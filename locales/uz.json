@@ -1,0 +1,803 @@
+{
+  "loading": "Yuklanmoqda...",
+  "welcome": "Xush kelibsiz",
+  "subheader": {
+    "regionQuestion": "Mintaqangizni tanlang",
+    "yes": "Ha",
+    "chooseRegion": "Mintaqa tanlash",
+    "stats": "Allaqachon 1 000 000 dan ortiq odam o'z mutaxassisini topdi"
+  },
+  "services": {
+    "empty": "Sizda hali qo'shilgan xizmatlar yo'q.",
+    "buy_boost": "Bo'st qilish!",
+    "select_boost": "Bo'st tanlash",
+    "pay": "To'lash",
+    "save": "Saqlash",
+    "price": "Narx",
+    "total": "Sizning xizmatlaringiz",
+    "category": "Kategoriya",
+    "addService": "Qo'shish",
+    "subCategories": "Subkategoriyalar",
+    "description": "Xizmat tavsifi",
+    "edit": "Tahrirlash",
+    "modalTitle": "Xizmat yaratish",
+    "namePlaceholder": "Xizmat nomi",
+    "descriptionPlaceholder": "Xizmatingizni tasvirlang",
+    "categorySelect": {
+      "0": "Kategoriyani tanlang"
+    },
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "saving": "Saqlanmoqda...",
+    "loading": "Yuklanmoqda...",
+    "expand": "Kengaytirish",
+    "image": "Rasm",
+    "tooltips": {
+      "name": "Xizmat nomini kiriting",
+      "description": "Xizmatingizni tasvirlang (maksimum 250 so'z)",
+      "category": "Kategoriyani tanlang, masalan, 'Ta'mirlash' yoki 'Go'zallik'",
+      "price": "Xizmat narxi va valyutasini ko'rsating",
+      "image": "Xizmat uchun rasm yuklang"
+    },
+    "errors": {
+      "fetching_data": "Ma'lumotlarni yuklashda xatolik",
+      "creating_service": "Xizmat yaratishda xatolik",
+      "updating_service": "Xizmatni yangilashda xatolik",
+      "deleting_service": "Xizmatni o'chirishda xatolik",
+      "service_limit_reached": "Xizmatlar limiti yetdi: {limit}. Obunani yangilang.",
+      "required_fields": "Nomi, kategoriyasi va narxi majburiy",
+      "confirm_delete": "Ushbu xizmatni o'chirishni xohlaysizmi?"
+    }
+  },
+  "backToLogin": "Kirish",
+  "regionModal": {
+    "title": "Mintaqangizni tanlang",
+    "regionPlaceholder": "Mintaqani ko'rsating",
+    "submit": "Tasdiqlash"
+  },
+  "search": {
+    "loading": "Natijalarni yuklash...",
+    "services": "Xizmatlar",
+    "vacancies": "Vakansiyalar",
+    "resultsTitle": "O'zingiz bilgan narsada pul ishlang",
+    "ariaLabel": "Mutaxassislar qidirish",
+    "placeholder": "Qidirish",
+    "button": "Topish",
+    "noQuery": "Hammasi",
+    "inRegion": "{{region}} mintaqasida",
+    "emptySearch": "Qidiruv uchun so'rov kiriting yoki filtrlar tanlang",
+    "fetchError": "Qidiruv natijalarini yuklab bo'lmadi",
+    "retry": "Qayta urinish",
+    "toggleServices": "Xizmatlarga o'tish",
+    "toggleVacancies": "Vakansiyalarga o'tish",
+    "search": "Qidiruv"
+  },
+  "filters": {
+    "allCategories": "Barcha kategoriyalar",
+    "selectCategory": "Kategoriyani tanlang",
+    "subcategory": "Subkategoriya",
+    "price": "Narx",
+    "currency": "(UZS)",
+    "experience": "Ish tajribasi (yil)",
+    "hours": "Ish soatlari",
+    "toggle": "Filtrlar"
+  },
+  "header": {
+    "logo": "MyProfi",
+    "login": "Kirish"
+  },
+  "hero": {
+    "title": "Har qanday vazifa uchun tasdiqlangan mutaxassisni bir necha daqiqada toping!"
+  },
+  "SearchPage": {
+    "placeholder": "Xizmatlar yoki mutaxassisliklar bo'yicha qidirish",
+    "button": "Topish",
+    "ariaLabel": "Xizmatlar va vakansiyalarni qidirish"
+  },
+  "carousel": {
+    "ariaLabel": "Reklama karuseli",
+    "slide1": "Xizmatlaringiz reklamasini joylashtiring",
+    "slide2": "Biz bilan biznesingizni targ'ib qiling!",
+    "slide3": "Yangi mijozlarni bugunoq jalb qiling!"
+  },
+  "advantages": {
+    "more12k": "100 dan ortiq haqiqiy xizmatlar",
+    "2_5m": "2 500 mijoz bizga ishonch bildirdi",
+    "more13y": "Sizga mutaxassis topishda tez yordam beramiz",
+    "safe": "Xavfsiz to'lov va tez to'lov",
+    "ariaLabel": "Platforma afzalliklari"
+  },
+  "request": {
+    "title": "Kerakli xizmatni topmadingizmi?",
+    "description": "So'rovingizni tasvirlang, biz sizga mutaxassis topishda yordam beramiz",
+    "inputAriaLabel": "So'rov tavsifi",
+    "inputPlaceholder": "Qanday xizmat qidirayotganingizni tasvirlang",
+    "button": "So'rov yuborish"
+  },
+  "specialists": {
+    "title": "Sizning mintaqangizdagi mutaxassislar",
+    "description": "mutaxassislar sizga yordam berishga tayyor",
+    "showAll": "Hammasini ko'rsatish"
+  },
+  "topSpecialties": {
+    "tutors": "Repetitorlar",
+    "repair": "Maishiy texnika ta'mirlash",
+    "construction": "Ta'mirlash va Qurilish",
+    "makeup": "Sartarosh / Vizajistlar"
+  },
+  "profile": {
+    "gender": "Jins",
+    "about": "O'zim haqimda",
+    "aboutPlaceholder": "Tajribangiz va ko'nikmalaringiz haqida so'zlab bering",
+    "reviewsCount": "{count} ta sharh",
+    "years": "yil",
+    "workExperience": "Ish tajribasi",
+    "vacancy_limit": "Xizmatlar limiti",
+    "avatarAlt": "Profil rasmi",
+    "vacancies": "Xizmatlar",
+    "location": "Mintaqa",
+    "cancel": "Bekor qilish",
+    "na": "Ko'rsatilmagan",
+    "genderOptions": {
+      "male": "Erkak",
+      "female": "Ayol",
+      "other": "Boshqa"
+    },
+    "support": {
+      "intro": "Yordam va qo'llab-quvvatlash",
+      "title": "Qo'llab-quvvatlash",
+      "telegram": "Telegram",
+      "telegramNotice": "Bizning qo'llab-quvvatlash xizmatimiz yuklangan, iloji boricha tezroq javob berishga harakat qilamiz.",
+      "email": "Elektron pochta",
+      "emailNotice": "Biz 7 ish kuni ichida albatta javob beramiz.",
+      "liveChat": "Jonli suhbat",
+      "liveChatPlaceholder": "Jonli suhbat vaqtincha mavjud emas."
+    },
+    "save": "O'zgarishlarni saqlash",
+    "service_limit": "Sizda {limit} ta xizmatdan {count} tasi mavjud",
+    "sidebar": {
+      "profile": "Mening profilim",
+      "services": "Mening xizmatlarim",
+      "vacancies": "Mening vakansiyalarim",
+      "orderHistory": "Buyurtmalar tarixi",
+      "security": "Sozlamalar",
+      "logout": "Chiqish",
+      "support": "Qo'llab-quvvatlash"
+    },
+    "modals": {
+      "gender": {
+        "title": "Jinsni o'zgartirish",
+        "placeholder": "Jinsni tanlang"
+      },
+      "about": {
+        "title": "Tavsifni tahrirlash",
+        "placeholder": "Tajribangiz va ko'nikmalaringizni tasvirlang"
+      },
+      "name": {
+        "title": "Ismni o'zgartirish",
+        "placeholder": "Ismingizni kiriting"
+      },
+      "specialty": {
+        "title": "Mutaxassislikni o'zgartirish",
+        "placeholder": "Mutaxassisligingizni ko'rsating"
+      },
+      "workingHours": {
+        "title": "Ish soatlarini o'zgartirish"
+      },
+      "cost": {
+        "title": "Narxni o'zgartirish",
+        "pricePlaceholder": "Narxni kiriting"
+      },
+      "workExperience": {
+        "title": "Ish tajribasini o'zgartirish",
+        "placeholder": "Yillarda ish tajribasini ko'rsating"
+      },
+      "cancel": "Bekor qilish",
+      "save": "Saqlash"
+    },
+    "errors": {
+      "emptyName": "Ism bo'sh bo'lishi mumkin emas",
+      "emptySpecialty": "Mutaxassislik bo'sh bo'lishi mumkin emas",
+      "invalidWorkingHours": "Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak",
+      "invalidCost": "Narx musbat son bo'lishi kerak",
+      "emptyCategory": "Kategoriya bo'sh bo'lishi mumkin emas",
+      "emptyDescription": "Xizmat tavsifi bo'sh bo'lishi mumkin emas",
+      "descriptionTooLong": "Tavsif {max} so'zdan oshmasligi kerak",
+      "emptyGender": "Jinsni tanlash kerak",
+      "invalidWorkExperience": "Ish tajribasi manfiy bo'lmagan son bo'lishi kerak",
+      "fetchError": "Profilni yuklashda xatolik",
+      "saveError": "Profil o'zgarishlarini saqlashda xatolik",
+      "csrfError": "CSRF token xatosi. Iltimos, qayta kiring",
+      "internalServerError": "Ichki server xatosi",
+      "categoryNotFound": "Kategoriya topilmadi",
+      "subCategoryNotFound": "Subkategoriya topilmadi"
+    }
+  },
+  "regionPlaceholder": "Mintaqani ko'rsating",
+  "submit": "Tasdiqlash",
+  "avatarAlt": "Mutaxassis rasmi",
+  "na": "Ko'rsatilmagan",
+  "specialty": "Mutaxassislik",
+  "workingHours": "Ish soatlari",
+  "serviceCost": "Xizmat narxi",
+  "responseTime": "O'rtacha javob vaqti",
+  "responses": "{count} ta javob",
+  "experience": "Ish tajribasi",
+  "years": "yil",
+  "timeOnPlatform": "Platformada",
+  "save": "Saqlash",
+  "saveSuccess": "Profil muvaffaqiyatli yangilandi!",
+  "noRating": "Reyting mavjud emas",
+  "costUnits": {
+    "perHour": "soatiga",
+    "perDay": "kunga",
+    "perMonth": "oyiga",
+    "perWeek": "haftasiga",
+    "perService": "xizmatga"
+  },
+  "genderOptions": {
+    "female": "Ayol",
+    "male": "Erkak",
+    "other": "Boshqa"
+  },
+  "genderLabel": "Jins",
+  "workExperience": "{count} yil",
+  
+  "security": {
+    "title": "Sozlamalar",
+    "header": "Sozlamalar",
+    "birthday": {
+      "modalTitle": "Tug‘ilgan kun"
+    },
+    "button": {
+        "label": "Maʼlumotlarni o‘zgartirish"
+    },
+    "name": {
+      "label": "Ism",
+      "modalTitle": "Ismni o'zgartirish",
+      "placeholder": "Ismingizni kiriting",
+      "edit": "Ismni tahrirlash"
+    },
+    "comingSoon": "Funktsiya tez orada paydo bo'ladi",
+    "dob": {
+      "label": "Tug'ilgan sana",
+      "modalTitle": "Tug'ilgan sanani o'zgartirish",
+      "placeholder": "Sanani tanlang",
+      "edit": "Tug'ilgan sanani tahrirlash"
+    },
+    "phone": {
+      "label": "Telefon raqami",
+      "modalTitle": "Telefon raqamini o'zgartirish",
+      "oldPlaceholder": "Joriy raqamni kiriting",
+      "newPlaceholder": "Yangi raqamni kiriting",
+      "disclaimer": "Yangi raqamga tasdiqlash kodi yuboramiz.",
+      "otpPlaceholder": "Tasdiqlash kodini kiriting",
+      "requestOTP": "Kod so'rash",
+      "otpSent": "Tasdiqlash kodi yuborildi",
+      "updateSuccess": "Telefon raqami muvaffaqiyatli yangilandi",
+      "edit": "Telefon raqamini tahrirlash"
+    },
+    "email": {
+      "label": "Elektron pochta",
+      "modalTitle": "Emailni o'zgartirish",
+      "placeholder": "Yangi emailni kiriting",
+      "disclaimer": "Tasdiqlash uchun xat yuboramiz.",
+      "updateSuccess": "Email muvaffaqiyatli yangilandi",
+      "edit": "Emailni tahrirlash"
+    },
+    "telegram": {
+      "label": "Telegram",
+      "modalTitle": "Telegramni o'zgartirish",
+      "oldPlaceholder": "Joriy Telegramni kiriting",
+      "newPlaceholder": "Yangi Telegramni kiriting",
+      "disclaimer": "Telegram @ bilan boshlanishi kerak.",
+      "updateSuccess": "Telegram muvaffaqiyatli yangilandi",
+      "edit": "Telegramni tahrirlash"
+    },
+    "newsletters": {
+      "label": "Xabarlar obunasi",
+      "modalTitle": "Xabarlar obunasini sozlash",
+      "marketing": "Marketing xabarlari",
+      "orders": "Buyurtmalar haqida bildirishnomalar",
+      "edit": "Xabarlar obunasini tahrirlash"
+    },
+    "subscription": {
+      "label": "Obuna",
+      "basic": "Asosiy",
+      "modalTitle": "Obunani tanlang",
+      "subscribe": "Obuna bo'lish",
+      "success": "{plan} obunasi muvaffaqiyatli amalga oshirildi!",
+      "plans": {
+        "7days": {
+          "title": "Yaxshilangan",
+          "duration": "7 kun",
+          "features": {
+            "0": "Profil holatini o'zgartirish",
+            "1": "Qidiruvda ustunlik: haftada 3 marta",
+            "2": "Tezlashtirilgan qo'llab-quvvatlash"
+          }
+        },
+        "1month": {
+          "title": "Ilg'or",
+          "duration": "1 oy",
+          "features": {
+            "0": "Profil holatini o'zgartirish",
+            "1": "Qidiruvda ustunlik: oyiga 15 marta",
+            "2": "Tezlashtirilgan qo'llab-quvvatlash",
+            "3": "Bir vaqtda 3 tagacha xizmat joylashtirish"
+          }
+        },
+        "3months": {
+          "title": "Premium",
+          "duration": "3 oy",
+          "features": {
+            "0": "Profil holatini o'zgartirish",
+            "1": "Qidiruvda ustunlik: 3 oyda 55 marta",
+            "2": "Ustunlikli qo'llab-quvvatlash",
+            "3": "Bir vaqtda 7 tagacha xizmat joylashtirish",
+            "4": "Profilning individual uslublari",
+            "5": "Platforma xizmatlarida 10% chegirma"
+          }
+        }
+      }
+    },
+    "documents": {
+      "label": "Sertifikatlar",
+      "modalTitle": "Sertifikatlarni yuklash",
+      "passport": "Pasport",
+      "registration": "Ro'yxatdan o'tish",
+      "diploma": "Diplom",
+      "additional": "Qo'shimcha",
+      "additionalTitle": "Qo'shimcha sertifikatlar",
+      "uploaded": "Yuklangan",
+      "notUploaded": "Yuklanmagan",
+      "uploadPrompt": {
+        "passport": "Pasport faylini sudrab olib keling yoki tanlang",
+        "registration": "Ro'yxatdan o'tish faylini sudrab olib keling yoki tanlang",
+        "diploma": "Diplom faylini sudrab olib keling yoki tanlang",
+        "additional": "Qo'shimcha fayllarni sudrab olib keling yoki tanlang"
+      },
+      "upload": "Yuklash",
+      "replace": "Almashtirish",
+      "addMore": "Yana qo'shish",
+      "additionalCount": "+{count} qo'shimcha fayllar",
+      "view": "{name} faylini ko'rish",
+      "viewButton": "Ko'rish",
+      "deleteButton": "O'chirish",
+      "uploadSuccess": "Hujjat muvaffaqiyatli yuklandi"
+    },
+    "status": {
+      "online": "Onlayn",
+      "offline": "Oflayn"
+    },
+    "deleteAccount": {
+      "label": "Hisobni o'chirish",
+      "button": "Hisobni o'chirish",
+      "modalTitle": "Hisobni o'chirishni tasdiqlash",
+      "confirmText": "hisobni o'chirish",
+      "confirmPlaceholder": "Tasdiqlash uchun 'hisobni o'chirish' ni kiriting",
+      "confirmTooltip": "Tasdiqlash uchun aniq 'hisobni o'chirish' iborasini kiriting",
+      "policyAgreement": "Bizning siyosatimizga rozilik",
+      "policyTooltip": "Hisobni o'chirish shartlariga rozilikni tasdiqlang.",
+      "confirm": "Hisobni o'chirishni xohlaysizmi? Bu amalni bekor qilib bo'lmaydi.",
+      "success": "Hisob muvaffaqiyatli o'chirildi",
+      "invalidConfirmation": "Noto'g'ri tasdiqlash iborasi",
+      "policyNotAgreed": "O'chirish siyosatiga rozilik bildirish kerak"
+    },
+    "tooltips": {
+      "name": "To'liq ismingizni kiriting",
+      "dob": "Tug'ilgan sanangizni ko'rsating",
+      "phone": "Haqiqiy telefon raqamini kiriting",
+      "email": "Haqiqiy elektron pochta manzilini kiriting",
+      "telegram": "Telegram nikingizni @ bilan kiriting",
+      "newsletters": "Qabul qilmoqchi bo'lgan bildirishnoma turlarini tanlang",
+      "documents": "Hujjatlarni PDF, PNG yoki JPG formatida yuklang"
+    },
+    "errors": {
+      "fetchError": "Sozlamalar ma'lumotlarini yuklashda xatolik",
+      "saveError": "O'zgarishlarni saqlashda xatolik",
+      "csrfError": "CSRF token xatosi. Iltimos, qayta kiring",
+      "oldPhoneIncorrect": "Joriy telefon raqami noto'g'ri kiritildi",
+      "invalidNewPhone": "Yangi telefon raqami yaroqsiz",
+      "invalidOTP": "Noto'g'ri tasdiqlash kodi",
+      "otpRequestFailed": "Tasdiqlash kodi so'rovida xatolik",
+      "invalidEmail": "Noto'g'ri email kiritildi",
+      "oldTelegramIncorrect": "Joriy Telegram noto'g'ri kiritildi",
+      "invalidNewTelegram": "Yangi Telegram yaroqsiz",
+      "noDocument": "Yuklash uchun hujjat tanlanmadi"
+    },
+    "modals": {
+      "cancel": "Bekor qilish",
+      "save": "Saqlash",
+      "upload": "Yuklash",
+      "about": {
+        "title": "Tavsifni tahrirlash",
+        "placeholder": "Tajribangiz va ko'nikmalaringizni tasvirlang"
+      }
+    }
+  },
+
+  "vacancies": {
+    "empty": "Sizda hali qo'shilgan vakansiyalar yo'q.",
+    "buy_boost": "Bo'st qilish!",
+    "select_boost": "Bo'st tanlash",
+    "pay": "To'lash",
+    "price": "Narx",
+    "total": "Sizning vakansiyalaringiz",
+    "category": "Kategoriya",
+    "addService": "Qo'shish",
+    "subCategories": "Subkategoriyalar",
+    "description": "Vakansiya tavsifi",
+    "edit": "Tahrirlash",
+    "modalTitle": "Vakansiya yaratish",
+    "namePlaceholder": "Vakansiya nomi",
+    "descriptionPlaceholder": "Vakansiyangizni tasvirlang",
+    "categorySelect": {
+      "0": "Kategoriyani tanlang"
+    },
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "saving": "Saqlanmoqda...",
+    "loading": "Yuklanmoqda...",
+    "expand": "Kengaytirish",
+    "image": "Rasm",
+    "tooltips": {
+      "name": "Vakansiya nomini kiriting",
+      "description": "Vakansiyangizni tasvirlang (maksimum 250 so'z)",
+      "category": "Kategoriyani tanlang, masalan, 'Ta'mirlash' yoki 'Go'zallik'",
+      "price": "Vakansiya narxi va valyutasini ko'rsating",
+      "image": "Vakansiya uchun rasm yuklang"
+    },
+    "errors": {
+      "fetching_data": "Ma'lumotlarni yuklashda xatolik",
+      "creating_vacancy": "Vakansiya yaratishda xatolik",
+      "updating_vacancy": "Vakansiyani yangilashda xatolik",
+      "deleting_vacancy": "Vakansiyani o'chirishda xatolik",
+      "vacancy_limit_reached": "Vakansiyalar limiti yetdi: {limit}. Obunani yangilang.",
+      "required_fields": "Nomi, kategoriyasi va narxi majburiy",
+      "confirm_delete": "Ushbu vakansiyani o'chirishni xohlaysizmi?"
+    }
+  },
+  "orderHistory": {
+    "reviewClient": "Mijozni tekshirish",
+    "executorReview": "Ijrochi sharhi",
+    "reviewDescription": "Tavsifni tekshirish",
+    "reviewPlaceholder": "Sharhingizni bu yerga yozing (maksimal 250 ta belgi)",
+    "reviewButtonName": "Sharhni yuborish",
+    "ratingExecutor": "Baholang",
+    "ratingClient": "Baholang",
+    "submitting": "Sharhni yuborish jarayoni",
+    "reviewExecutor": "Ijrochini tekshirish",
+    "title": "Buyurtmalar tarixi",
+    "roleLabelClient": "Siz buyurtmachi",
+    "roleLabelExecutor": "Siz ijrochi",
+    "date": "Buyurtma sanasi",
+    "total": "Buyurtmalar tarixi",
+    "noReviews": "Sharhlar yo'q",
+    "status": "Holati",
+    "description": "Xizmat tavsifi",
+    "price": "Narx",
+    "duration": "Davomiyligi",
+    "review": "Sharh qoldirish",
+    "statusCompleted": "Bajarildi",
+    "acceptResponse": "Qabul qilish",
+    "declineResponse": "Bekor qilish",
+    "statusInProgress": "Jarayonda",
+    "statusPending": "Tasdiqlash kutilmoqda",
+    "statusCancelled": "Bekor qilindi",
+    "statusAwaiting": "Ijrochini kutmoqda",
+    "loading": "Ma'lumotlar yuklanmoqda...",
+    "error": "Buyurtmalar tarixini yuklab bo'lmadi. Iltimos, qayta urinib ko'ring.",
+    "contactTitle": "Aloqa ma'lumotlari",
+    "name": "Ism",
+    "phone": "Telefon",
+    "email": "Elektron pochta",
+    "telegram": "Telegram",
+    "ratingTitle": "Ijrochini baholang",
+    "ratingRequired": "Iltimos, 1 dan 5 gacha baho tanlang",
+    "submitRating": "Baho yuborish",
+    "close": "Yopish",
+    "aboutClient": "Mijoz haqida",
+    "text": "Aloqa qilish",
+    "accept": "Buyurtmani qabul qilish",
+    "decline": "Buyurtmani rad etish",
+    "cancel": "Buyurtmani bekor qilish",
+    "complete": "Buyurtmani yakunlash",
+    "chat": "Suhbatni ochish",
+    "menu": "Amallar menyusi",
+    "expand": "Tafsilotlarni kengaytirish",
+    "noOrders": "Sizda hali buyurtmalar yo'q",
+    "errors": {
+      "fetchContactInfo": "Aloqa ma'lumotlarini yuklashda xatolik",
+      "updateOrder": "Buyurtma holatini yangilashda xatolik",
+      "submitRating": "Baho yuborishda xatolik"
+    }
+  },
+  "order": {
+    "reviewData": "Шарҳ санаси",
+    "modalTitle": "Buyurtmani tasdiqlash",
+    "respondModalTitle": "Vakansiyaga javobni tasdiqlash",
+    "executor": "Ijrochi",
+    "client": "Buyurtmachi",
+    "price": "Narx",
+    "rating": "Reyting",
+    "category": "Kategoriya",
+    "subcategories": "Subkategoriyalar",
+    "gender": "Jins",
+    "workExperience": "Ish tajribasi",
+    "region": "Mintaqa",
+    "createdAt": "Yaratilgan sana",
+    "details": "Tafsilotlar",
+    "collapse": "Yig'ish",
+    "order": "Buyurtma berish",
+    "respond": "Vakansiyaga javob berish",
+    "phone": "Telefon",
+    "email": "Email",
+    "telegram": "Telegram",
+    "confirmButton": "Buyurtmani tasdiqlash",
+    "confirmRespondButton": "Javobni tasdiqlash",
+    "cancelButton": "Bekor qilish",
+    "close": "Yopish",
+    "errorTitle": "Buyurtma xatosi",
+    "error": "Buyurtma berishda xatolik",
+    "errorNotAuthenticated": "Buyurtma berish uchun tizimga kiring",
+    "invalidId": "Xizmat yoki vakansiya ID'si noto'g'ri",
+    "unknownError": "Noma'lum xatolik",
+    "notSpecified": "Ko'rsatilmagan",
+    "noDescription": "Tavsif mavjud emas",
+    "noReviews": "Sharhlar mavjud emas",
+    "noComment": "Izoh mavjud emas",
+    "review": "Sharh",
+    "comment": "Izoh",
+    "reviewDate": "Sharh sanasi",
+    "years": "yil",
+    "image": "Rasm"
+  },
+  "registerCoolText1": {
+    "title": "Siz hamma narsani qila olasiz",
+    "description": "Mutaxassislarni qidiring va ularga aylaning",
+    "subtitle": "1000 dan ortiq haqiqiy xizmatlar",
+    "subtitle2": "1000 dan ortiq mutaxassislar",
+    "button": "Yangi hayotga start bering!"
+  },
+  "registerCoolText2": {
+    "title": "Eng yuqorida bo'ling!",
+    "description": "Bo'st bilan tezroq qidiring va toping",
+    "button": "Ro'yxatdan o'tishni yakunlash",
+    "boost_description": "Profilingizni qidiruvda bo'st qiladi, xizmatlar va vakansiyalarning ko'rinishini oshiradi, javoblarni tezroq olishni tezlashtiradi"
+  },
+  "register": {
+    "forgotPassword": "Parolni unutdingizmi?",
+    "forgotPasswordForm": {
+      "title": "Parolni tiklash",
+      "phonePlaceholder": "Telefon raqamini kiriting",
+      "submit": "Kod olish",
+      "back": "Kirish"
+    },
+    "profile": {
+      "namePlaceholder": "Ismingizni kiriting",
+      "passwordPlaceholder": "Parolni kiriting",
+      "confirmPasswordPlaceholder": "Parolni tasdiqlang",
+      "genderPlaceholder": "Jinsni tanlang",
+      "gender": {
+        "male": "Erkak",
+        "female": "Ayol"
+      },
+      "regionPlaceholder": "Mintaqani tanlang",
+      "submit": "Ro'yxatdan o'tish",
+      "welcomeTitle": "Xush kelibsiz!",
+      "welcomeSubtitle": "Profilni to'ldiring"
+    },
+    "login": {
+      "title": "Kirish",
+      "userCount": "1 233 333 mutaxassis va buyurtmachilar allaqachon myProfy'da",
+      "phonePlaceholder": "Telefon raqamini kiriting",
+      "passwordPlaceholder": "Parolni kiriting",
+      "submit": "Kirish"
+    },
+    "tooltips": {
+      "phone": "Telefon raqamini kiriting",
+      "password": "Kamida 8 ta belgi, harflar, raqamlar va maxsus belgilar",
+      "confirmPassword": "Parolni qayta kiriting",
+      "telegram": "Telegram nikingizni kiriting",
+      "name": "Ism va familiyangizni kiriting",
+      "gender": "Jinsingizni ko'rsating",
+      "region": "Mintaqangizni tanlang"
+    },
+    "or": "yoki",
+    "registerLink": "Ro'yxatdan o'tish",
+    "register": {
+      "title": "Ro'yxatdan o'tish",
+      "phonePlaceholder": "Telefon raqamini kiriting",
+      "submit": "Kod olish",
+      "back": "Orqaga",
+      "backToLogin": "Kirish",
+      "searchSpecialists": "Siz ijrochilarni qidirishingiz va shuningdek ulardan biri bo'lishingiz mumkin"
+    },
+    "otp": {
+      "title": "Tasdiqlash kodini kiriting",
+      "note": "Kod olish uchun Telegram'da suhbatni boshlang.",
+      "submit": "Tasdiqlash",
+      "resend": "Kodni qayta yuborish",
+      "resendTimer": "{{seconds}} soniyadan so'ng qayta yuboring",
+      "sentMessage": "Kod Telegram'ga yuborildi. Xabarlarni tekshiring",
+      "resendMessage": "Kod kelmadi? Telegram'ni tekshiring yoki yangi kod so'rang."
+    },
+    "telegram": {
+      "title": "Telegram",
+      "placeholder": "@username ni kiriting",
+      "submit": "Davom etish"
+    },
+    "newPassword": {
+      "title": "Yangi parol yaratish",
+      "newPasswordPlaceholder": "Yangi parolni kiriting",
+      "repeatPasswordPlaceholder": "Yangi parolni tasdiqlang",
+      "submit": "Parolni saqlash"
+    },
+    "errors": {
+      "invalidCredentials": "Noto'g'ri parol yoki telefon raqami",
+      "invalidPhone": "+998901234567 formatida raqam kiriting",
+      "invalidPassword": "Parol kamida 8 ta belgi, harflar, raqamlar va maxsus belgi (!@#$%^&*-) dan iborat bo'lishi kerak",
+      "passwordMismatch": "Parollar mos kelmaydi",
+      "invalidOtp": "Kod 6 ta raqamdan iborat bo'lishi kerak",
+      "invalidTelegram": "@username ni kiriting (kamida 5 ta belgi)",
+      "invalidName": "Ism kamida 2 ta harfdan iborat bo'lishi kerak",
+      "emptyGender": "Jinsni tanlang",
+      "emptyRegion": "Mintaqani tanlang",
+      "loginFailed": "Kirishda xatolik",
+      "otpRequestFailed": "Kod so'rovida xatolik",
+      "otpResendFailed": "Kodni qayta yuborishda xatolik",
+      "registrationFailed": "Ro'qatdan o'tishda xatolik",
+      "invalidOtpFormat": "Noto'g'ri kod formati",
+      "otpExpired": "Kodning amal qilish muddati tugadi",
+      "noTelegramChat": "Kod olish uchun @MyProfy_OTP_bot bilan Telegram'da suhbatni boshlang.",
+      "passwordResetFailed": "Parolni tiklashda xatolik. Qayta urinib ko'ring."
+    },
+    "regions": {
+      "Ташкент": "Toshkent",
+      "Андижан": "Andijon",
+      "Бухара": "Buxoro",
+      "Фергана": "Farg'ona",
+      "Джизак": "Jizzax",
+      "Наманган": "Namangan",
+      "Навои": "Navoiy",
+      "Кашкадарья": "Qashqadaryo",
+      "Самарканд": "Samarqand",
+      "Сырдарья": "Sirdaryo",
+      "Сурхандарья": "Surxondaryo",
+      "Хорезм": "Xorazm",
+      "Каракалпакстан": "Qoraqalpog'iston"
+    }
+  },
+  "errors": {
+    "fetchError": "Serverdan ma'lumotlarni yuklab bo'lmadi. Keyinroq qayta urinib ko'ring.",
+    "imageError": "OOPS, nimadir noto'g'ri ketdi",
+    "loading": "Yuklanmoqda...",
+    "fetching_data": "Ma'lumotlarni yuklashda xatolik",
+    "creating_service": "Xizmat yaratishda xatolik",
+    "updating_service": "Xizmatni yangilashda xatolik",
+    "vacancy_limit_reached": "Xizmatlar limiti yetdi: {limit}",
+    "service_limit_reached": "Xizmatlar limiti yetdi: {limit}. Obunani yangilang."
+  },
+  "reviews": {
+    "title": "Sharhlar",
+    "reviewerImageAlt": "Sharh muallifi rasmi",
+    "cost": "Narx",
+    "service": "Xizmat",
+    "paymentMethod": {
+      "cash": "Naqd pul bilan",
+      "transfer": "O'tkazma orqali",
+      "na": "Ko'rsatilmagan"
+    },
+    "rating": "Reyting",
+    "1": {
+      "text": "Ajoyib repetitor, imtihonga tayyorlanishga yordam berdi!",
+      "comment": "Viktor juda sabrli va hamma narsani tushunarli tushuntiradi. Unga rahmat, matematikadan yuqori ball oldim.",
+      "date": "2021 yil 28 sentyabr",
+      "reviewer": "Aleksey K.",
+      "rating": 5,
+      "tasksCompleted": 20,
+      "image": "https://via.placeholder.com/40",
+      "cost": "1145 ₽",
+      "serviceName": "Matematika bo'yicha repetitor",
+      "paymentMethod": "transfer"
+    },
+    "2": {
+      "text": "Sifatli interyer dizayni",
+      "comment": "Anna mening barcha istaklarimni hisobga oldi, loyiha zamonaviy va funktsional bo'ldi.",
+      "date": "2021 yil 15 oktyabr",
+      "reviewer": "Mariya P.",
+      "rating": 4.8,
+      "tasksCompleted": 15,
+      "image": "https://via.placeholder.com/40",
+      "cost": "2300 ₽",
+      "serviceName": "Interyer dizayni",
+      "paymentMethod": "cash"
+    },
+    "3": {
+      "text": "Tez va ishonchli ta'mirlash",
+      "comment": "Igor mening kir yuvish mashinamni bir necha soatda ta'mirladi, hammasi yangidek ishlaydi.",
+      "date": "2021 yil 3 noyabr",
+      "reviewer": "Sergey V.",
+      "rating": 4.9,
+      "tasksCompleted": 30,
+      "image": "https://via.placeholder.com/40",
+      "cost": "1800 ₽",
+      "serviceName": "Texnika ta'mirlash",
+      "paymentMethod": "transfer"
+    },
+    "4": {
+      "text": "Ajoyib fotosessiya",
+      "comment": "Yelena ajoyib suratlar oldi, juda professional yondashuv!",
+      "date": "2021 yil 20 dekabr",
+      "reviewer": "Olga S.",
+      "rating": 5,
+      "tasksCompleted": 25,
+      "image": "https://via.placeholder.com/40",
+      "cost": "3500 ₽",
+      "serviceName": "Fotosurat",
+      "paymentMethod": "cash"
+    },
+    "5": {
+      "text": "Sayt uchun ajoyib matn",
+      "comment": "Dmitriy yangi mijozlarni jalb qilgan sotuvchi matn yozdi.",
+      "date": "2022 yil 10 yanvar",
+      "reviewer": "Irina L.",
+      "rating": 4.7,
+      "tasksCompleted": 18,
+      "image": "https://via.placeholder.com/40",
+      "cost": "1200 ₽",
+      "serviceName": "Kopirayting",
+      "paymentMethod": "transfer"
+    },
+    "6": {
+      "text": "Buyurtma bo'yicha mazali tort",
+      "comment": "Natalya mening tug'ilgan kunimga tort tayyorladi — chiroyli va juda mazali!",
+      "date": "2022 yil 14 fevral",
+      "reviewer": "Tatyana M.",
+      "rating": 5,
+      "tasksCompleted": 12,
+      "image": "https://via.placeholder.com/40",
+      "cost": "2500 ₽",
+      "serviceName": "Qandolatchilik mahsulotlari",
+      "paymentMethod": "cash"
+    },
+    "7": {
+      "text": "Yuqori darajadagi xonadon tozalash",
+      "comment": "Svetlana tez va sifatli tozaladi, hamma narsa yaltirab turibdi. Natijadan juda mamnunman.",
+      "date": "2022 yil 5 mart",
+      "reviewer": "Lyudmila R.",
+      "rating": 4.9,
+      "tasksCompleted": 40,
+      "image": "https://via.placeholder.com/40",
+      "cost": "1800 ₽",
+      "serviceName": "Xonadonlarni tozalash",
+      "paymentMethod": "transfer"
+    },
+    "8": {
+      "text": "Kalit topshiriladigan sayt",
+      "comment": "Aleksey mening biznesim uchun sayt ishlab chiqdi, hamma narsa muammosiz ishlaydi va zamonaviy ko'rinadi.",
+      "date": "2022 yil 25 aprel",
+      "reviewer": "Vladimir S.",
+      "rating": 4.8,
+      "tasksCompleted": 22,
+      "image": "https://via.placeholder.com/40",
+      "cost": "15000 ₽",
+      "serviceName": "Veb-ishlab chiqish",
+      "paymentMethod": "transfer"
+    },
+    "9": {
+      "text": "Avtomobil ta'mirlash",
+      "comment": "Sergey tormoz yostiqchalarini va moyni almashtirdi. Hammasini tez va o'rtacha narxda qildi.",
+      "date": "2022 yil 8 may",
+      "reviewer": "Pavel I.",
+      "rating": 5,
+      "tasksCompleted": 28,
+      "image": "https://via.placeholder.com/40",
+      "cost": "5000 ₽",
+      "serviceName": "Avtoservis",
+      "paymentMethod": "cash"
+    }
+  }
+}

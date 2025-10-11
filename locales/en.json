@@ -1,0 +1,670 @@
+{
+  "loading": "Loading...",
+  "subheader": {
+    "regionQuestion": "Is your region Tashkent?",
+    "yes": "Yes",
+    "chooseRegion": "Choose another region",
+    "stats": "Already 1,000,500+ people have found their specialist"
+  },
+  "regionModal": {
+    "title": "Select your region",
+    "regionPlaceholder": "Specify region",
+    "submit": "Confirm"
+  },
+  "search": {
+    "loading": "Loading results...",
+    "services": "Services",
+    "vacancies": "Vacancies",
+    "resultsTitle": "Search results",
+    "ariaLabel": "Search for specialists",
+    "placeholder": "Search",
+    "button": "Find"
+  },
+  "header": {
+    "logo": "MyProfi",
+    "login": "Log in"
+  },
+  "hero": {
+    "title": "Find a trusted specialist for any task in minutes!"
+  },
+  "SearchPage": {
+    "placeholder": "Search by services or specialties",
+    "button": "Find"
+  },
+  "carousel": {
+    "ariaLabel": "Advertising carousel",
+    "slide1": "Place an ad for your services",
+    "slide2": "Promote your business with us!",
+    "slide3": "Attract new clients today!"
+  },
+  "advantages": {
+    "more12k": "Over 100 real services",
+    "2_5m": "2.5M customers trusted us",
+    "more13y": "Quickly help you find a specialist",
+    "safe": "Secure and fast payment",
+    "ariaLabel": "Platform advantages"
+  },
+  "request": {
+    "title": "Can't find the right service?",
+    "description": "Describe your request, and we will help find a specialist",
+    "inputAriaLabel": "Request description",
+    "inputPlaceholder": "Describe the service you are looking for",
+    "button": "Send request"
+  },
+  "specialists": {
+    "title": "Specialists in your region",
+    "description": "{totalServices} specialists are ready to help you",
+    "showAll": "Show all"
+  },
+  "topSpecialties": {
+    "math": "Math Tutor",
+    "english": "English Tutor",
+    "plumber": "Plumber",
+    "tire": "Tire Services"
+  },
+  "profile": {
+    "gender": "Gender",
+    "about": "About me",
+    "aboutPlaceholder": "Tell about your experience and skills",
+    "reviewsCount": "{count} reviews",
+    "years": "years",
+    "workExperience": "Work experience",
+    "vacancy_limit": "Service limit",
+    "avatarAlt": "Profile photo",
+    "vacancies": "Services",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "support": {
+      "intro": "Help and support",
+      "title": "Support",
+      "telegram": "Telegram",
+      "telegramNotice": "Our support is overloaded, we will try to respond quickly.",
+      "email": "Email",
+      "emailNotice": "We will definitely respond within 7 business days.",
+      "liveChat": "Live chat",
+      "liveChatPlaceholder": "Live chat is temporarily unavailable."
+    },
+    "save": "Save changes",
+    "service_limit": "You have {count} of {limit} services",
+    "sidebar": {
+      "profile": "My profile",
+      "services": "My services",
+      "vacancies": "My vacancies",
+      "orderHistory": "Order history",
+      "security": "Settings",
+      "logout": "Log out",
+      "support": "Support"
+    },
+    "modals": {
+      "gender": {
+        "title": "Change gender",
+        "placeholder": "Select gender"
+      },
+      "about": {
+        "title": "Edit description",
+        "placeholder": "Describe your experience and skills"
+      },
+      "name": {
+        "title": "Change name",
+        "placeholder": "Enter your name"
+      },
+      "specialty": {
+        "title": "Change specialty",
+        "placeholder": "Enter your specialty"
+      },
+      "workingHours": {
+        "title": "Change working hours"
+      },
+      "cost": {
+        "title": "Change cost",
+        "pricePlaceholder": "Enter cost"
+      },
+      "workExperience": {
+        "title": "Change work experience",
+        "placeholder": "Enter work experience in years"
+      },
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "errors": {
+      "emptyName": "Name cannot be empty",
+      "emptySpecialty": "Specialty cannot be empty",
+      "invalidWorkingHours": "Start time must be before end time",
+      "invalidCost": "Cost must be positive",
+      "emptyCategory": "Category cannot be empty",
+      "emptyDescription": "Description cannot be empty",
+      "descriptionTooLong": "Description cannot exceed {max} words",
+      "emptyGender": "Gender cannot be empty",
+      "invalidWorkExperience": "Work experience must be a non-negative number",
+      "fetchError": "Error loading profile",
+      "saveError": "Failed to save profile changes",
+      "csrfError": "CSRF token error. Please log in again",
+      "internalServerError": "Internal server error",
+      "categoryNotFound": "Category not found",
+      "subCategoryNotFound": "Subcategory not found"
+    }
+  },
+  "regionPlaceholder": "Specify region",
+  "submit": "Confirm",
+  "avatarAlt": "Specialist's photo",
+  "na": "Not specified",
+  "specialty": "Specialty",
+  "workingHours": "Working hours",
+  "serviceCost": "Service cost",
+  "responseTime": "Average response time",
+  "responses": "{count} responses",
+  "experience": "Work experience",
+  "years": "years",
+  "timeOnPlatform": "On the platform",
+  "save": "Save",
+  "saveSuccess": "Profile successfully updated!",
+  "noRating": "No rating",
+  "costUnits": {
+    "perHour": "per hour",
+    "perDay": "per day",
+    "perMonth": "per month",
+    "perWeek": "per week",
+    "perService": "per service"
+  },
+  "genderOptions": {
+    "female": "Female",
+    "male": "Male",
+    "other": "Other"
+  },
+  "genderLabel": "Gender",
+  "workExperience": "{count} years",
+  "services": {
+    "empty": "You have no services added yet.",
+    "save": "Save",
+    "price": "Cost",
+    "total": "Your services",
+    "category": "Category",
+    "addService": "Add",
+    "subCategories": "Subcategories",
+    "description": "Service description",
+    "edit": "Edit",
+    "modalTitle": "Create service",
+    "namePlaceholder": "Name your service",
+    "descriptionPlaceholder": "Describe your service",
+    "categorySelect": {
+      "0": "Select category"
+    },
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "expand": "Expand",
+    "image": "Image",
+    "tooltips": {
+      "name": "Enter the service name",
+      "description": "Describe your service (max 250 words)",
+      "category": "Select the category, e.g., 'Repair' or 'Beauty'",
+      "price": "Specify the cost and currency of the service",
+      "image": "Upload an image for the service"
+    },
+    "errors": {
+      "fetching_data": "Error loading data",
+      "creating_service": "Error creating service",
+      "updating_service": "Error updating service",
+      "deleting_service": "Error deleting service",
+      "service_limit_reached": "Service limit reached: {limit}. Upgrade your subscription.",
+      "required_fields": "Name, category, and cost are required",
+      "confirm_delete": "Are you sure you want to delete this service?"
+    }
+  },
+  "security": {
+    "title": "Settings",
+    "header": "Settings",
+    "name": {
+      "label": "Name",
+      "modalTitle": "Change name",
+      "placeholder": "Enter your name",
+      "edit": "Edit name"
+    },
+    "comingSoon": "Feature coming soon",
+    "dob": {
+      "label": "Date of birth",
+      "modalTitle": "Change date of birth",
+      "placeholder": "Select date",
+      "edit": "Edit date of birth"
+    },
+    "phone": {
+      "label": "Phone number",
+      "modalTitle": "Change phone number",
+      "oldPlaceholder": "Enter current phone number",
+      "newPlaceholder": "Enter new phone number",
+      "disclaimer": "We will send a verification code to the new number.",
+      "otpPlaceholder": "Enter verification code",
+      "requestOTP": "Request code",
+      "otpSent": "Verification code sent",
+      "updateSuccess": "Phone number successfully updated",
+      "edit": "Edit phone number"
+    },
+    "email": {
+      "label": "Email",
+      "modalTitle": "Change email",
+      "placeholder": "Enter new email",
+      "disclaimer": "We will send a confirmation email.",
+      "updateSuccess": "Email successfully updated",
+      "edit": "Edit email"
+    },
+    "telegram": {
+      "label": "Telegram",
+      "modalTitle": "Change Telegram",
+      "oldPlaceholder": "Enter current Telegram",
+      "newPlaceholder": "Enter new Telegram",
+      "disclaimer": "Ensure Telegram starts with @.",
+      "updateSuccess": "Telegram successfully updated",
+      "edit": "Edit Telegram"
+    },
+    "newsletters": {
+      "label": "Newsletter subscription",
+      "modalTitle": "Configure newsletter subscription",
+      "marketing": "Marketing newsletters",
+      "orders": "Order notifications",
+      "edit": "Edit newsletter subscription"
+    },
+    "subscription": {
+      "label": "Subscription",
+      "basic": "Basic",
+      "modalTitle": "Select subscription",
+      "subscribe": "Subscribe",
+      "success": "Subscription to {plan} successfully completed!",
+      "plans": {
+        "7days": {
+          "title": "Improved",
+          "duration": "7 days",
+          "features": {
+            "0": "Ability to change status",
+            "1": "Search priority: 3 times a week",
+            "2": "Accelerated technical support"
+          }
+        },
+        "1month": {
+          "title": "Advanced",
+          "duration": "1 month",
+          "features": {
+            "0": "Ability to change status",
+            "1": "Search priority: 15 times a month",
+            "2": "Accelerated technical support",
+            "3": "Simultaneous placement of up to 3 services"
+          }
+        },
+        "3months": {
+          "title": "Premium",
+          "duration": "3 months",
+          "features": {
+            "0": "Ability to change status",
+            "1": "Search priority: 55 times in 3 months",
+            "2": "Priority technical support",
+            "3": "Simultaneous placement of up to 7 services",
+            "4": "Individual profile styling",
+            "5": "10% discount on platform services"
+          }
+        }
+      }
+    },
+    "documents": {
+      "label": "Certificates",
+      "modalTitle": "Upload certificates",
+      "passport": "Passport",
+      "registration": "Registration",
+      "diploma": "Diploma",
+      "additional": "Additional",
+      "additionalTitle": "Additional certificates",
+      "uploaded": "Uploaded",
+      "notUploaded": "Not uploaded",
+      "uploadPrompt": {
+        "passport": "Drag or select passport file",
+        "registration": "Drag or select registration file",
+        "diploma": "Drag or select diploma file",
+        "additional": "Drag or select additional files"
+      },
+      "upload": "Upload",
+      "replace": "Replace",
+      "addMore": "Add more",
+      "additionalCount": "+{count} additional files",
+      "view": "View file {name}",
+      "viewButton": "View",
+      "deleteButton": "Delete",
+      "uploadSuccess": "Document successfully uploaded"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "deleteAccount": {
+      "label": "Delete account",
+      "button": "Delete account",
+      "modalTitle": "Confirm account deletion",
+      "confirmText": "delete account",
+      "confirmPlaceholder": "Enter 'delete account' to confirm",
+      "confirmTooltip": "Enter the exact phrase 'delete account' to confirm",
+      "policyAgreement": "Agree to our policy",
+      "policyTooltip": "Confirm agreement with account deletion terms.",
+      "confirm": "Are you sure you want to delete your account? This action cannot be undone.",
+      "success": "Account successfully deleted",
+      "invalidConfirmation": "Invalid confirmation phrase",
+      "policyNotAgreed": "You must agree to the deletion policy"
+    },
+    "tooltips": {
+      "name": "Enter your full name",
+      "dob": "Specify your date of birth",
+      "phone": "Enter a valid phone number",
+      "email": "Enter a valid email address",
+      "telegram": "Enter your Telegram handle starting with @",
+      "newsletters": "Select the types of notifications you want to receive",
+      "documents": "Upload documents in PDF, PNG, or JPG format"
+    },
+    "errors": {
+      "fetchError": "Error loading settings data",
+      "saveError": "Failed to save changes",
+      "csrfError": "CSRF token error. Please log in again",
+      "oldPhoneIncorrect": "Current phone number is incorrect",
+      "invalidNewPhone": "New phone number is invalid",
+      "invalidOTP": "Invalid verification code",
+      "otpRequestFailed": "Failed to request verification code",
+      "invalidEmail": "Invalid email",
+      "oldTelegramIncorrect": "Current Telegram is incorrect",
+      "invalidNewTelegram": "New Telegram is invalid",
+      "noDocument": "No document selected for upload"
+    },
+    "modals": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "upload": "Upload",
+      "about": {
+        "title": "Edit description",
+        "placeholder": "Describe your experience and skills"
+      }
+    }
+  },
+  "vacancies": {
+    "empty": "You have no vacancies added yet.",
+    "price": "Cost",
+    "total": "Your vacancies",
+    "category": "Category",
+    "addService": "Add",
+    "subCategories": "Subcategories",
+    "description": "Vacancy description",
+    "edit": "Edit",
+    "modalTitle": "Create vacancy",
+    "namePlaceholder": "Name your vacancy",
+    "descriptionPlaceholder": "Describe your vacancy",
+    "categorySelect": {
+      "0": "Select category"
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "expand": "Expand",
+    "image": "Image",
+    "tooltips": {
+      "name": "Enter the vacancy name",
+      "description": "Describe your vacancy (max 250 words)",
+      "category": "Select the category, e.g., 'Repair' or 'Beauty'",
+      "price": "Specify the cost and currency of the vacancy",
+      "image": "Upload an image for the vacancy"
+    },
+    "errors": {
+      "fetching_data": "Error loading data",
+      "creating_vacancy": "Error creating vacancy",
+      "updating_vacancy": "Error updating vacancy",
+      "deleting_vacancy": "Error deleting vacancy",
+      "vacancy_limit_reached": "Vacancy limit reached: {limit}. Upgrade your subscription.",
+      "required_fields": "Name, category, and cost are required",
+      "confirm_delete": "Are you sure you want to delete this vacancy?"
+    }
+  },
+  "orderHistory": {
+    "title": "Order history",
+    "date": "Order date",
+    "status": "Status",
+    "description": "Service description",
+    "price": "Cost",
+    "duration": "Duration",
+    "statusCompleted": "Completed",
+    "acceptResponse": "Accept",
+    "declineResponse": "Decline",
+    "statusInProgress": "In progress",
+    "statusPending": "Pending confirmation",
+    "statusCancelled": "Cancelled",
+    "statusAwaiting": "Awaiting executor",
+    "loading": "Loading data...",
+    "error": "Failed to load order history. Please try again.",
+    "contactTitle": "Contact information",
+    "name": "Name",
+    "phone": "Phone",
+    "email": "Email",
+    "telegram": "Telegram",
+    "ratingTitle": "Rate the executor",
+    "ratingRequired": "Please select a rating from 1 to 5",
+    "submitRating": "Submit rating",
+    "close": "Close",
+    "text": "Contact",
+    "accept": "Accept order",
+    "decline": "Decline order",
+    "cancel": "Cancel order",
+    "complete": "Complete order",
+    "chat": "Open chat",
+    "menu": "Action menu",
+    "expand": "Expand details",
+    "noOrders": "You have no orders yet",
+    "errors": {
+      "fetchContactInfo": "Failed to load contact information",
+      "updateOrder": "Failed to update order status",
+      "submitRating": "Failed to submit rating"
+    }
+  },
+  "order": {
+    "modalTitle": "Order confirmation",
+    "executor": "Executor",
+    "client": "Client",
+    "price": "Cost",
+    "rating": "Rating",
+    "category": "Category",
+    "subcategories": "Subcategories",
+    "gender": "Gender",
+    "workExperience": "Work experience",
+    "region": "Region",
+    "createdAt": "Created at",
+    "details": "Details",
+    "collapse": "Collapse",
+    "order": "Place order",
+    "respond": "Respond to vacancy",
+    "phone": "Executor's phone",
+    "email": "Executor's email",
+    "telegram": "Executor's Telegram",
+    "confirmButton": "Confirm order",
+    "cancelButton": "Cancel",
+    "close": "Close",
+    "errorTitle": "Order error",
+    "error": "Failed to place order. Try again.",
+    "errorNotAuthenticated": "Please log in to place an order.",
+    "notSpecified": "Not specified",
+    "noDescription": "No description",
+    "years": "years"
+  },
+  "register": {
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordForm": {
+      "title": "Password recovery",
+      "phonePlaceholder": "Enter phone number (+998901234567)",
+      "submit": "Get code"
+    },
+    "profile": {
+      "namePlaceholder": "Enter your name",
+      "passwordPlaceholder": "Enter password",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "genderPlaceholder": "Select gender",
+      "gender": {
+        "male": "Male",
+        "female": "Female"
+      },
+      "regionPlaceholder": "Select region",
+      "submit": "Register"
+    },
+    "login": {
+      "title": "Log in",
+      "phonePlaceholder": "Enter phone number (+998901234567)",
+      "passwordPlaceholder": "Enter password",
+      "submit": "Log in"
+    },
+    "tooltips": {
+      "phone": "Enter phone number",
+      "password": "Minimum 8 characters, including letters, numbers, and special characters",
+      "confirmPassword": "Repeat password",
+      "telegram": "Enter your Telegram username",
+      "name": "Enter your first and last name",
+      "gender": "Specify your gender",
+      "region": "Select your region"
+    },
+    "or": "or",
+    "registerLink": "Register",
+    "register": {
+      "title": "Registration",
+      "phonePlaceholder": "Enter phone number (+998901234567)",
+      "submit": "Get code"
+    },
+    "otp": {
+      "title": "Enter verification code",
+      "note": "Start a chat in Telegram to receive the code.",
+      "submit": "Confirm",
+      "resend": "Resend code",
+      "resendTimer": "Resend in {{seconds}} sec",
+      "sentMessage": "Code sent to Telegram. Check messages from <a href=\"{bot}\" target=\"_blank\">@MyProfy_OTP_bot</a>.",
+      "resendMessage": "Code not received? Check Telegram or request a new code."
+    },
+    "telegram": {
+      "title": "Telegram",
+      "placeholder": "Enter @username",
+      "submit": "Continue"
+    },
+    "newPassword": {
+      "title": "Create new password",
+      "newPasswordPlaceholder": "Enter new password",
+      "repeatPasswordPlaceholder": "Confirm new password",
+      "submit": "Save password"
+    },
+    "errors": {
+      "invalidPhone": "Enter number in format +998901234567",
+      "invalidPassword": "Minimum 8 characters, letters, numbers, and special character (!@#$%^&*-)",
+      "passwordMismatch": "Passwords must match",
+      "invalidOtp": "Code must contain 6 digits",
+      "invalidTelegram": "Enter @username (minimum 5 characters)",
+      "invalidName": "Name must contain at least 2 letters",
+      "emptyGender": "Select gender",
+      "emptyRegion": "Select region",
+      "loginFailed": "Login failed",
+      "otpRequestFailed": "OTP request failed",
+      "otpResendFailed": "Resend failed",
+      "registrationFailed": "Registration failed",
+      "invalidOtpFormat": "Invalid OTP format",
+      "otpExpired": "OTP expired",
+      "noTelegramChat": "Start a chat with @MyProfy_OTP_bot in Telegram to receive the code.",
+      "passwordResetFailed": "Password reset failed. Try again."
+    },
+    "regions": {
+      "Ташкент": "Tashkent",
+      "Андижан": "Andijan",
+      "Бухара": "Bukhara",
+      "Фергана": "Fergana",
+      "Джизак": "Jizzakh",
+      "Наманган": "Namangan",
+      "Навои": "Navoi",
+      "Кашкадарья": "Rezkanet",
+      "Самарканд": "Samarkand",
+      "Сырдарья": "Sirdaryo",
+      "Сурхандарья": "Surkhandarya",
+      "Хорезм": "Khorezm",
+      "Каракалпакстан": "Karakalpakstan"
+    }
+  },
+  "errors": {
+    "fetchError": "Failed to load data from the server. Please try again later.",
+    "imageError": "Oops, something went wrong",
+    "loading": "Loading...",
+    "fetching_data": "Error loading data",
+    "creating_service": "Error creating service",
+    "updating_service": "Error updating service",
+    "vacancy_limit_reached": "Service limit reached: {limit}",
+    "service_limit_reached": "Service limit reached: {limit}. Upgrade your subscription."
+  },
+  "reviews": {
+    "title": "Reviews",
+    "reviewerImageAlt": "Reviewer's photo",
+    "cost": "Cost",
+    "service": "Service",
+    "paymentMethod": {
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "na": "Not specified"
+    },
+    "rating": "Rating",
+    "1": {
+      "text": "Great tutor, helped me prepare for the exam!",
+      "comment": "Victor is very patient and explains everything clearly. Thanks to him, I passed math with a high score.",
+      "date": "September 28, 2021",
+      "reviewer": "Alexey K.",
+      "rating": "5",
+      "tasksCompleted": "20",
+      "image": "https://via.placeholder.com/40",
+      "cost": "$15",
+      "serviceName": "Math Tutor",
+      "paymentMethod": "transfer"
+    },
+    "2": {
+      "text": "Quality interior design",
+      "comment": "Anna took all my wishes into account, the project turned out stylish and functional.",
+      "date": "October 15, 2021",
+      "reviewer": "Maria P.",
+      "rating": "4.8",
+      "tasksCompleted": "15",
+      "image": "https://via.placeholder.com/40",
+      "cost": "$30",
+      "serviceName": "Interior Design",
+      "paymentMethod": "cash"
+    },
+    "3": {
+      "text": "Fast and reliable repair",
+      "comment": "Igor fixed my washing machine in a couple of hours, everything works like new.",
+      "date": "November 3, 2021",
+      "reviewer": "Sergey V.",
+      "rating": "4.9",
+      "tasksCompleted": "30",
+      "image": "https://via.placeholder.com/40",
+      "cost": "$25",
+      "serviceName": "Appliance Repair",
+      "paymentMethod": "transfer"
+    },
+    "4": {
+      "text": "Amazing photo session",
+      "comment": "Elena took incredible photos, very professional approach!",
+      "date": "December 20, 2021",
+      "reviewer": "Olga S.",
+      "rating": "5",
+      "tasksCompleted": "25",
+      "image": "https://via.placeholder.com/40",
+      "cost": "$50",
+      "serviceName": "Photography",
+      "paymentMethod": "cash"
+    },
+    "5": {
+      "text": "Great website content",
+      "comment": "Dmitry wrote compelling content that attracted new clients.",
+      "date": "January 10, 2022",
+      "reviewer": "Irina L.",
+      "rating": "4.7",
+      "tasksCompleted": "18",
+      "image": "https://via.placeholder.com/40",
+      "cost": "$20",
+      "serviceName": "Copywriting",
+      "paymentMethod": "transfer"
+    }
+  }
+}
