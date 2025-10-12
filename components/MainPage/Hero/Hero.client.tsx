@@ -6,12 +6,14 @@ import { LanguageContext } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { getAPIClient } from "../../types/apiClient";
-import { Category, Reklama, Service, SubCategory, User } from "../../types/apiTypes";
+import { Category, Reklama, Service, SubCategory } from "../../types/apiTypes";
 import ReviewsBlock from "components/ReviewsBlock/ReviewsBlock";
 import { motion } from "framer-motion";
 import apiClient from "@/components/types/apiClient";
-import Navbar from "@/components/Header/Navbar";
+  
 import MyProfiBanner from "../../../public/Banner-MyProfi.png"
+import Image from "next/image";
+import Navbar from "@/components/Header/Navbar";
 
 interface CarouselTextProps {
   isActive: boolean;
@@ -246,7 +248,7 @@ const SlideWrapper = styled.div`
   width: 100%;
   height: 100%;
   position: relative;
-  aspect-ratio: 970 / 90;
+  aspect-ratio: 970 / 250;
 `;
 
 const CarouselText = styled.h2<CarouselTextProps>`
@@ -980,7 +982,7 @@ interface BannerClientProps {
   initialSlide?: number;
 }
 
-export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
+export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
   const { language } = useContext(LanguageContext);
   const { t, i18n } = useTranslation();
   const router = useRouter();
@@ -1049,14 +1051,14 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
     [t]
   );
 
-  const topSpecialtiesLinks = useMemo(() => 
+  const topSpecialtiesLinks = useMemo(() =>
     topSpecialties.map(s => ({
       ...s,
-      link: mode === 'client' 
-        ? `/search?category=${s.category}` 
+      link: mode === 'client'
+        ? `/search?category=${s.category}`
         : `/register-specialist?category=${s.category}`
-    })), 
-  [topSpecialties, mode]);
+    })),
+    [topSpecialties, mode]);
 
   useEffect(() => {
     document.addEventListener(
@@ -1092,7 +1094,7 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
         ]);
 
         setReklamaData([]);
-        
+
         if (Array.isArray(categoriesData)) {
           setCategories(categoriesData);
         } else if (categoriesData && 'results' in categoriesData) {
@@ -1213,14 +1215,14 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
 
   const requestTitle = mode === 'client' ? t("request.title") : (t("request.titleSpecialist") || "Расскажите о своих услугах");
   const requestDesc = mode === 'client' ? t("request.description") : (t("request.descriptionSpecialist") || "Опишите, чем вы занимаетесь, и мы поможем найти клиентов");
-  const styledDescContent = mode === 'client' 
+  const styledDescContent = mode === 'client'
     ? "Из 1 233 333 специалистов обязательно найдется тот кто поможет"
-    : "Из 1 233 333 заказов обязательно найдется тот, кто оценит ваши услуги";
-  const requestPlaceholder = mode === 'client' 
-    ? t("request.inputPlaceholder") 
+    : "Из 1 233 333 заказов обязательно найд  ется тот, кто оценит ваши услуги";
+  const requestPlaceholder = mode === 'client'
+    ? t("request.inputPlaceholder")
     : (t("request.inputPlaceholderSpecialist") || "Например: 'Я ремонтирую квартиры в Ташкенте'");
-  const requestButton = mode === 'client' 
-    ? t("request.button") 
+  const requestButton = mode === 'client'
+    ? t("request.button")
     : (t("request.buttonSpecialist") || "Создать профиль");
 
   useEffect(() => {
@@ -1307,7 +1309,7 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
           onMouseLeave={() => setIsPaused(false)}
         >
           <SlideWrapper>
-            {validReklama.length > 0 && !errorTimerExpired ? (
+            {validReklama.length > 0 ? (
               <ReklamaSlide
                 isActive={true}
                 href={(slides[currentSlide] as Reklama).link || "#"}
@@ -1315,21 +1317,30 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
                 rel="noopener noreferrer"
                 aria-hidden={false}
               >
-                <ReklamaImage
-                  src={(slides[currentSlide] as Reklama).image}
-                  alt={`Реклама ${currentSlide + 1}`}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src = {MyProfiBanner};
-                    setImageError(true);
-                  }}
+                <Image
+                  src={(slides[currentSlide] as Reklama).image || MyProfiBanner}
+                  alt="Reklama Banner"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  className="rounded-[23px]"
+                  onError={() => setImageError(true)}
                 />
               </ReklamaSlide>
             ) : (
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <Image
+                  src={MyProfiBanner}
+                  alt="MyProfi Banner"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  className="rounded-[23px]"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            )}
+            {imageError && errorTimerExpired && (
               <ErrorMessage>
-                {errorTimerExpired
-                  ? t("errors.imageError")
-                  : (slides[currentSlide] as string)}
+                {t("errors.imageError")}
               </ErrorMessage>
             )}
           </SlideWrapper>

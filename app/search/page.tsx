@@ -4,7 +4,7 @@ import React from "react";
 import { Suspense } from "react";
 import Header from "@/components/Header/Header.server";
 import Footer from "@/components/Footer/Footer";
-import { SearchPage as SearchPageComponent } from "@/components/SearchPage/SearchPage"; 
+// import { SearchPage as SearchPageComponent } from "@/components/SearchPage/SearchPage"; 
 import ClientRoot from "@/components/ClientRoot";
 import Loader from "@/components/Loader/Loader";
 
@@ -14,7 +14,7 @@ export default function SearchPage() {
             <Loader >
                 <Header />
                 <Suspense fallback={<div>Загрузка результатов поиска...</div>}>
-                    <SearchPageComponent /> 
+                    {/* <SearchPageComponent />  */}
                 </Suspense>
                 <Footer />
             </Loader>
