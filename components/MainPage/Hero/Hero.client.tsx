@@ -11,6 +11,7 @@ import ReviewsBlock from "components/ReviewsBlock/ReviewsBlock";
 import { motion } from "framer-motion";
 import apiClient from "@/components/types/apiClient";
 import Navbar from "@/components/Header/Navbar";
+import MyProfiBanner from "../../../public/Banner-MyProfi.png"
 
 interface CarouselTextProps {
   isActive: boolean;
@@ -1319,7 +1320,7 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
                   alt={`Реклама ${currentSlide + 1}`}
                   loading="lazy"
                   onError={(e) => {
-                    e.currentTarget.src = "/placeholder-image.jpg";
+                    e.currentTarget.src = {MyProfiBanner};
                     setImageError(true);
                   }}
                 />
