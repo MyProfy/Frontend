@@ -6,25 +6,29 @@ import Footer from "@/components/Footer/Footer";
 import ProfilePage from "@/components/ProfilePage/Hero";
 import ClientRoot from "@/components/ClientRoot";
 import Loader from "@/components/Loader/Loader";
+import Navbar from "@/components/Header/Navbar";
 
 export default function Profile() {
-    const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
-    const handleLoadingComplete = () => {
-        setShowContent(true);
-    };
+  const handleLoadingComplete = () => {
+    setShowContent(true);
+  };
 
-    return (
-        <ClientRoot>
-            <Loader duration={3500} message="Loading Profile..." onLoadingComplete={() => { }}>
-                {showContent && (
-                    <>
-                        <Header />
-                        <ProfilePage />
-                        <Footer />
-                    </>
-                )}
-            </Loader>
-        </ClientRoot>
-    );
+  return (
+    <ClientRoot>
+      <Loader
+        duration={3500}
+        message="Load Profile..."
+        onLoadingComplete={handleLoadingComplete} 
+      >
+        {showContent && (
+          <>
+            <Navbar />
+            <ProfilePage />
+          </>
+        )}
+      </Loader>
+    </ClientRoot>
+  );
 }

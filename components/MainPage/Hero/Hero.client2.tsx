@@ -217,10 +217,6 @@ const ChoiceButton = styled(motion.button)`
     background: #218838;
   }
 
-  &.active {
-    background: #218838;
-  }
-
   @media (max-width: 768px) {
     font-size: 1rem;
     padding: 12px 24px;
@@ -239,6 +235,7 @@ const CarouselContainer = styled.div`
   aspect-ratio: 970 / 250;
   height: auto;
   transition: padding 0.3s ease;
+  border: 2px solid #e3f2fd;
 `;
 
 const SlideWrapper = styled.div`
@@ -278,6 +275,87 @@ const ReklamaImage = styled.img`
   height: auto;
   object-fit: contain;
   border-radius: 24px;
+`;
+
+const BannerHighlight = styled.div`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  height: 40px;
+  background: #2196f3;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  z-index: 2;
+`;
+
+const RegionInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  position: relative;
+`;
+
+const RegionFlag = styled.span`
+  width: 30px;
+  height: 20px;
+  background: #4caf50;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.8rem;
+`;
+
+const RegionInput = styled.input`
+  flex: 1;
+  padding: 10px 40px 10px 10px;
+  border: 2px solid #e3f2fd;
+  border-radius: 8px;
+  font-size: 1rem;
+`;
+
+const QuestionSection = styled.div`
+  background: white;
+  border: 2px solid #e3f2fd;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 20px 0;
+  text-align: center;
+`;
+
+const QuestionTitle = styled.h3`
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #333;
+`;
+
+const QuestionOptions = styled.div`
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+`;
+
+const QuestionOption = styled.button`
+  padding: 10px 20px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+  
+  &:hover {
+    background: #e3f2fd;
+  }
 `;
 
 const RegistrationSection = styled.div`
@@ -975,17 +1053,16 @@ const SpecialtyTitle = styled.h3`
   }
 `;
 
-interface BannerClientProps {
+interface BannerSpecialistClientProps {
   initialSlide?: number;
 }
 
-export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
+export default function BannerSpecialistClient({ initialSlide = 0 }: BannerSpecialistClientProps) {
   const { language } = useContext(LanguageContext);
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const apiClient = useMemo(() => getAPIClient(), []);
 
-  const [mode, setMode] = useState<'client' | 'specialist'>('client');
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [userRegion, setUserRegion] = useState<string | null>(null);
@@ -1000,6 +1077,7 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [imageError, setImageError] = useState<boolean>(false);
   const [errorTimerExpired, setErrorTimerExpired] = useState<boolean>(false);
+  const [region, setRegion] = useState<string>("");
 
   const textSlides = useMemo(
     () => [t("carousel.slide1"), t("carousel.slide2"), t("carousel.slide3")],
@@ -1040,22 +1118,16 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
 
   const topSpecialties = useMemo(
     () => [
-      { name: t("topSpecialties.tutors"), category: "math" },
-      { name: t("topSpecialties.repair"), category: "english" },
-      { name: t("topSpecialties.construction"), category: "plumber" },
-      { name: t("topSpecialties.makeup"), category: "tire" },
+      { name: t("topSpecialties.tutors"), link: "/register-specialist?category=math" },
+      { name: t("topSpecialties.repair"), link: "/register-specialist?category=english" },
+      {
+        name: t("topSpecialties.construction"),
+        link: "/register-specialist?category=plumber",
+      },
+      { name: t("topSpecialties.makeup"), link: "/register-specialist?category=tire" },
     ],
     [t]
   );
-
-  const topSpecialtiesLinks = useMemo(() => 
-    topSpecialties.map(s => ({
-      ...s,
-      link: mode === 'client' 
-        ? `/search?category=${s.category}` 
-        : `/register-specialist?category=${s.category}`
-    })), 
-  [topSpecialties, mode]);
 
   useEffect(() => {
     document.addEventListener(
@@ -1170,26 +1242,27 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
   };
 
   const handleCategoryClick = (categoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?category=${categoryId}`);
+    router.push(`/register-specialist?category=${categoryId}`);
   };
 
   const handleSubCategoryClick = (subCategoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?subcategory=${subCategoryId}`);
+    router.push(`/register-specialist?subcategory=${subCategoryId}`);
   };
 
   const handleShowAllClick = (categoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?category=${categoryId}&all=true`);
+    router.push(`/register-specialist?category=${categoryId}&all=true`);
   };
 
   const handleSpecialtyClick = (link: string) => {
     router.push(link);
   };
 
-  const handleModeChange = (newMode: 'client' | 'specialist') => {
-    setMode(newMode);
+  const handleChoiceClick = (choice: 'find' | 'become') => {
+    if (choice === 'find') {
+      router.push('/'); // Первая страница - найти специалиста
+    } else {
+      router.push('/specialist'); // Текущая - стать специалистом
+    }
   };
 
   const getDisplayName = (item: Category | SubCategory) => {
@@ -1201,26 +1274,6 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
     }
     return item.name;
   };
-
-  const clientTitle = t("hero.title");
-  const specialistTitle = t("hero.titleSpecialist") || "Станьте специалистом и зарабатывайте";
-  const mainTitle = mode === 'client' ? clientTitle : specialistTitle;
-
-  const specialistsTitle = mode === 'client' ? t("specialists.title") : (t("specialists.titleSpecialist") || "Популярные категории для специалистов");
-  const specialistsDesc = mode === 'client' ? t("specialists.description") : (t("specialists.descriptionSpecialist") || "минут на регистрацию");
-  const specialistsDescFull = `5 ${specialistsDesc}`;
-
-  const requestTitle = mode === 'client' ? t("request.title") : (t("request.titleSpecialist") || "Расскажите о своих услугах");
-  const requestDesc = mode === 'client' ? t("request.description") : (t("request.descriptionSpecialist") || "Опишите, чем вы занимаетесь, и мы поможем найти клиентов");
-  const styledDescContent = mode === 'client' 
-    ? "Из 1 233 333 специалистов обязательно найдется тот кто поможет"
-    : "Из 1 233 333 заказов обязательно найдется тот, кто оценит ваши услуги";
-  const requestPlaceholder = mode === 'client' 
-    ? t("request.inputPlaceholder") 
-    : (t("request.inputPlaceholderSpecialist") || "Например: 'Я ремонтирую квартиры в Ташкенте'");
-  const requestButton = mode === 'client' 
-    ? t("request.button") 
-    : (t("request.buttonSpecialist") || "Создать профиль");
 
   useEffect(() => {
     const activeSlide = slides[currentSlide];
@@ -1242,27 +1295,25 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
 
       <BannerContainer>
         <HeaderTop>
-          <MainTitle>{mainTitle}</MainTitle>
+          <MainTitle>{t("hero.titleSpecialist") || "Станьте специалистом и зарабатывайте"}</MainTitle>
         </HeaderTop>
 
-        {/* <ChoiceSection>
+        <ChoiceSection>
           <ChoiceButton
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={mode === 'client' ? 'active' : ''}
-            onClick={() => handleModeChange('client')}
+            onClick={() => handleChoiceClick('find')}
           >
             Найти специалиста
           </ChoiceButton>
           <ChoiceButton
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={mode === 'specialist' ? 'active' : ''}
-            onClick={() => handleModeChange('specialist')}
+            style={{ background: '#218838' }}
           >
             Стать специалистом
           </ChoiceButton>
-        </ChoiceSection> */}
+        </ChoiceSection>
 
         <SearchContainer>
           <InputWrapper>
@@ -1274,17 +1325,17 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                {/* <path
+                <path
                   fill-rule="evenodd"
                   clip-rule="evenodd"
                   d="M2.48359 10.0833C2.48359 5.88592 5.88623 2.48329 10.0836 2.48329C14.281 2.48329 17.6836 5.88592 17.6836 10.0833C17.6836 12.1741 16.8393 14.0678 15.473 15.4419C15.4676 15.4469 15.4623 15.4521 15.457 15.4573C15.4517 15.4626 15.4466 15.4679 15.4415 15.4733C14.0675 16.8392 12.1741 17.6833 10.0836 17.6833C5.88623 17.6833 2.48359 14.2807 2.48359 10.0833ZM15.9002 16.8198C14.3402 18.1679 12.3071 18.9833 10.0836 18.9833C5.16826 18.9833 1.18359 14.9986 1.18359 10.0833C1.18359 5.16795 5.16826 1.18329 10.0836 1.18329C14.9989 1.18329 18.9836 5.16795 18.9836 10.0833C18.9836 12.3072 18.1679 14.3405 16.8195 15.9006L20.0429 19.124C20.2967 19.3779 20.2967 19.7894 20.0429 20.0433C19.789 20.2971 19.3775 20.2971 19.1237 20.0433L15.9002 16.8198Z"
                   fill="#A4A8B2"
-                /> */}
+                />
               </svg>
             </SearchIcon>
             <SearchInput
               aria-label={t("search.ariaLabel")}
-              placeholder={t("search.placeholder")}
+              placeholder={t("search.placeholderSpecialist") || "Поиск услуг для регистрации"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -1323,6 +1374,7 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
                     setImageError(true);
                   }}
                 />
+                <BannerHighlight>111 × 387 Hug</BannerHighlight>
               </ReklamaSlide>
             ) : (
               <ErrorMessage>
@@ -1332,22 +1384,38 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
               </ErrorMessage>
             )}
           </SlideWrapper>
+          <RegionInputWrapper>
+            <RegionFlag>🇺🇿</RegionFlag>
+            <RegionInput
+              placeholder="Выберите город"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+            />
+          </RegionInputWrapper>
         </CarouselContainer>
 
-        {mode === 'specialist' && (
-          <RegistrationSection>
-            <RegistrationTitle>Зарегистрируйтесь, чтобы зарабатывать</RegistrationTitle>
-            <RegistrationSubtitle>Создайте профиль специалиста и получайте заказы от клиентов</RegistrationSubtitle>
-            <StatsBadge>143 × 19 заказов на платформе</StatsBadge>
-            <RegistrationForm>
-              <RegInput placeholder="Ваш email" type="email" />
-              <RegButton>Зарегистрироваться</RegButton>
-            </RegistrationForm>
-          </RegistrationSection>
-        )}
+        <QuestionSection>
+          <QuestionTitle>Какие услуги вы хотите заказать?</QuestionTitle>
+          <p>Опишите, что вам нужно, и мы подберем лучших специалистов</p>
+          <QuestionOptions>
+            <QuestionOption>Ремонт квартиры</QuestionOption>
+            <QuestionOption>Уроки английского</QuestionOption>
+            <QuestionOption>Установка кондиционера</QuestionOption>
+          </QuestionOptions>
+        </QuestionSection>
+
+        <RegistrationSection>
+          <RegistrationTitle>Зарегистрируйтесь, чтобы зарабатывать</RegistrationTitle>
+          <RegistrationSubtitle>Создайте профиль специалиста и получайте заказы от клиентов</RegistrationSubtitle>
+          <StatsBadge>111 × 387 заказов на платформе</StatsBadge>
+          <RegistrationForm>
+            <RegInput placeholder="Ваш email" type="email" />
+            <RegButton>Зарегистрироваться</RegButton>
+          </RegistrationForm>
+        </RegistrationSection>
 
         <TopSpecialtiesContainer>
-          {topSpecialtiesLinks.map((specialty, index) => (
+          {topSpecialties.map((specialty, index) => (
             <SpecialtyContainer key={index}>
               <TopSpecialtyCard
                 onClick={() => handleSpecialtyClick(specialty.link)}
@@ -1360,9 +1428,9 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
         </TopSpecialtiesContainer>
 
         <SpecialistsContainer>
-          <SpecialistsTitle>{specialistsTitle}</SpecialistsTitle>
+          <SpecialistsTitle>{t("specialists.titleSpecialist") || "Популярные категории для специалистов"}</SpecialistsTitle>
           <SpecialistsDescription>
-            {specialistsDescFull}
+            {"5 " + t("specialists.descriptionSpecialist") || "минут на регистрацию"}
           </SpecialistsDescription>
           <SpecialistsGrid>
             {categories.map((category) => {
@@ -1412,18 +1480,19 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
             })}
           </SpecialistsGrid>
         </SpecialistsContainer>
+
         <RequestContainer>
           <RequestText>
-            <RequestTitle>{requestTitle}</RequestTitle>
-            <RequestDescription>{requestDesc}</RequestDescription>
+            <RequestTitle>{t("request.titleSpecialist") || "Расскажите о своих услугах"}</RequestTitle>
+            <RequestDescription>{t("request.descriptionSpecialist") || "Опишите, чем вы занимаетесь, и мы поможем найти клиентов"}</RequestDescription>
             <StyledDescription>
-              {styledDescContent}
+              {"5 " + t("specialists.descriptionSpecialist") || "минут на создание профиля"}
             </StyledDescription>
           </RequestText>
           <RequestInputWrapper>
             <RequestInput
-              aria-label={t("request.inputAriaLabel")}
-              placeholder={requestPlaceholder}
+              aria-label={t("request.inputAriaLabelSpecialist") || "Описание услуг"}
+              placeholder={t("request.inputPlaceholderSpecialist") || "Например: 'Я ремонтирую квартиры в Ташкенте'"}
               value={requestText}
               onChange={(e) => setRequestText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -1432,9 +1501,10 @@ export default function BannerClient({ initialSlide = 0 }: BannerClientProps) {
             <CharacterCounter isMax={requestText.length === 250}>
               {requestText.length}/250
             </CharacterCounter>
-            <RequestButton>{requestButton}</RequestButton>
+            <RequestButton>{t("request.buttonSpecialist") || "Создать профиль"}</RequestButton>
           </RequestInputWrapper>
         </RequestContainer>
+
         <ReviewsBlock reviews={reviews} />
       </BannerContainer>
     </div>

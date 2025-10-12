@@ -7,6 +7,37 @@
     "chooseRegion": "Mintaqa tanlash",
     "stats": "Allaqachon 1 000 000 dan ortiq odam o'z mutaxassisini topdi"
   },
+  "footer": {
+    "useful": {
+      "title": "Foydali",
+      "newTask": "Yangi vazifa",
+      "allServices": "Barcha xizmatlar",
+      "allReviews": "Barcha sharhlar",
+      "termsOfUse": "Foydalanish shartlari",
+      "linkCatalog": "Havolalar katalogi",
+      "privacyPolicy": "Maxfiylik siyosati"
+    },
+    "social": {
+      "title": "Bizning ijtimoiy tarmoqlar",
+      "telegram": "Telegram",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "youtube": "YouTube",
+      "twitter": "Twitter"
+    },
+    "contacts": {
+      "title": "Aloqa",
+      "phone1": "+998 55 511 5544",
+      "phone2": "+998 55 511 5588",
+      "address": "Manzil: 100174, Toshkent sh.,\nOlmazor tum. 2-Chimboy 96-uy\nPochta indeksi: 100095"
+    },
+    "copyright": "© {{year}} MyProfy. Barcha huquqlar himoyalangan",
+    "privacyPolicy": {
+      "title": "Maxfiylik siyosati",
+      "sectionTitle": "Bo'lim {{number}}",
+      "content": "Bu yerda maxfiylik siyosati matni..."
+    }
+  },
   "services": {
     "empty": "Sizda hali qo'shilgan xizmatlar yo'q.",
     "buy_boost": "Bo'st qilish!",
@@ -157,10 +188,11 @@
     "service_limit": "Sizda {limit} ta xizmatdan {count} tasi mavjud",
     "sidebar": {
       "profile": "Mening profilim",
-      "services": "Mening xizmatlarim",
-      "vacancies": "Mening vakansiyalarim",
-      "orderHistory": "Buyurtmalar tarixi",
-      "security": "Sozlamalar",
+      "services": "Mening reklamalarim",
+      "vacancies": "Qo'llab-quvvatlash",
+      "orderHistory": "Sozlamalar",
+      "security": "Mening obunam",
+      "order": "Mening buyurtmalarim",
       "logout": "Chiqish",
       "support": "Qo'llab-quvvatlash"
     },
@@ -242,7 +274,6 @@
   },
   "genderLabel": "Jins",
   "workExperience": "{count} yil",
-  
   "security": {
     "title": "Sozlamalar",
     "header": "Sozlamalar",
@@ -250,7 +281,7 @@
       "modalTitle": "Tug‘ilgan kun"
     },
     "button": {
-        "label": "Maʼlumotlarni o‘zgartirish"
+      "label": "Maʼlumotlarni o‘zgartirish"
     },
     "name": {
       "label": "Ism",
@@ -416,7 +447,6 @@
       }
     }
   },
-
   "vacancies": {
     "empty": "Sizda hali qo'shilgan vakansiyalar yo'q.",
     "buy_boost": "Bo'st qilish!",

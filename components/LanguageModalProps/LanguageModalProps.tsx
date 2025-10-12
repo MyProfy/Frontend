@@ -8,6 +8,8 @@ import FocusTrap from "focus-trap-react";
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
 
+// ===== Styled Components =====
+
 const ModalBackdrop = styled(motion.div)`
   position: fixed;
   inset: 0;
@@ -21,14 +23,14 @@ const ModalBackdrop = styled(motion.div)`
 `;
 
 const ModalContainer = styled(motion.div)`
-  background: #FFFFFF;
+  background: #ffffff;
   border-radius: 32px;
   padding: 48px 32px 32px;
   width: 100%;
   max-width: 620px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
-  
+
   @media (max-width: 768px) {
     max-width: 90%;
     padding: 40px 24px 24px;
@@ -40,7 +42,7 @@ const LanguageContainer = styled.div`
   display: flex;
   width: 100%;
   gap: 24px;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 16px;
@@ -53,25 +55,25 @@ const LanguageOption = styled(motion.div)`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #F2F3F7;
+  background: #f2f3f7;
   gap: 32px;
   cursor: pointer;
-  transition: all 0.2s ease;
   position: relative;
   padding: 48px 32px;
   border-radius: 16px;
   border: 2px solid transparent;
-  
+  transition: all 0.25s ease;
+
   &:hover {
     border-color: #3ea240;
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(62, 162, 62, 0.15);
   }
-    
+
   &:active {
     transform: translateY(-2px);
   }
-  
+
   @media (max-width: 768px) {
     padding: 40px 24px;
     gap: 24px;
@@ -84,6 +86,7 @@ const LanguageText = styled.div`
   font-weight: 600;
   color: #1f2937;
   line-height: 1.4;
+
   @media (max-width: 768px) {
     font-size: 16px;
   }
@@ -93,17 +96,17 @@ const FlagContainer = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
+  background: #f9fafb;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f9fafb;
   overflow: hidden;
   transition: transform 0.2s ease;
-  
+
   ${LanguageOption}:hover & {
     transform: scale(1.05);
   }
-  
+
   @media (max-width: 768px) {
     width: 100px;
     height: 100px;
@@ -113,11 +116,13 @@ const FlagContainer = styled.div`
 const FlagEmoji = styled.div`
   font-size: 82px;
   line-height: 1;
-  
+
   @media (max-width: 768px) {
     font-size: 60px;
   }
 `;
+
+// ===== Animation Variants =====
 
 const backdropVariants = {
   hidden: { opacity: 0 },
@@ -127,17 +132,19 @@ const backdropVariants = {
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
-    transition: { duration: 0.2 } 
+    transition: { duration: 0.2 },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     scale: 0.95,
-    transition: { duration: 0.15 } 
+    transition: { duration: 0.15 },
   },
 };
+
+// ===== Props Interface =====
 
 interface LanguageModalProps {
   isOpen: boolean;
@@ -146,6 +153,8 @@ interface LanguageModalProps {
   UzFlag?: any;
   RusFlag?: any;
 }
+
+// ===== Component =====
 
 export default function LanguageModal({
   isOpen,
@@ -163,6 +172,7 @@ export default function LanguageModal({
         onClose();
       }
     };
+
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
@@ -171,6 +181,7 @@ export default function LanguageModal({
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+
     if (isOpen) document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
@@ -196,8 +207,8 @@ export default function LanguageModal({
             variants={backdropVariants}
             onClick={onClose}
           >
-            <ModalContainer 
-              ref={modalRef} 
+            <ModalContainer
+              ref={modalRef}
               onClick={(e) => e.stopPropagation()}
               variants={modalVariants}
               initial="hidden"
@@ -210,7 +221,7 @@ export default function LanguageModal({
                   whileTap={{ scale: 0.98 }}
                 >
                   <LanguageText>
-                    O'zbek tilida
+                    O&apos;zbek tilida
                     <br />
                     davom etish
                   </LanguageText>

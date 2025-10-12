@@ -3,35 +3,36 @@
 import React, { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import styled from "@emotion/styled";
-import  {
+import {
   FaUser,
   FaHistory,
   FaLock,
   FaBriefcase,
   FaSignOutAlt,
   FaHeadset,
+  FaUsers,
+  FaStar,
+  FaPlus,
 } from "react-icons/fa";
-// } from "react-icons/fa";
-// import { MyProfile } from "../../components/ProfilePage/common/Modal";
-// import Security from "components/ProfilePage/sections/Security";
-// import History from "components/ProfilePage/sections/History";
-// import Support from "components/ProfilePage/sections/SupportModal";
-// import Vacancies from "components/ProfilePage/sections/Vacancies";
+import Security from "components/ProfilePage/sections/Security";
+import History from "components/ProfilePage/sections/History";
+import Support from "components/ProfilePage/sections/Support";
+import Vacancies from "components/ProfilePage/sections/Vacancies";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
-// import { logoutUser } from "../../components/types/apiClient";
-// import Services from "@/components/ProfilePage/sections/Services";
+import MyProfile from "./sections/MyProfile";
+import Services from "./sections/Services";
 
 const iconVariants: Variants = {
   hidden: { opacity: 0, scale: 0 },
   visible: {
     opacity: 1,
     scale: 1,
-    color: "#666",
+    color: "#9ca3af",
     transition: { duration: 0.3 },
   },
-  hover: { scale: 1.2, color: "#10b981", transition: { duration: 0.2 } },
-  active: { scale: 1.2, color: "#10b981", transition: { duration: 0.2 } },
+  hover: { scale: 1.05, color: "#6b7280", transition: { duration: 0.2 } },
+  active: { scale: 1, color: "#6b7280", transition: { duration: 0.2 } },
 };
 
 // Стили
@@ -43,6 +44,7 @@ const PageContainer = styled.div`
   padding-top: 80px;
   gap: 16px;
   box-sizing: border-box;
+  background: #f9fafb;
 
   @media (min-width: 600px) {
     padding: 20px;
@@ -73,9 +75,9 @@ const SidebarWrapper = styled.div`
   @media (min-width: 769px) {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
     width: 100%;
-    max-width: 220px;
+    max-width: 240px;
     padding: 0;
     position: sticky;
     top: 125px;
@@ -87,28 +89,24 @@ const SidebarContainer = styled(motion.nav)`
   display: contents;
   @media (min-width: 769px) {
     width: 100%;
-    max-width: 220px;
-    padding: 15px;
+    max-width: 240px;
+    padding: 16px;
     border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex !important;
     flex-direction: column;
-    gap: 15px;
+    gap: 4px;
   }
 `;
 
-const LogoutContainer = styled(motion.div)`
+const NavLinksContainer = styled.div`
   display: contents;
 
   @media (min-width: 769px) {
-    width: 100%;
-    max-width: 220px;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    display: flex !important;
+    display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-top: 5vh;
+    gap: 2px;
   }
 `;
 
@@ -137,91 +135,122 @@ const SidebarLink = styled.div<{ active?: boolean }>`
   @media (min-width: 769px) {
     flex-direction: row;
     justify-content: flex-start;
+    align-items: center;
     min-height: auto;
-    padding: 12px 16px;
-    font-size: 1rem;
-    color: ${({ active }) => "#676E7E"};
-    background: ${({ active }) => (active ? "#fff" : "transparent")};
+    padding: 11px 14px;
+    font-size: 14px;
+    color: #6b7280;
+    background: transparent;
     border-radius: 8px;
     box-shadow: none;
     text-align: left;
+    font-weight: 400;
+
+    ${({ active }) =>
+      active &&
+      `
+      background: #f3f4f6;
+      font-weight: 400;
+    `}
 
     ${({ active }) =>
       !active &&
       `
       &:hover {
-        background: #e4e6ea;
+        background: #f9fafb;
       }
         cursor: pointer;
     `}
 
     svg {
-      font-size: 1.2rem;
-      color: #676e7e;
+      font-size: 18px;
+      color: #9ca3af;
+      margin-right: 2px;
     }
   }
 `;
 
-const LogoutButton = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  font-size: 12px;
-  line-height: 1.2;
-  text-align: center;
-  color: #666;
-  background: #fff;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  min-height: 80px;
-
-  &:hover {
-    background: rgba(255, 77, 79, 0.3);
-    color: #000;
+const Divider = styled.div`
+  display: none;
+  
+  @media (min-width: 769px) {
+    display: block;
+    height: 1px;
+    background: #e5e7eb;
+    margin: 8px 0;
   }
+`;
 
-  &:active {
-    svg {
-      color: #fff;
-    }
-  }
-
-  svg {
-    font-size: 1.2rem;
-    color: #666;
-  }
+const ServiceSection = styled.div`
+  display: none;
 
   @media (min-width: 769px) {
-    flex-direction: row;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+`;
+
+const ServiceLink = styled.div<{ active?: boolean }>`
+  display: none;
+
+  @media (min-width: 769px) {
+    display: flex;
+    align-items: center;
     justify-content: flex-start;
-    min-height: auto;
-    padding: 12px 16px;
-    font-size: 1rem;
-    color: #666;
+    padding: 11px 14px 11px 38px;
+    font-size: 14px;
+    color: #9ca3af;
     background: transparent;
     border-radius: 8px;
-    box-shadow: none;
-    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 400;
+
+    ${({ active }) =>
+      active &&
+      `
+      background: #f3f4f6;
+      color: #6b7280;
+    `}
 
     &:hover {
-      background: rgba(255, 77, 79, 0.3);
-      color: #000;
+      background: #f9fafb;
+      color: #6b7280;
     }
+  }
+`;
 
-    &:active {
-      svg {
-        color: #10b981;
-      }
-    }
+const AddServiceLink = styled.div`
+  display: none;
 
+  @media (min-width: 769px) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 11px 14px 11px 38px;
+    font-size: 14px;
+    color: #9ca3af;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 400;
+    
     svg {
-      font-size: 1.2rem;
-      color: #666;
+      width: 14px;
+      height: 14px;
+      color: #9ca3af;
+    }
+
+    &:hover {
+      background: #f9fafb;
+      color: #6b7280;
+      
+      svg {
+        color: #6b7280;
+      }
     }
   }
 `;
@@ -229,6 +258,9 @@ const LogoutButton = styled.div`
 const IconContainer = styled(motion.span)`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 `;
 
 const MainContent = styled.main`
@@ -247,46 +279,24 @@ const MainContent = styled.main`
   }
 `;
 
-const NavLinksContainer = styled.div`
-  display: contents;
-
-  @media (min-width: 769px) {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-`;
-
 const sidebarVariants = {
   initial: { opacity: 0 },
   visible: { opacity: 1 },
 };
 
 const navLinks = [
-  { name: "profile.sidebar.profile", icon: <FaUser />, active: true },
-  { name: "profile.sidebar.services", icon: <FaBriefcase />, active: false },
-  { name: "profile.sidebar.vacancies", icon: <FaBriefcase />, active: false },
-  { name: "profile.sidebar.orderHistory", icon: <FaHistory />, active: false },
-  { name: "profile.sidebar.security", icon: <FaLock />, active: false },
-  { name: "profile.sidebar.support", icon: <FaHeadset />, active: false },
+  { name: "Мой профиль", icon: <FaUser />, key: "profile" },
+  { name: "Мои объявления", icon: <FaBriefcase />, key: "services" },
+  { name: "Поддержка", icon: <FaUsers />, key: "support" },
+  { name: "Настройки", icon: <FaLock />, key: "settings" },
+  { name: "Моя подписка", icon: <FaStar />, key: "subscription" },
 ];
 
 export default function Hero() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [activeLink, setActiveLink] = useState("profile.sidebar.profile");
-
-  // const handleLogout = async () => {
-  //   try {
-  //     await logoutUser();
-  //     window.dispatchEvent(new Event("logout"));
-  //     router.push("/");
-  //   } catch (error) {
-  //     console.error("Ошибка выхода:", error);
-  //     window.dispatchEvent(new Event("logout"));
-  //     router.push("/");
-  //   }
-  // };
+  const [activeLink, setActiveLink] = useState("profile");
+  const [activeService, setActiveService] = useState<string | null>(null);
 
   return (
     <PageContainer>
@@ -300,58 +310,85 @@ export default function Hero() {
           <NavLinksContainer>
             {navLinks.map((link) => (
               <SidebarLink
-                key={link.name}
-                active={activeLink === link.name}
-                onClick={() => setActiveLink(link.name)}
+                key={link.key}
+                active={activeLink === link.key}
+                onClick={() => {
+                  setActiveLink(link.key);
+                  setActiveService(null);
+                }}
                 role="button"
-                aria-label={t(link.name)}
               >
                 <IconContainer
                   variants={iconVariants}
                   initial="visible"
-                  animate={activeLink === link.name ? "active" : "visible"}
+                  animate={activeLink === link.key ? "active" : "visible"}
                   whileHover="hover"
                 >
                   {link.icon}
                 </IconContainer>
-                <span>{t(link.name)}</span>
+                <span>{link.name}</span>
               </SidebarLink>
             ))}
           </NavLinksContainer>
-        </SidebarContainer>
 
-        <LogoutContainer
-          variants={sidebarVariants}
-          initial="initial"
-          animate="visible"
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <LogoutButton
-            // onClick={handleLogout}
-            role="button"
-            aria-label={t("profile.sidebar.logout")}
-          >
-            <IconContainer
-              variants={iconVariants}
-              initial="visible"
-              animate="visible"
-              whileHover="hover"
+          <Divider />
+
+          <ServiceSection>
+            <SidebarLink
+              active={activeLink === "orders" && !activeService}
+              onClick={() => {
+                setActiveLink("orders");
+                setActiveService(null);
+              }}
+              role="button"
             >
-              <FaSignOutAlt />
-            </IconContainer>
-            <span>{t("profile.sidebar.logout")}</span>
-          </LogoutButton>
-        </LogoutContainer>
+              <IconContainer
+                variants={iconVariants}
+                initial="visible"
+                animate={activeLink === "orders" && !activeService ? "active" : "visible"}
+                whileHover="hover"
+              >
+                <FaUser />
+              </IconContainer>
+              <span>Мои заказы</span>
+            </SidebarLink>
+
+            <ServiceLink
+              active={activeService === "plumbing"}
+              onClick={() => {
+                setActiveLink("orders");
+                setActiveService("plumbing");
+              }}
+            >
+              Сантехник
+            </ServiceLink>
+
+            <ServiceLink
+              active={activeService === "cleaning"}
+              onClick={() => {
+                setActiveLink("orders");
+                setActiveService("cleaning");
+              }}
+            >
+              Чистка труб
+            </ServiceLink>
+
+            <AddServiceLink onClick={() => console.log("Add new service")}>
+              <FaPlus />
+              Новая услуга
+            </AddServiceLink>
+          </ServiceSection>
+        </SidebarContainer>
       </SidebarWrapper>
 
-      {/* <MainContent>
-        {activeLink === "profile.sidebar.profile" && <MyProfile />}
-        {activeLink === "profile.sidebar.services" && <Services />}
-        {activeLink === "profile.sidebar.vacancies" && <Vacancies />}
-        {activeLink === "profile.sidebar.orderHistory" && <History />}
-        {activeLink === "profile.sidebar.security" && <Security />}
-        {activeLink === "profile.sidebar.support" && <Support />}
-      </MainContent> */}
+      <MainContent>
+        {activeLink === "profile" && <MyProfile />}
+        {activeLink === "services" && <Services />}
+        {activeLink === "orders" && <History />}
+        {activeLink === "settings" && <Security />}
+        {activeLink === "support" && <Support />}
+        {activeLink === "subscription" && <Vacancies />}
+      </MainContent>
     </PageContainer>
   );
 }

@@ -7,7 +7,37 @@
     "chooseRegion": "Выбрать регион",
     "stats": "Уже более 1 000 000 человек нашли своего специалиста"
   },
-
+  "footer": {
+    "useful": {
+      "title": "Полезно",
+      "newTask": "Новая задача",
+      "allServices": "Все услуги",
+      "allReviews": "Все отзывы",
+      "termsOfUse": "Условия использования",
+      "linkCatalog": "Каталог ссылок",
+      "privacyPolicy": "Политика конфиденциальности"
+    },
+    "social": {
+      "title": "Наши соц сети",
+      "telegram": "Telegram",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "youtube": "YouTube",
+      "twitter": "Twitter"
+    },
+    "contacts": {
+      "title": "Контакты",
+      "phone1": "+998 55 511 5544",
+      "phone2": "+998 55 511 5588",
+      "address": "Адрес: 100174, г. Ташкент,\nОлмазорский р-н, 2-Чимбой 96\nПочтовый индекс: 100095"
+    },
+    "copyright": "© {{year}} MyProfy. Все права защищены",
+    "privacyPolicy": {
+      "title": "Политика конфиденциальности",
+      "sectionTitle": "Раздел {{number}}",
+      "content": "Здесь ваш текст политики конфиденциальности..."
+    }
+  },
   "services": {
     "empty": "У вас пока нет добавленных услуг.",
     "buy_boost": "Забустить!",
@@ -159,10 +189,11 @@
     "service_limit": "У вас {count} из {limit} услуг",
     "sidebar": {
       "profile": "Мой профиль",
-      "services": "Мои услуги",
-      "vacancies": "Мои вакансии",
-      "orderHistory": "История заказов",
-      "security": "Настройки",
+      "services": "Мои объяления",
+      "vacancies": "Поддержка",
+      "orderHistory": "Настройки",
+      "security": "Моя подписка",
+      "order": "Мои заказы",
       "logout": "Выйти",
       "support": "Поддержка"
     },
@@ -251,7 +282,7 @@
       "modalTitle": "День рождения"
     },
     "button": {
-        "label": "Изменить данные"
+      "label": "Изменить данные"
     },
     "name": {
       "label": "Имя",
@@ -417,7 +448,7 @@
       }
     }
   },
-
+  
   "vacancies": {
     "empty": "У вас пока нет добавленных вакансий.",
     "buy_boost": "Забустить!",

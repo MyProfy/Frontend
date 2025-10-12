@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import FocusTrap from 'focus-trap-react';
+import LogoMyProfi from "@/public/MyProfyLogo.png";
+import Image from 'next/image';
 
 // Styles
 const ModalBackdrop = styled(motion.div)`
@@ -67,7 +69,7 @@ const Select = styled(motion.select)`
 `;
 
 const Button = styled(motion.button)`
-    padding: 10px;
+    padding: 5px;
     border: none;
     border-radius: 6px;
     font-size: 0.95rem;
@@ -101,6 +103,7 @@ const InputError = styled(motion.span)`
     display: block;
 `;
 
+
 const Spinner = styled(FaSpinner)`
     animation: spin 1s linear infinite;
     @keyframes spin {
@@ -109,7 +112,6 @@ const Spinner = styled(FaSpinner)`
     }
 `;
 
-// Animations
 const backdropVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3 } },
@@ -147,7 +149,6 @@ export default function RegionModal({ isOpen, onCloseAction, onSelectAction }: R
 
     const regions = ['Ташкент', 'Андижан', 'Бухара', 'Фергана', 'Джизак', 'Наманган', 'Навои', 'Кашкадарья', 'Самарканд', 'Сырдарья', 'Сурхандарья', 'Хорезм', 'Каракалпакстан'];
 
-    // Закрытие по клику вне модального окна
     useEffect(() => {
         if (typeof window === "undefined") return;
 
@@ -203,7 +204,13 @@ export default function RegionModal({ isOpen, onCloseAction, onSelectAction }: R
             <ModalBackdrop initial="hidden" animate="visible" exit="exit" variants={backdropVariants}>
                 <ModalContainer ref={modalRef} variants={containerVariants}>
                     <AnimatePresence>
-                        <form onSubmit={handleSubmit}>
+                        <Image
+                            src={LogoMyProfi}
+                            alt="MyProfi logo"
+                            width={46}
+                            height={46}
+                            style={{ display: "block", margin: "0 auto", marginBottom: "32px" }}
+                        />                        <form onSubmit={handleSubmit}>
                             <ModalTitle variants={itemVariants}>{t('regionModal.title')}</ModalTitle>
                             <InputContainer variants={itemVariants}>
                                 <Select value={region} onChange={e => setRegion(e.target.value)} required>

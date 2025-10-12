@@ -13,7 +13,7 @@ i18n.use(initReactI18next).init({
     lng: "ru", 
     fallbackLng: "ru", 
     interpolation: {
-        escapeValue: false, // React уже экранирует значения
+        escapeValue: false, 
     },
 });
 

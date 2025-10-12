@@ -6,6 +6,37 @@
     "chooseRegion": "Choose another region",
     "stats": "Already 1,000,500+ people have found their specialist"
   },
+  "footer": {
+    "useful": {
+      "title": "Useful",
+      "newTask": "New Task",
+      "allServices": "All Services",
+      "allReviews": "All Reviews",
+      "termsOfUse": "Terms of Use",
+      "linkCatalog": "Link Catalog",
+      "privacyPolicy": "Privacy Policy"
+    },
+    "social": {
+      "title": "Our Social Networks",
+      "telegram": "Telegram",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "youtube": "YouTube",
+      "twitter": "Twitter"
+    },
+    "contacts": {
+      "title": "Contacts",
+      "phone1": "+998 55 511 5544",
+      "phone2": "+998 55 511 5588",
+      "address": "Address: 100174, Tashkent city,\nOlmazor district, 2-Chimboy 96\nPostal code: 100095"
+    },
+    "copyright": "© {{year}} MyProfy. All rights reserved",
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "sectionTitle": "Section {{number}}",
+      "content": "Your privacy policy text here..."
+    }
+  },
   "regionModal": {
     "title": "Select your region",
     "regionPlaceholder": "Specify region",
@@ -43,7 +74,7 @@
     "more13y": "Quickly help you find a specialist",
     "safe": "Secure and fast payment",
     "ariaLabel": "Platform advantages"
-  },
+  },  
   "request": {
     "title": "Can't find the right service?",
     "description": "Describe your request, and we will help find a specialist",
@@ -91,10 +122,11 @@
     "service_limit": "You have {count} of {limit} services",
     "sidebar": {
       "profile": "My profile",
-      "services": "My services",
-      "vacancies": "My vacancies",
-      "orderHistory": "Order history",
-      "security": "Settings",
+      "services": "My adds",
+      "vacancies": "Support",
+      "orderHistory": "Settings",
+      "security": "My subscription",
+      "order": "My Orders",
       "logout": "Log out",
       "support": "Support"
     },
