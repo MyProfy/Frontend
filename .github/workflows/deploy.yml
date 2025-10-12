@@ -18,26 +18,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            echo "=== 🔄 Pulling latest code ==="
-            cd /var/www/Frontend || exit 1
+            cd /var/www/Frontend 
             git fetch origin main
             git checkout main
             git pull origin main
-
-            echo "=== 📦 Installing dependencies ==="
             npm install
-
-            echo "=== 🏗️ Building Next.js project ==="
             npm run build
-
-            echo "=== ⚙️ Checking PM2 installation ==="
-            if ! command -v pm2 &> /dev/null
-            then
-              echo "PM2 not found. Installing..."
-              npm install -g pm2
-            fi
-
-            echo "=== 🚀 Restarting app with PM2 ==="
-            pm2 restart frontend || pm2 start npm --name "frontend" -- start
+            pm2 list
+            pm2 logs frontend-dev
+            pm2 restart frontend-dev
+            pm2 logs frontend-dev
 
             echo "✅ Deployment complete!"
