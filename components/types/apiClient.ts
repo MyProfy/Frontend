@@ -95,9 +95,6 @@ export const apiClient = {
   getUserById: async (id: string | number): Promise<User> =>
     (await withRetry(() => api.get(`/users/${id}/`))).data,
 
-  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data,
-
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
 
@@ -177,20 +174,21 @@ export const apiClient = {
   getReklamaById: async (id: number): Promise<Reklama> =>
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
 
-  // Add authentication methods
-  checkAuth: async (): Promise<User> =>
-    (await withRetry(() => api.get("/auth/me/"))).data,
-
   login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data,
+    (await api.post("/auth/login/", credentials)).data, 
+  
+  register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
+    (await api.post("/auth/register/", userData)).data,
+
+  // Add authentication methods
+  // checkAuth: async (): Promise<User> =>
+  //   (await withRetry(() => api.get("/auth/me/"))).data,
+
 
   logout: async (): Promise<void> =>
     (await api.post("/auth/logout/")).data,
 
-  register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/register/", userData)).data,
-
-
+   
 };
 
 export function getAPIClient() {
