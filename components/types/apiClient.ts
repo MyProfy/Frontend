@@ -19,7 +19,7 @@ import {
   Vacancy,
   VacancyBoost,
   OrderData,
-  Reklama, 
+  Reklama,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -104,8 +104,20 @@ export const apiClient = {
   createOrder: async (data: OrderData): Promise<Order> =>
     (await api.post("/orders/", data)).data,
 
-  getExecutorReviews: async (): Promise<ExecutorReview[]> =>
-    (await withRetry(() => api.get("/executor-reviews/"))).data,
+  getExecutorReviews: async (): Promise<ExecutorReview[]> => {
+    const response = await withRetry(() => api.get("/executor-reviews/"));
+
+    if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results;
+    }
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
+    return [];
+  },
 
   getClientReviews: async (): Promise<ClientReview[]> =>
     (await withRetry(() => api.get("/client-reviews/"))).data,
@@ -175,8 +187,8 @@ export const apiClient = {
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
 
   login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data, 
-  
+    (await api.post("/auth/login/", credentials)).data,
+
   register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
     (await api.post("/auth/register/", userData)).data,
 
@@ -188,7 +200,7 @@ export const apiClient = {
   logout: async (): Promise<void> =>
     (await api.post("/auth/logout/")).data,
 
-   
+
 };
 
 export function getAPIClient() {

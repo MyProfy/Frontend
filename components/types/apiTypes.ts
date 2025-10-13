@@ -83,14 +83,17 @@ export interface Boost extends BaseEntity {
 
 export interface Image extends BaseEntity {
   image: string;
-}
+};
 
 export interface ExecutorReview extends BaseEntity {
+  id?: number;
   rating: number;
   review?: string;
   created_at: string;
   reviewer?: User;
   executor: number | User;
+  vacancy: number | Vacancy;
+  order: number | Order;
 }
 
 export interface ClientReview extends BaseEntity {

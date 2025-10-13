@@ -221,34 +221,38 @@ const ReviewsBlock: React.FC<{ reviews?: Review[]; customStyles?: CustomStyles }
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        setLoading(true);
-        const response = await apiClient.getExecutorReviews({ limit: 9 });
-        const data: ExecutorReview[] = response.data?.results || response.data || [];
+        const reviewsData = await apiClient.getExecutorReviews();
 
-        const formattedReviews: Review[] = data.map((review) => ({
-          id: review.id,
-          comment: review.review || "Без комментария",
-          date: new Date(review.created_at).toLocaleDateString("ru-RU", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }),
-          reviewer: `User_${review.executor}`,
-          rating: review.rating || 0,
-          image: `https://via.placeholder.com/44?text=U${review.executor}`,
-        }));
+        const formattedReviews = reviewsData.map((review) => {
+          const executorId =
+            typeof review.executor === "object"
+              ? review.executor?.id ?? 0
+              : review.executor ?? 0;
 
-        setReviews(formattedReviews);
-      } catch (err) {
-        setError("Не удалось загрузить отзывы 😞");
-        console.error("Error fetching reviews:", err);
+          return {
+            id: review.id ?? 0,
+            comment: review.review || "Без комментария",
+            date: new Date(review.created_at).toLocaleDateString("ru-RU", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+            reviewer: `User_${executorId}`,
+            rating: review.rating ?? 0,
+            image: `https://via.placeholder.com/44?text=U${executorId}`,
+          };
+        });
+
+        console.log("Отзывы успешно загружены:", formattedReviews);
+      } catch (error) {
+        console.error("Ошибка при загрузке отзывов:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchReviews();
-  }, [apiClient]);
+  }, []);
 
 
   if (loading) return <div style={{ textAlign: "center", padding: "20px" }}>Loading...</div>;
