@@ -25,8 +25,6 @@ jobs:
             git pull origin main
             npm install
             npm run build
-            pm2 list
-            pm2 stop frontend
-            pm2 start frontend
+            pm2 restart frontend
 
-            echo "✅ Deployment complete!"
+  
