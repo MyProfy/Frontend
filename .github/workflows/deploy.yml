@@ -26,8 +26,7 @@ jobs:
             npm install
             npm run build
             pm2 list
-            pm2 logs frontend-dev
-            pm2 restart frontend-dev
-            pm2 logs frontend-dev
+            pm2 stop frontend
+            pm2 start frontend
 
             echo "✅ Deployment complete!"
