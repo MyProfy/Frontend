@@ -83,14 +83,17 @@ export interface Boost extends BaseEntity {
 
 export interface Image extends BaseEntity {
   image: string;
-}
+};
 
 export interface ExecutorReview extends BaseEntity {
+  id?: number;
   rating: number;
   review?: string;
   created_at: string;
   reviewer?: User;
   executor: number | User;
+  vacancy: number | Vacancy;
+  order: number | Order;
 }
 
 export interface ClientReview extends BaseEntity {
@@ -153,10 +156,10 @@ export interface Vacancy extends BaseEntity {
 }
 
 export interface OrderData {
-  client: number; 
-  executor: number; 
-  service?: number; 
-  vacancy?: number; 
+  client: number;
+  executor: number;
+  service?: number;
+  vacancy?: number;
   amount: number;
   price: number;
   status: "Awaiting" | "InProgress" | "Completed" | "Cancelled";
@@ -183,6 +186,13 @@ export interface SchemaInfo {
 export interface login {
   phone?: string,
   password?: string,
+}
+
+export interface register {
+  phone?: string,
+  password?: string,
+  name?: string,
+  role?: string
 
 }
 
@@ -204,10 +214,10 @@ export interface AuthResponse {
 }
 
 export interface OrderData {
-  client: number; 
-  executor: number; 
-  service?: number; 
-  vacancy?: number; 
+  client: number;
+  executor: number;
+  service?: number;
+  vacancy?: number;
   amount: number;
   price: number;
   status: "Awaiting" | "InProgress" | "Completed" | "Cancelled";

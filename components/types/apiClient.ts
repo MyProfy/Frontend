@@ -19,7 +19,7 @@ import {
   Vacancy,
   VacancyBoost,
   OrderData,
-  Reklama, 
+  Reklama,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -95,9 +95,6 @@ export const apiClient = {
   getUserById: async (id: string | number): Promise<User> =>
     (await withRetry(() => api.get(`/users/${id}/`))).data,
 
-  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data,
-
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
 
@@ -107,8 +104,20 @@ export const apiClient = {
   createOrder: async (data: OrderData): Promise<Order> =>
     (await api.post("/orders/", data)).data,
 
-  getExecutorReviews: async (): Promise<ExecutorReview[]> =>
-    (await withRetry(() => api.get("/executor-reviews/"))).data,
+  getExecutorReviews: async (): Promise<ExecutorReview[]> => {
+    const response = await withRetry(() => api.get("/executor-reviews/"));
+
+    if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results;
+    }
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
+    return [];
+  },
 
   getClientReviews: async (): Promise<ClientReview[]> =>
     (await withRetry(() => api.get("/client-reviews/"))).data,
@@ -177,18 +186,19 @@ export const apiClient = {
   getReklamaById: async (id: number): Promise<Reklama> =>
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
 
-  // Add authentication methods
-  checkAuth: async (): Promise<User> =>
-    (await withRetry(() => api.get("/auth/me/"))).data,
-
   login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
     (await api.post("/auth/login/", credentials)).data,
 
-  logout: async (): Promise<void> =>
-    (await api.post("/auth/logout/")).data,
-
   register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
     (await api.post("/auth/register/", userData)).data,
+
+  // Add authentication methods
+  // checkAuth: async (): Promise<User> =>
+  //   (await withRetry(() => api.get("/auth/me/"))).data,
+
+
+  logout: async (): Promise<void> =>
+    (await api.post("/auth/logout/")).data,
 
 
 };

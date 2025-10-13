@@ -12,10 +12,10 @@ import { useTranslation } from "react-i18next";
 import {
   login,
   registerUser,
-  requestOTP,
-  resetPassword,
-  verifyOTP,
-  checkUser,
+//   requestOTP,
+//   resetPassword,
+//   verifyOTP,
+//   checkUser,
 } from "../../components/types/apiClient";
 
 import { useRouter } from "next/navigation";
@@ -731,7 +731,6 @@ export default function RegisterModal({
 
     setIsLoading(true);
     try {
-      // Проверка на существование пользователя
       const userCheck = await checkUser({ phone: phoneNumber });
       if (userCheck.message === "User exists") {
         setError(t("register.errors.phoneAlreadyRegistered"));
@@ -739,7 +738,6 @@ export default function RegisterModal({
         return;
       }
 
-      // Если пользователь не существует, продолжаем с запросом OTP
       const response = await requestOTP({ phone: phoneNumber });
       setTelegramMessage(
         response.message ||
@@ -782,52 +780,52 @@ export default function RegisterModal({
     }
   };
 
-  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validatePhone()) return setError(validatePhone());
+  // const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (validatePhone()) return setError(validatePhone());
 
-    setIsLoading(true);
-    try {
-      const response = await requestOTP({ phone: phoneNumber });
-      setTelegramMessage(
-        response.message ||
-        t("register.otp.sentMessage", { bot: "https://t.me/MyProfy_OTP_bot" })
-      );
-      setStep(7);
-      setResendTimer(60);
-      setError("");
-    } catch (err: unknown) {
-      const errorMessage =
-        (err as any).response?.data?.error ||
-        t("register.errors.otpRequestFailed");
-      if (errorMessage.includes("chat_id")) {
-        setError(t("register.errors.noTelegramChat"));
-      } else {
-        setError(errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   setIsLoading(true);
+  //   try {
+  //     const response = await requestOTP({ phone: phoneNumber });
+  //     setTelegramMessage(
+  //       response.message ||
+  //       t("register.otp.sentMessage", { bot: "https://t.me/MyProfy_OTP_bot" })
+  //     );
+  //     setStep(7);
+  //     setResendTimer(60);
+  //     setError("");
+  //   } catch (err: unknown) {
+  //     const errorMessage =
+  //       (err as any).response?.data?.error ||
+  //       t("register.errors.otpRequestFailed");
+  //     if (errorMessage.includes("chat_id")) {
+  //       setError(t("register.errors.noTelegramChat"));
+  //     } else {
+  //       setError(errorMessage);
+  //     }
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateOtp()) return setError(validateOtp());
+  // const handleOtpSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (validateOtp()) return setError(validateOtp());
 
-    setIsLoading(true);
-    try {
-      await verifyOTP({ phone: phoneNumber, otp });
-      if (step === 3) setStep(4);
-      if (step === 7) setStep(8);
-      setError("");
-    } catch (err: unknown) {
-      setError(
-        (err as any).response?.data?.error || t("register.errors.invalidOtp")
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   setIsLoading(true);
+  //   try {
+  //     await verifyOTP({ phone: phoneNumber, otp });
+  //     if (step === 3) setStep(4);
+  //     if (step === 7) setStep(8);
+  //     setError("");
+  //   } catch (err: unknown) {
+  //     setError(
+  //       (err as any).response?.data?.error || t("register.errors.invalidOtp")
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
@@ -892,27 +890,27 @@ export default function RegisterModal({
     }
   };
 
-  const handleNewPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newPasswordError = validateNewPassword();
-    const repeatNewPasswordError = validateRepeatNewPassword();
-    if (newPasswordError || repeatNewPasswordError)
-      return setError(newPasswordError || repeatNewPasswordError);
+  // const handleNewPasswordSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   const newPasswordError = validateNewPassword();
+  //   const repeatNewPasswordError = validateRepeatNewPassword();
+  //   if (newPasswordError || repeatNewPasswordError)
+  //     return setError(newPasswordError || repeatNewPasswordError);
 
-    setIsLoading(true);
-    try {
-      await resetPassword({ phone: phoneNumber, new_password: newPassword });
-      await login({ phone: phoneNumber, password: newPassword });
-      onCloseAction();
-      router.push("/profile");
-    } catch (err: unknown) {
-      setError(
-        (err as any).message || t("register.errors.passwordResetFailed")
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   setIsLoading(true);
+  //   try {
+  //     await resetPassword({ phone: phoneNumber, new_password: newPassword });
+  //     await login({ phone: phoneNumber, password: newPassword });
+  //     onCloseAction();
+  //     router.push("/profile");
+  //   } catch (err: unknown) {
+  //     setError(
+  //       (err as any).message || t("register.errors.passwordResetFailed")
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const countryCodes = [
     { code: "+998", flag: "🇺🇿" },
