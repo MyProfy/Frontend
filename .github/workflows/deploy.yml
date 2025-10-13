@@ -19,6 +19,7 @@ jobs:
           script_stop: true
           script: |
             cd /var/www/Frontend 
+            git stash 
             git fetch origin main
             git checkout main
             git pull origin main
