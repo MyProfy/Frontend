@@ -180,6 +180,12 @@ export interface SchemaInfo {
   endpoints: string[];
 }
 
+export interface login {
+  phone?: string,
+  password?: string,
+
+}
+
 export type SearchResult = Service | Vacancy;
 
 export interface PaginatedResponse<T> {

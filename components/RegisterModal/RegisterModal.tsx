@@ -10,7 +10,7 @@ import {
 } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
-  loginUser,
+  login,
   registerUser,
   requestOTP,
   resetPassword,
@@ -714,7 +714,7 @@ export default function RegisterModal({
 
     setIsLoading(true);
     try {
-      await loginUser({ phone: phoneNumber, password });
+      await login({ phone: phoneNumber, password });
       onCloseAction();
       router.push("/profile");
     } catch (err: unknown) {
@@ -883,7 +883,7 @@ export default function RegisterModal({
         gender,
         region,
       });
-      await loginUser({ phone: phoneNumber, password });
+      await login({ phone: phoneNumber, password });
     } catch (err: unknown) {
       setError(
         (err as any).response?.data?.error ||
@@ -902,7 +902,7 @@ export default function RegisterModal({
     setIsLoading(true);
     try {
       await resetPassword({ phone: phoneNumber, new_password: newPassword });
-      await loginUser({ phone: phoneNumber, password: newPassword });
+      await login({ phone: phoneNumber, password: newPassword });
       onCloseAction();
       router.push("/profile");
     } catch (err: unknown) {

@@ -19,7 +19,7 @@ import {
   Vacancy,
   VacancyBoost,
   OrderData,
-  Reklama, // Make sure this is imported from apiTypes
+  Reklama, 
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -94,6 +94,9 @@ export const apiClient = {
 
   getUserById: async (id: string | number): Promise<User> =>
     (await withRetry(() => api.get(`/users/${id}/`))).data,
+
+  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
+    (await api.post("/auth/login/", credentials)).data,
 
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
