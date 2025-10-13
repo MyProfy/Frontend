@@ -3,4 +3,9 @@ module.exports = {
   compiler: {
     emotion: true,
   },
+
+  devIndicators: {
+    appIsrStatus: false,
+    buildActivity: false,
+  },
 };
