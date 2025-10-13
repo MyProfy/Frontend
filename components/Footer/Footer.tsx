@@ -4,7 +4,7 @@ import React, { useContext, useState } from "react";
 import styled from "@emotion/styled";
 import { motion } from "framer-motion";
 import { LanguageContext } from "@/contexts/LanguageContext";
-import img from "../../public/my_profy_logo.svg";
+import img from "../../public/avatar/logo.svg";
 import Image from "next/image";
 
 const FooterContainer = styled.footer`
@@ -37,8 +37,8 @@ const FooterInner = styled.div`
 `;
 
 const FooterLogo = styled(Image)`
-  width: 46px;
-  height: 46px;
+  width: 150px;
+  height: 150px;
   object-fit: contain;
   border-radius: 10px;  
   cursor: pointer;

@@ -478,6 +478,7 @@ const StyledDescription = styled(RequestDescription)`
   border-radius: 8px;
   box-sizing: border-box;
   font-family: "Font 1", sans-serif;
+  width: 100%;
   font-size: 15.25px;
   font-weight: 500;
   line-height: 23.2px;
@@ -1364,7 +1365,7 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
               <TopSpecialtyCard
                 onClick={() => handleSpecialtyClick(specialty.link)}
               >
-                {/* <CardImage src="/avatar/logologo.png" alt={specialty.name} /> */}
+                <CardImage src="/avatar/logologo.png" alt={specialty.name} />
               </TopSpecialtyCard>
               <SpecialtyTitle>{specialty.name}</SpecialtyTitle>
             </SpecialtyContainer>
@@ -1400,7 +1401,7 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
                   <SubCategoryList>
                     {subCategories
                       .filter((sub) => {
-                        const categoryId =
+                     const categoryId =
                           typeof sub.category === "number"
                             ? sub.category
                             : sub.category.id;

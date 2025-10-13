@@ -49,7 +49,7 @@ export default function App() {
           textGap="80px"
           textPosition={{ left: "20px" }}
           trailCount={3}
-          message="WELCOME...!"
+          message="WELCOME !"
         >
           {showContent && (
             <>

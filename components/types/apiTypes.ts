@@ -188,12 +188,11 @@ export interface login {
   password?: string,
 }
 
-export interface register {
-  phone?: string,
-  password?: string,
-  name?: string,
-  role?: string
-
+export interface RegisterPayload {
+  phone?: string;
+  password?: string;
+  name?: string;
+  role: "client";
 }
 
 export type SearchResult = Service | Vacancy;

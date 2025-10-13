@@ -65,6 +65,13 @@ api.interceptors.request.use(
 );
 
 export const apiClient = {
+  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
+    (await api.post("/auth/login/", credentials)).data,
+
+
+  register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
+    (await api.post("/auth/register/", userData)).data,
+
   getCategories: async (): Promise<Category[] | { results: Category[]; count: number }> =>
     (await withRetry(() => api.get("/categories/"))).data,
 
@@ -186,16 +193,9 @@ export const apiClient = {
   getReklamaById: async (id: number): Promise<Reklama> =>
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
 
-  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data,
-
-  register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/register/", userData)).data,
-
   // Add authentication methods
   // checkAuth: async (): Promise<User> =>
   //   (await withRetry(() => api.get("/auth/me/"))).data,
-
 
   logout: async (): Promise<void> =>
     (await api.post("/auth/logout/")).data,
