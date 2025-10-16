@@ -598,7 +598,6 @@ export default function RegisterModal({
 
                 <div
                   className={`relative overflow-visible bg-white transition-all duration-300 min-h-[56px] border-2 ${hasLoginError ? "border-[#e53e3e]" : "border-[#e2e8f0] hover:border-[#3ea23e]"} rounded-[16px]`}
-                  variants={itemVariants}
                 >
                   <motion.div
                     className="absolute text-[1.1rem] z-2 left-4 top-1/2 -translate-y-1/2"
@@ -1032,7 +1031,7 @@ export default function RegisterModal({
                 </motion.div>
                 <div
                   className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
-                  variants={itemVariants}
+                  // variants={itemVariants}
                 >
                   <motion.div
                     className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"
@@ -1073,7 +1072,7 @@ export default function RegisterModal({
                 </div>
                 <div
                   className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
-                  variants={itemVariants}
+                  // variants={itemVariants}
                 >
                   <motion.div
                     className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"

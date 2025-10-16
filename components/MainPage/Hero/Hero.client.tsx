@@ -11,6 +11,9 @@ import { motion } from "framer-motion";
 import MyProfiBanner from "../../../public/Banner-MyProfi.png";
 import Image from "next/image";
 import Navbar from "@/components/Header/Navbar";
+import { FaFireFlameCurved } from "react-icons/fa6";
+import { BsFillLightningFill } from "react-icons/bs";
+import Link from "next/link";
 
 interface BannerClientProps {
   initialSlide?: number;
@@ -68,24 +71,26 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
   const topSpecialties = useMemo(
     () => [
       {
-        name: t("topSpecialties.tutors", "Репетиторы"),
-        category: "math",
-        image: "/avatar/logologo.png"
+        name: t("topSpecialties.tutors", "Образование"),
+        image: "/avatar/logologo.png",
+        link: "https://myprofy.uz/search?category=1"
+
       },
       {
-        name: t("topSpecialties.repair", "Ремонт"),
-        category: "english",
-        image: "/avatar/logologo.png"
+        name: t("topSpecialties.repair", "Ремонт бытовой техники"),
+        image: "/avatar/logologo.png",
+        link: "https://myprofy.uz/search?category=67"
       },
       {
         name: t("topSpecialties.construction", "Строительство"),
-        category: "plumber",
-        image: "/avatar/logologo.png"
+        image: "/avatar/logologo.png",
+        link: "https://myprofy.uz/search?category=2"
+
       },
       {
         name: t("topSpecialties.makeup", "Красота"),
-        category: "tire",
-        image: "/avatar/logologo.png"
+        image: "/avatar/logologo.png",
+        link: "https://myprofy.uz/search?category=14"
       },
     ],
     [t]
@@ -95,12 +100,11 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
     topSpecialties.map(s => ({
       ...s,
       link: mode === 'client'
-        ? `/search?category=${s.category}`
-        : `/register-specialist?category=${s.category}`
+        ? `/search?category=${s.link}`
+        : `/register-specialist?category=${s.link}`
     })),
     [topSpecialties, mode]);
 
-  // Effects
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 1) e.preventDefault();
@@ -308,6 +312,21 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
           </div>
         </div>
 
+        <div className="flex items-center justify-center mt-50 fixed  bg-[#C9C9C966] py-2 px-4 rounded-xl z-50">
+          <button className="flex items-center gap-2 bg-black text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-l-xl transition-all hover:bg-[#222] cursor-pointer">
+            <FaFireFlameCurved className="text-lg" />
+            Найти специалиста
+          </button>
+
+          <Link href="/VacanciesCategory/Vacancies">
+            <button className="flex gap-2 bg-[#292B2FBF] text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-r-xl transition-all hover:bg-[#333539bf] cursor-pointer">
+              <BsFillLightningFill className="text-lg mt-0.5" />
+              Найти клиентов
+            </button>
+          </Link>
+
+        </div>
+
         {mode === 'specialist' && (
           <div className="bg-gradient-to-br from-[#3ea240] to-[#218838] text-white py-12 md:py-16 px-8 md:px-9 rounded-3xl my-10 max-w-[1400px] w-full text-center">
             <h2 className="text-3xl md:text-4xl mb-2.5 max-md:text-[1.8rem]">
@@ -381,7 +400,7 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
                       {getDisplayName(category)}
                     </h3>
                     <p className="text-sm md:text-lg text-[#858b98] ml-2 hidden md:inline-block">
-                      {category.service_count || 0}
+                      {(category.service_count ?? 0) < 50 ? 50 : category.service_count ?? 0}
                     </p>
                   </div>
 
