@@ -18,13 +18,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd /var/www/Frontend 
-            git stash 
-            git fetch origin main
+            cd /var/www/Frontend/
+            git stash
             git checkout main
             git pull origin main
-            npm install
+            pm2 list 
+            pm2 delete frontend
             npm run build
-            pm2 restart frontend
+            pm2 start npm --name "frontend" -- run dev
+            
 
   
