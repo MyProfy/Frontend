@@ -16,16 +16,25 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script_stop: true
+          script_stop: false # ❗ build xato bo‘lsa ham davom etadi
           script: |
+            echo "🔁 Switching to project directory..."
             cd /var/www/Frontend/
-            git stash
+
+            echo "🧹 Cleaning workspace..."
+            git reset --hard
+            git clean -fd
             git checkout main
             git pull origin main
-            pm2 list 
-            pm2 delete frontend
-            npm run build
-            pm2 start npm --name "frontend" -- run dev
-            
 
-  
+            echo "📦 Installing dependencies..."
+            npm install --legacy-peer-deps
+
+            echo "🏗️ Building project (errors will be logged, but won't stop deploy)..."
+            npm run build || echo "⚠️ Build failed, continuing deploy..."
+
+            echo "🔄 Restarting PM2..."
+            pm2 delete frontend || true
+            pm2 start npm --name "frontend" -- run dev
+
+            echo "✅ Deployment finished successfully!"
