@@ -182,7 +182,6 @@ export interface SchemaInfo {
   endpoints: string[];
 }
 
-// Авторизация
 export interface LoginPayload {
   phone: string;
   password: string;
