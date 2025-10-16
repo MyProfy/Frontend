@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { motion, Variants } from "framer-motion";
-import styled from "@emotion/styled";
 import {
   FaUser,
   FaHistory,
@@ -35,250 +34,6 @@ const iconVariants: Variants = {
   active: { scale: 1, color: "#6b7280", transition: { duration: 0.2 } },
 };
 
-// Стили
-const PageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 10px;
-  padding-top: 80px;
-  gap: 16px;
-  box-sizing: border-box;
-  background: #f9fafb;
-
-  @media (min-width: 600px) {
-    padding: 20px;
-    padding-top: 100px;
-    gap: 20px;
-  }
-
-  @media (min-width: 769px) {
-    flex-direction: row;
-    padding: 24px;
-    padding-top: 125px;
-    gap: 24px;
-  }
-`;
-
-const SidebarWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: 100%;
-  padding: 10px 8px;
-  background: transparent;
-
-  @media (min-width: 600px) and (max-width: 768px) {
-    padding: 10px 12px;
-  }
-
-  @media (min-width: 769px) {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
-    max-width: 240px;
-    padding: 0;
-    position: sticky;
-    top: 125px;
-    height: fit-content;
-  }
-`;
-
-const SidebarContainer = styled(motion.nav)`
-  display: contents;
-  @media (min-width: 769px) {
-    width: 100%;
-    max-width: 240px;
-    padding: 16px;
-    border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    display: flex !important;
-    flex-direction: column;
-    gap: 4px;
-  }
-`;
-
-const NavLinksContainer = styled.div`
-  display: contents;
-
-  @media (min-width: 769px) {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-`;
-
-const SidebarLink = styled.div<{ active?: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px;
-  font-size: 12px;
-  line-height: 2.2;
-  text-align: center;
-  color: ${({ active }) => (active ? "#fff" : "#666")};
-  background: ${({ active }) => (active ? "#008000" : "#fff")};
-  border-radius: 12px;
-  transition: background 0.3s ease, color 0.3s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  min-height: 80px;
-
-  svg {
-    font-size: 1.2rem;
-    color: ${({ active }) => (active ? "#fff" : "#666")};
-  }
-
-  @media (min-width: 769px) {
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-    min-height: auto;
-    padding: 11px 14px;
-    font-size: 14px;
-    color: #6b7280;
-    background: transparent;
-    border-radius: 8px;
-    box-shadow: none;
-    text-align: left;
-    font-weight: 400;
-
-    ${({ active }) =>
-      active &&
-      `
-      background: #f3f4f6;
-      font-weight: 400;
-    `}
-
-    ${({ active }) =>
-      !active &&
-      `
-      &:hover {
-        background: #f9fafb;
-      }
-        cursor: pointer;
-    `}
-
-    svg {
-      font-size: 18px;
-      color: #9ca3af;
-      margin-right: 2px;
-    }
-  }
-`;
-
-const Divider = styled.div`
-  display: none;
-  
-  @media (min-width: 769px) {
-    display: block;
-    height: 1px;
-    background: #e5e7eb;
-    margin: 8px 0;
-  }
-`;
-
-const ServiceSection = styled.div`
-  display: none;
-
-  @media (min-width: 769px) {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-`;
-
-const ServiceLink = styled.div<{ active?: boolean }>`
-  display: none;
-
-  @media (min-width: 769px) {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 11px 14px 11px 38px;
-    font-size: 14px;
-    color: #9ca3af;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 400;
-
-    ${({ active }) =>
-      active &&
-      `
-      background: #f3f4f6;
-      color: #6b7280;
-    `}
-
-    &:hover {
-      background: #f9fafb;
-      color: #6b7280;
-    }
-  }
-`;
-
-const AddServiceLink = styled.div`
-  display: none;
-
-  @media (min-width: 769px) {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    padding: 11px 14px 11px 38px;
-    font-size: 14px;
-    color: #9ca3af;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 400;
-    
-    svg {
-      width: 14px;
-      height: 14px;
-      color: #9ca3af;
-    }
-
-    &:hover {
-      background: #f9fafb;
-      color: #6b7280;
-      
-      svg {
-        color: #6b7280;
-      }
-    }
-  }
-`;
-
-const IconContainer = styled(motion.span)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-
-  @media (min-width: 600px) {
-    gap: 20px;
-  }
-
-  @media (min-width: 769px) {
-    gap: 24px;
-  }
-`;
-
 const sidebarVariants = {
   initial: { opacity: 0 },
   visible: { opacity: 1 },
@@ -299,96 +54,102 @@ export default function Hero() {
   const [activeService, setActiveService] = useState<string | null>(null);
 
   return (
-    <PageContainer>
-      <SidebarWrapper>
-        <SidebarContainer
+    <div className="flex flex-col min-h-screen px-[10px] pt-[80px] pb-[10px] gap-4 box-border bg-[#f9fafb] sm:px-5 sm:pt-[100px] sm:gap-5 md:flex-row md:px-6 md:pt-[125px] md:gap-6">
+      <div className="grid grid-cols-3 gap-2 w-full p-[10px]_8px bg-transparent sm:p-[10px]_12px md:flex md:flex-col md:gap-0 md:w-full md:max-w-[240px] md:p-0 md:sticky md:top-[125px] md:h-fit">
+        <motion.nav
+          className="contents md:w-full md:max-w-[240px] md:px-4 md:py-4 md:rounded-[12px] md:bg-white md:shadow-sm md:flex md:flex-col md:gap-1"
           variants={sidebarVariants}
           initial="initial"
           animate="visible"
           transition={{ duration: 0.5 }}
         >
-          <NavLinksContainer>
+          <div className="contents md:flex md:flex-col md:gap-[2px]">
             {navLinks.map((link) => (
-              <SidebarLink
+              <div
                 key={link.key}
-                active={activeLink === link.key}
+                className={`flex flex-col items-center justify-center gap-[10px] px-2 py-2 text-xs leading-[2.2] text-center text-[#666] bg-white rounded-[12px] transition-all duration-300 shadow-sm min-h-[80px] md:flex-row md:justify-start md:items-center md:min-h-auto md:px-[11px] md:py-[11px] md:text-sm md:text-left md:font-normal md:text-[#6b7280] md:bg-transparent md:rounded-[8px] md:shadow-none md:cursor-pointer md:hover:bg-[#f9fafb] ${activeLink === link.key ? "text-white bg-[#008000]" : ""} md:${activeLink === link.key ? "bg-[#f3f4f6] md:font-normal" : ""}`}
                 onClick={() => {
                   setActiveLink(link.key);
                   setActiveService(null);
                 }}
                 role="button"
               >
-                <IconContainer
+                <motion.span
+                  className="inline-flex items-center justify-center w-[20px] h-[20px] md:mr-0.5"
                   variants={iconVariants}
                   initial="visible"
                   animate={activeLink === link.key ? "active" : "visible"}
                   whileHover="hover"
                 >
-                  {link.icon}
-                </IconContainer>
+           
+                </motion.span>
                 <span>{link.name}</span>
-              </SidebarLink>
+              </div>
             ))}
-          </NavLinksContainer>
+          </div>
 
-          <Divider />
+          <div className="hidden md:block h-[1px] bg-[#e5e7eb] my-2" />
 
-          <ServiceSection>
-            <SidebarLink
-              active={activeLink === "orders" && !activeService}
+          <div className="hidden md:flex md:flex-col md:gap-[2px]">
+            <div
+              className={`flex flex-col items-center justify-center gap-[10px] px-2 py-2 text-xs leading-[2.2] text-center text-[#666] bg-white rounded-[12px] transition-all duration-300 shadow-sm min-h-[80px] md:flex-row md:justify-start md:items-center md:min-h-auto md:px-[11px] md:py-[11px] md:text-sm md:text-left md:font-normal md:text-[#6b7280] md:bg-transparent md:rounded-[8px] md:shadow-none md:cursor-pointer md:hover:bg-[#f9fafb] ${activeLink === "orders" && !activeService ? "text-white bg-[#008000]" : ""} md:${activeLink === "orders" && !activeService ? "bg-[#f3f4f6] md:font-normal" : ""}`}
               onClick={() => {
                 setActiveLink("orders");
                 setActiveService(null);
               }}
               role="button"
             >
-              <IconContainer
+              <motion.span
+                className="inline-flex items-center justify-center w-[20px] h-[20px] md:mr-0.5"
                 variants={iconVariants}
                 initial="visible"
                 animate={activeLink === "orders" && !activeService ? "active" : "visible"}
                 whileHover="hover"
               >
-                <FaUser />
-              </IconContainer>
+                {React.cloneElement(<FaUser />, { className: `text-[1.2rem] md:text-[18px] ${activeLink === "orders" && !activeService ? "text-white" : "text-[#666] md:text-[#9ca3af]"}` })}
+              </motion.span>
               <span>Мои заказы</span>
-            </SidebarLink>
+            </div>
 
-            <ServiceLink
-              active={activeService === "plumbing"}
+            <div
+              className={`hidden md:flex md:items-center md:justify-start md:px-[11px] md:py-[11px] md:text-sm md:text-[#9ca3af] md:bg-transparent md:rounded-[8px] md:cursor-pointer md:transition-all md:duration-200 md:font-normal ${activeService === "plumbing" ? "md:bg-[#f3f4f6] md:text-[#6b7280]" : "md:hover:bg-[#f9fafb] md:hover:text-[#6b7280]"}`}
               onClick={() => {
                 setActiveLink("orders");
                 setActiveService("plumbing");
               }}
             >
               Сантехник
-            </ServiceLink>
+            </div>
 
-            <ServiceLink
-              active={activeService === "cleaning"}
+            <div
+              className={`hidden md:flex md:items-center md:justify-start md:px-[11px] md:py-[11px] md:text-sm md:text-[#9ca3af] md:bg-transparent md:rounded-[8px] md:cursor-pointer md:transition-all md:duration-200 md:font-normal ${activeService === "cleaning" ? "md:bg-[#f3f4f6] md:text-[#6b7280]" : "md:hover:bg-[#f9fafb] md:hover:text-[#6b7280]"}`}
               onClick={() => {
                 setActiveLink("orders");
                 setActiveService("cleaning");
               }}
             >
               Чистка труб
-            </ServiceLink>
+            </div>
 
-            <AddServiceLink onClick={() => console.log("Add new service")}>
-              <FaPlus />
+            <div
+              className="hidden md:flex md:items-center md:justify-start md:gap-2 md:px-[11px] md:py-[11px] md:text-sm md:text-[#9ca3af] md:bg-transparent md:rounded-[8px] md:cursor-pointer md:transition-all md:duration-200 md:font-normal md:hover:bg-[#f9fafb] md:hover:text-[#6b7280]"
+              onClick={() => console.log("Add new service")}
+            >
+              <FaPlus className="w-[14px] h-[14px] text-[#9ca3af] md:hover:text-[#6b7280]" />
               Новая услуга
-            </AddServiceLink>
-          </ServiceSection>
-        </SidebarContainer>
-      </SidebarWrapper>
+            </div>
+          </div>
+        </motion.nav>
+      </div>
 
-      <MainContent>
+      <main className="flex-1 flex flex-col gap-4 min-w-0 sm:gap-5 md:gap-6">
         {activeLink === "profile" && <MyProfile />}
         {activeLink === "services" && <Services />}
         {activeLink === "orders" && <History />}
         {activeLink === "settings" && <Security />}
         {activeLink === "support" && <Support />}
         {activeLink === "subscription" && <Vacancies />}
-      </MainContent>
-    </PageContainer>
+      </main>
+    </div>
   );
 }

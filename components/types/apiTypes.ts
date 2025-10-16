@@ -83,7 +83,7 @@ export interface Boost extends BaseEntity {
 
 export interface Image extends BaseEntity {
   image: string;
-};
+}
 
 export interface ExecutorReview extends BaseEntity {
   id?: number;
@@ -165,7 +165,6 @@ export interface OrderData {
   status: "Awaiting" | "InProgress" | "Completed" | "Cancelled";
 }
 
-
 export interface ServiceBoost extends BaseEntity {
   service: number | Service;
   boost: number | Boost;
@@ -183,17 +182,28 @@ export interface SchemaInfo {
   endpoints: string[];
 }
 
-export interface login {
-  phone?: string,
-  password?: string,
+// Авторизация
+export interface LoginPayload {
+  phone: string;
+  password: string;
 }
 
-export interface register {
-  phone?: string,
-  password?: string,
-  name?: string,
-  role?: string
+export interface RegisterPayload {
+  phone: string;
+  password: string;
+  confirm_password: string;
+  name: string;
+  role: "client" | "executor";
+  region: string;
+}
 
+export interface OTPRequestPayload {
+  phone: string;
+}
+
+export interface OTPVerifyPayload {
+  phone: string;
+  code: string;
 }
 
 export type SearchResult = Service | Vacancy;
@@ -206,25 +216,13 @@ export interface PaginatedResponse<T> {
 }
 
 export interface AuthResponse {
-  user_id?: number;
-  name?: string;
-  region?: string;
-  is_authenticated?: boolean;
-  error?: string;
-}
-
-export interface OrderData {
-  client: number;
-  executor: number;
-  service?: number;
-  vacancy?: number;
-  amount: number;
-  price: number;
-  status: "Awaiting" | "InProgress" | "Completed" | "Cancelled";
+  token: string;
+  user: User;
 }
 
 export interface ApiError {
   message: string;
   code?: number;
+  error?: string;
 }
 

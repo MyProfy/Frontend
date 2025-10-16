@@ -22,14 +22,14 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
     const setLanguage = useCallback((lang: string) => {
         setLanguageState(lang);
-        i18n.changeLanguage(lang); // Синхронизация с i18next
+        i18n.changeLanguage(lang); 
         if (typeof window !== "undefined") {
             localStorage.setItem("language", lang);
         }
     }, []);
 
     useEffect(() => {
-        i18n.changeLanguage(language); // Устанавливаем язык при монтировании
+        i18n.changeLanguage(language); 
     }, [language]);
 
     return (
