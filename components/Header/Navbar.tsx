@@ -1,193 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import styled from "@emotion/styled";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { BsFire } from "react-icons/bs";
 import { FiMenu, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 
 import MyProfiLogo from "../../public/avatar/logo.svg";
 import UzFlag from "../../public/🇺🇿.png";
 import RusFlag from "../../public/🇷🇺.png";
 import RegionModal from "../RegionModal/RegionModal";
 import LanguageModal from "../LanguageModalProps/LanguageModalProps";
-import AuthModal from "../../components/RegisterModal/RegisterModal"
-
-const Nav = styled.nav`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 24px;
-  background-color: #f8f9fb;
-  color: #333;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 64px;
-  z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-`;
-
-const Left = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-
-const Logo = styled(Image)`
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  border-radius: 8px;
-  cursor: pointer;
-`;
-
-const Center = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 100px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #2d3748;
-
-  @media (max-width: 640px) {
-    display: none;
-  }
-`;
-
-const FireIcon = styled.span`
-  color: #3ea240;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-`;
-
-const Right = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  @media (max-width: 640px) {
-    display: none;
-  }
-`;
-
-const LangButton = styled.button`
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px 16px;
-  color: #2d3748;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
-  }
-`;
-
-const LangFlag = styled(Image)`
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
-  border-radius: 4px;
-`;
-
-const LoginButton = styled.button`
-  background: #4caf50;
-  color: white;
-  padding: 8px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s ease;
-
-  &:hover {
-    background: #45a049;
-  }
-`;
-
-const ProfileButton = styled(LoginButton)`
-  background: #2d3748;
-
-  &:hover {
-    background: #1a202c;
-  }
-`;
-
-const MobileMenuButton = styled.button`
-  display: none;
-  border: none;
-  background: none;
-  font-size: 24px;
-  color: #2d3748;
-  cursor: pointer;
-
-  @media (max-width: 640px) {
-    display: block;
-  }
-`;
-
-const MobileMenu = styled(motion.div)`
-  position: fixed;
-  top: 64px;
-  left: 0;
-  width: 100%;
-  z-index: 999;
-  background: #f8f9fb;
-  padding: 16px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-`;
-
-const RegionBar = styled.div`
-  position: fixed;
-  top: 64px;
-  left: 0;
-  width: 84%;
-  margin: 0 8%;
-  height: 40px;
-  display: flex;
-  z-index: 999;
-`;
-
-const RegionSelectButton = styled.button`
-  background: #4caf50;
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  border-radius: 0px 0px 8px 8px;
-  padding: 4px 16px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    background: #45a049;
-  }
-`;
+import AuthModal from "../../components/RegisterModal/RegisterModal";
 
 export default function Navbar() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
 
-  const [lang, setLang] = useState("Uzbek tilida");
+  const [lang, setLang] = useState(t('navbar.uzbek', "Uzbek tilida"));
   const [flag, setFlag] = useState(UzFlag);
-  const [region, setRegion] = useState("Выберите свой регион");
+  const [region, setRegion] = useState(t('navbar.selectRegion', "Выберите свой регион"));
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -200,77 +34,143 @@ export default function Navbar() {
   }, []);
 
   const handleLanguageSelect = (language: string) => {
-    if (language === "Русский язык") {
-      setLang("Русский язык");
+    if (language === t('navbar.russian', "Русский язык")) {
+      setLang(t('navbar.russian', "Русский язык"));
       setFlag(RusFlag);
+      i18n.changeLanguage('ru');
     } else {
-      setLang("Uzbek tilida");
+      setLang(t('navbar.uzbek', "Uzbek tilida"));
       setFlag(UzFlag);
+      i18n.changeLanguage('uz');
     }
   };
 
   const handleRegionSelect = (selectedRegion: string) => setRegion(selectedRegion);
 
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    setShowAuthModal(false);
+  };
+
   return (
     <>
-      <Nav>
-        <Left>
-          <Logo src={MyProfiLogo} alt="MyProfy Logo" onClick={() => router.push("/")} />
-        </Left>
+      <nav className="flex justify-between items-center px-6 py-2.5 bg-gray-50 text-gray-800 fixed top-0 left-0 w-full h-16 z-50 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Image
+            src={MyProfiLogo}
+            alt={t('navbar.logoAlt', "MyProfy Logo")}
+            className="w-20 h-20 object-contain rounded-lg cursor-pointer"
+            onClick={() => router.push("/")}
+          />
+        </div>
 
-        <Center>
-          <FireIcon><BsFire /></FireIcon>
-          <span>Более 100 реальных услуг</span>
-        </Center>
+        <div className="hidden sm:flex items-center gap-1.5 pl-25 text-sm font-semibold text-gray-800">
+          <span className="text-green-600 text-base flex items-center">
+            <BsFire />
+          </span>
+          <span>{t('navbar.servicesCount', "Более 100 реальных услуг")}</span>
+        </div>
 
-        <Right>
-          <LangButton onClick={() => setShowLanguageModal(true)}>
-            <LangFlag src={flag} alt="flag" />
+        <div className="hidden sm:flex items-center gap-3">
+          <button
+            onClick={() => setShowLanguageModal(true)}
+            className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-800 cursor-pointer text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:bg-gray-50 hover:border-gray-400"
+          >
+            <Image
+              src={flag}
+              alt={t('navbar.flagAlt', "flag")}
+              className="w-5 h-5 object-cover rounded"
+            />
             {lang}
-          </LangButton>
+          </button>
 
           {isLoggedIn ? (
-            <ProfileButton onClick={() => router.push("/profile")}>Профиль</ProfileButton>
+            <button
+              onClick={() => router.push("/profile")}
+              className="bg-gray-800 text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900"
+            >
+              {t('navbar.profile', "Профиль")}
+            </button>
           ) : (
-            <LoginButton onClick={() => setShowAuthModal(true)}>Войти</LoginButton>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-green-600 text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-green-700"
+            >
+              {t('navbar.login', "Войти")}
+            </button>
           )}
-        </Right>
+        </div>
 
-        <MobileMenuButton onClick={() => setMobileOpen(!mobileOpen)}>
+        <button
+          className="sm:hidden border-none bg-transparent text-2xl text-gray-800 cursor-pointer"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
           {mobileOpen ? <FiX /> : <FiMenu />}
-        </MobileMenuButton>
-      </Nav>
+        </button>
+      </nav>
 
-      <RegionBar>
-        <RegionSelectButton onClick={() => setShowRegionModal(true)}>
-          {region}
-        </RegionSelectButton>
-      </RegionBar>
+      <div className="fixed top-16 left-32 w-full z-40">
+        <div className="w-48 h-[29px] flex">
+          <button
+            onClick={() => setShowRegionModal(true)}
+            className="bg-[#3EA240] text-white font-semibold text-sm border-none rounded-b-lg px-3 py-1 cursor-pointer transition-all duration-200 hover:bg-green-700 w-full"
+          >
+            {region}
+          </button>
+        </div>
+      </div>
 
       <AnimatePresence>
         {mobileOpen && (
-          <MobileMenu
+          <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.25 }}
+            className="fixed top-16 left-0 w-full z-40 bg-gray-50 py-4 flex flex-col items-center gap-3 shadow-md"
           >
-            <button className="text-sm text-green-700 font-semibold py-2"
-              onClick={() => setShowRegionModal(true)}>
+            <button
+              className="text-sm text-green-700 font-semibold py-2"
+              onClick={() => {
+                setShowRegionModal(true);
+                setMobileOpen(false);
+              }}
+            >
               {region}
             </button>
 
-            <button className="text-sm text-gray-700 py-2"
-              onClick={() => setShowLanguageModal(true)}>
+         <button
+              className="text-sm text-gray-700 py-2"
+              onClick={() => {
+                setShowLanguageModal(true);
+                setMobileOpen(false);
+              }}
+            >
               {lang}
             </button>
 
             {isLoggedIn ? (
-              <ProfileButton onClick={() => router.push("/profile")}>Профиль</ProfileButton>
+              <button
+                onClick={() => {
+                  router.push("/profile");
+                  setMobileOpen(false);
+                }}
+                className="bg-gray-800 text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900"
+              >
+                {t('navbar.profile', "Профиль")}
+              </button>
             ) : (
-              <LoginButton onClick={() => setShowAuthModal(true)}>Войти</LoginButton>
+              <button
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setMobileOpen(false);
+                }}
+                className="bg-[#3EA240] text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-green-700"
+              >
+                {t('navbar.login', "Войти")}
+              </button>
             )}
-          </MobileMenu>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -291,7 +191,7 @@ export default function Navbar() {
       <AuthModal
         isOpen={showAuthModal}
         onCloseAction={() => setShowAuthModal(false)}
-        // onLoginSuccess={() => setIsLoggedIn(true)}
+        onLoginSuccess={handleLoginSuccess}
       />
     </>
   );

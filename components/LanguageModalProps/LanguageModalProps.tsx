@@ -2,149 +2,10 @@
 
 import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import styled from "@emotion/styled";
 import Image from "next/image";
 import FocusTrap from "focus-trap-react";
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
-
-// ===== Styled Components =====
-
-const ModalBackdrop = styled(motion.div)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-`;
-
-const ModalContainer = styled(motion.div)`
-  background: #ffffff;
-  border-radius: 32px;
-  padding: 48px 32px 32px;
-  width: 100%;
-  max-width: 620px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  position: relative;
-
-  @media (max-width: 768px) {
-    max-width: 90%;
-    padding: 40px 24px 24px;
-    border-radius: 24px;
-  }
-`;
-
-const LanguageContainer = styled.div`
-  display: flex;
-  width: 100%;
-  gap: 24px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 16px;
-  }
-`;
-
-const LanguageOption = styled(motion.div)`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #f2f3f7;
-  gap: 32px;
-  cursor: pointer;
-  position: relative;
-  padding: 48px 32px;
-  border-radius: 16px;
-  border: 2px solid transparent;
-  transition: all 0.25s ease;
-
-  &:hover {
-    border-color: #3ea240;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(62, 162, 62, 0.15);
-  }
-
-  &:active {
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 768px) {
-    padding: 40px 24px;
-    gap: 24px;
-  }
-`;
-
-const LanguageText = styled.div`
-  text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  line-height: 1.4;
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
-`;
-
-const FlagContainer = styled.div`
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: #f9fafb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  transition: transform 0.2s ease;
-
-  ${LanguageOption}:hover & {
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    width: 100px;
-    height: 100px;
-  }
-`;
-
-const FlagEmoji = styled.div`
-  font-size: 82px;
-  line-height: 1;
-
-  @media (max-width: 768px) {
-    font-size: 60px;
-  }
-`;
-
-// ===== Animation Variants =====
-
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
-};
-
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.2 },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.95,
-    transition: { duration: 0.15 },
-  },
-};
-
-// ===== Props Interface =====
 
 interface LanguageModalProps {
   isOpen: boolean;
@@ -154,7 +15,17 @@ interface LanguageModalProps {
   RusFlag?: any;
 }
 
-// ===== Component =====
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15 } },
+};
 
 export default function LanguageModal({
   isOpen,
@@ -166,30 +37,30 @@ export default function LanguageModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const { i18n } = useTranslation();
 
+  // Закрытие по клику вне модалки
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
+  // Закрытие по ESC
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
-
     if (isOpen) document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
-  const handleLanguageSelect = (language: string) => {
-    const lng = language === "Русский" ? "ru" : "uz";
-    i18n.changeLanguage(lng);
-    localStorage.setItem("lang", lng);
+  // Переключение языка
+  const handleLanguageSelect = (language: "uz" | "ru") => {
+    i18n.changeLanguage(language);
+    localStorage.setItem("lang", language);
     onSelectLanguage(language);
     onClose();
   };
@@ -200,32 +71,41 @@ export default function LanguageModal({
     <AnimatePresence>
       {isOpen && (
         <FocusTrap active={isOpen}>
-          <ModalBackdrop
+          <motion.div
+            variants={backdropVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            variants={backdropVariants}
             onClick={onClose}
+            className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-5"
           >
-            <ModalContainer
+            <motion.div
               ref={modalRef}
-              onClick={(e) => e.stopPropagation()}
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[32px] p-12 md:p-10 w-full max-w-[620px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] relative"
             >
-              <LanguageContainer>
-                <LanguageOption
-                  onClick={() => handleLanguageSelect("Uzbek tilida")}
-                  whileTap={{ scale: 0.98 }}
+              {/* Контейнер с языками */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                {/* Узбекский */}
+                <motion.div
+                  whileHover={{
+                    scale: 1.03,
+                    boxShadow: "0 8px 24px rgba(62,162,62,0.15)",
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleLanguageSelect("uz")}
+                  className="flex flex-col items-center justify-center bg-[#f2f3f7] hover:border-[#3ea240] border-2 border-transparent rounded-2xl p-8 md:p-10 w-full cursor-pointer transition-all"
                 >
-                  <LanguageText>
+                  <div className="text-center text-lg md:text-xl font-semibold text-[#1f2937] leading-snug mb-6">
                     O&apos;zbek tilida
                     <br />
                     davom etish
-                  </LanguageText>
-                  <FlagContainer>
+                  </div>
+                  <div className="w-[120px] h-[120px] md:w-[100px] md:h-[100px] rounded-full bg-[#f9fafb] flex items-center justify-center overflow-hidden">
                     {UzFlag ? (
                       <Image
                         src={UzFlag}
@@ -235,21 +115,27 @@ export default function LanguageModal({
                         style={{ objectFit: "contain" }}
                       />
                     ) : (
-                      <FlagEmoji>🇺🇿</FlagEmoji>
+                      <div className="text-[72px] md:text-[60px]">🇺🇿</div>
                     )}
-                  </FlagContainer>
-                </LanguageOption>
+                  </div>
+                </motion.div>
 
-                <LanguageOption
-                  onClick={() => handleLanguageSelect("Русский")}
-                  whileTap={{ scale: 0.98 }}
+                {/* Русский */}
+                <motion.div
+                  whileHover={{
+                    scale: 1.03,
+                    boxShadow: "0 8px 24px rgba(62,162,62,0.15)",
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleLanguageSelect("ru")}
+                  className="flex flex-col items-center justify-center bg-[#f2f3f7] hover:border-[#3ea240] border-2 border-transparent rounded-2xl p-8 md:p-10 w-full cursor-pointer transition-all"
                 >
-                  <LanguageText>
+                  <div className="text-center text-lg md:text-xl font-semibold text-[#1f2937] leading-snug mb-6">
                     Продолжить на
                     <br />
                     русском языке
-                  </LanguageText>
-                  <FlagContainer>
+                  </div>
+                  <div className="w-[120px] h-[120px] md:w-[100px] md:h-[100px] rounded-full bg-[#f9fafb] flex items-center justify-center overflow-hidden">
                     {RusFlag ? (
                       <Image
                         src={RusFlag}
@@ -259,13 +145,13 @@ export default function LanguageModal({
                         style={{ objectFit: "contain" }}
                       />
                     ) : (
-                      <FlagEmoji>🇷🇺</FlagEmoji>
+                      <div className="text-[72px] md:text-[60px]">🇷🇺</div>
                     )}
-                  </FlagContainer>
-                </LanguageOption>
-              </LanguageContainer>
-            </ModalContainer>
-          </ModalBackdrop>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
         </FocusTrap>
       )}
     </AnimatePresence>

@@ -5,6 +5,7 @@ import Header from "@/components/MainPage/Hero/Hero.client";
 import Footer from "@/components/Footer/Footer";
 import ClientRoot from "@/components/ClientRoot";
 import "flag-icons/css/flag-icons.min.css";
+// import "./globals.css";
 import Loader from "@/components/Loader/Loader";
 
 export default function App() {
@@ -49,7 +50,7 @@ export default function App() {
           textGap="80px"
           textPosition={{ left: "20px" }}
           trailCount={3}
-          message="WELCOME !"
+          message="WELCOME..."
         >
           {showContent && (
             <>

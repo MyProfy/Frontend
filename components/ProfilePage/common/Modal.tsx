@@ -1,86 +1,7 @@
+"use client";
+
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import styled from "@emotion/styled";
-
-const ModalOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-`;
-
-const ModalContent = styled(motion.div)`
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  width: 100%;
-  max-width: 500px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 768px) {
-    max-width: 90%;
-    padding: 16px;
-  }
-`;
-
-const ModalTitle = styled.h3`
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #000;
-  margin: 0;
-`;
-
-const ModalButtons = styled.div`
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-`;
-
-const ModalButton = styled.button<{ isSave?: boolean }>`
-  padding: 10px 16px;
-  border: none;
-  margin-top: 20px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.1s ease;
-
-  ${({ isSave }) =>
-    isSave
-        ? `
-        background: #C8FFC8;
-        color: #1a1a1a;
-        &:hover {
-          background: #A8EFA8;
-          transform: translateY(-1px);
-        }
-        &:active {
-          transform: translateY(0);
-        }
-      `
- : `
-        background: #e0e0e0;
-        color: #333;
-        &:hover {
-          background: #d0d0d0;
-          transform: translateY(-1px);
-        }
-        &:active {
-          transform: translateY(0);
-        }
-      `}
-`;
 
 interface ModalProps {
     isOpen: boolean;
@@ -114,18 +35,20 @@ export default function Modal({ isOpen, onClose, title, children, onSave }: Moda
     const handleContentClick = (e: React.MouseEvent) => e.stopPropagation();
 
     return (
-        <ModalOverlay
+        <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[100]"
             onClick={handleOverlayClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <ModalContent
+            <motion.div
                 ref={contentRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="modal-title"
+                className="bg-white rounded-[12px] p-5 w-full max-w-[500px] flex flex-col gap-[15px] shadow-lg md:max-w-[90%] md:p-4"
                 variants={{
                     initial: { opacity: 0, scale: 0.9 },
                     visible: { opacity: 1, scale: 1 },
@@ -137,7 +60,7 @@ export default function Modal({ isOpen, onClose, title, children, onSave }: Moda
                 transition={{ duration: 0.3 }}
                 onClick={handleContentClick}
             >
-                <ModalTitle id="modal-title">{title}</ModalTitle>
+                <h3 id="modal-title" className="text-[1.1rem] font-medium text-black m-0">{title}</h3>
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -145,16 +68,23 @@ export default function Modal({ isOpen, onClose, title, children, onSave }: Moda
                     }}
                 >
                     {children}
-                    <ModalButtons>
-                        <ModalButton type="button" onClick={onClose}>
+                    <div className="flex gap-[10px] justify-end">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-[16px] py-[10px] border-none mt-[20px] rounded-[8px] text-sm cursor-pointer transition-all duration-300 bg-[#e0e0e0] text-[#333] hover:bg-[#d0d0d0] hover:-translate-y-0.5 active:translate-y-0"
+                        >
                             Отмена
-                        </ModalButton>
-                        <ModalButton type="submit" isSave>
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-[16px] py-[10px] border-none mt-[20px] rounded-[8px] text-sm cursor-pointer transition-all duration-300 bg-[#C8FFC8] text-[#1a1a1a] hover:bg-[#A8EFA8] hover:-translate-y-0.5 active:translate-y-0"
+                        >
                             Сохранить
-                        </ModalButton>
-                    </ModalButtons>
+                        </button>
+                    </div>
                 </form>
-            </ModalContent>
-        </ModalOverlay>
+            </motion.div>
+        </motion.div>
     );
 }

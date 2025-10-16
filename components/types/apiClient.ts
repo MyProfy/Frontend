@@ -20,6 +20,7 @@ import {
   VacancyBoost,
   OrderData,
   Reklama,
+  RegisterPayload,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -68,9 +69,17 @@ export const apiClient = {
   login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
     (await api.post("/auth/login/", credentials)).data,
 
-
-  register: async (userData: Partial<User>): Promise<{ token: string; user: User }> =>
+  register: async (userData: RegisterPayload): Promise<{ token: string; user: User }> =>
     (await api.post("/auth/register/", userData)).data,
+
+  requestOTP: async (phone: string): Promise<{ message: string }> =>
+    ( await api.post("/auth/otp/request/", { phone })).data,
+
+  verifyOTP: async (data: { phone: string; code: string }): Promise<{ token: string; user: User }> =>
+    (await api.post("/auth/otp/verify/", data)).data,
+
+  logout: async (): Promise<void> =>
+    (await api.post("/auth/logout/")).data,
 
   getCategories: async (): Promise<Category[] | { results: Category[]; count: number }> =>
     (await withRetry(() => api.get("/categories/"))).data,
@@ -102,6 +111,7 @@ export const apiClient = {
   getUserById: async (id: string | number): Promise<User> =>
     (await withRetry(() => api.get(`/users/${id}/`))).data,
 
+  // Заказы
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
 
@@ -111,6 +121,7 @@ export const apiClient = {
   createOrder: async (data: OrderData): Promise<Order> =>
     (await api.post("/orders/", data)).data,
 
+  // Отзывы исполнителей
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
     const response = await withRetry(() => api.get("/executor-reviews/"));
 
@@ -126,6 +137,12 @@ export const apiClient = {
     return [];
   },
 
+  getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
+    (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,
+
+  createExecutorReview: async (data: Omit<ExecutorReview, "id">): Promise<ExecutorReview> =>
+    (await api.post("/executor-reviews/", data)).data,
+
   getClientReviews: async (): Promise<ClientReview[]> =>
     (await withRetry(() => api.get("/client-reviews/"))).data,
 
@@ -134,12 +151,6 @@ export const apiClient = {
 
   createClientReview: async (data: Omit<ClientReview, "id">): Promise<ClientReview> =>
     (await api.post("/client-reviews/", data)).data,
-
-  getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
-    (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,
-
-  createExecutorReview: async (data: Omit<ExecutorReview, "id">): Promise<ExecutorReview> =>
-    (await api.post("/executor-reviews/", data)).data,
 
   getOrderReviews: async (): Promise<OrderReview[]> =>
     (await withRetry(() => api.get("/order-reviews/"))).data,
@@ -186,21 +197,11 @@ export const apiClient = {
   createVacancyBoost: async (data: Omit<VacancyBoost, "id">): Promise<VacancyBoost> =>
     (await api.post("/vacancy-boosts/", data)).data,
 
-  // Add the getReklamas method
   getReklamas: async (params?: Record<string, any>): Promise<Reklama[]> =>
     (await withRetry(() => api.get("/reklamas/", { params }))).data,
 
   getReklamaById: async (id: number): Promise<Reklama> =>
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
-
-  // Add authentication methods
-  // checkAuth: async (): Promise<User> =>
-  //   (await withRetry(() => api.get("/auth/me/"))).data,
-
-  logout: async (): Promise<void> =>
-    (await api.post("/auth/logout/")).data,
-
-
 };
 
 export function getAPIClient() {

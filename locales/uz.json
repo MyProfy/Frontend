@@ -38,6 +38,12 @@
       "content": "Bu yerda maxfiylik siyosati matni..."
     }
   },
+  "navbar": {
+    "servicesCount": "Xizmatlar 100 dan ortiq soni",
+    "flagAlt": "Uzbek tilida",
+    "profile": "Profil",
+    "login": "Kirish"
+  },
   "services": {
     "empty": "Sizda hali qo'shilgan xizmatlar yo'q.",
     "buy_boost": "Bo'st qilish!",

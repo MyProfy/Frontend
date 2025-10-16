@@ -1,7 +1,6 @@
 "use client";
 
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
-import styled from "@emotion/styled";
 import {
   AnimatePresence,
   motion,
@@ -9,8 +8,7 @@ import {
   Variants,
 } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import apiClient, { getAPIClient } from "../../components/types/apiClient";
-
+import { apiClient } from "../../components/types/apiClient";
 import { useRouter } from "next/navigation";
 import {
   FaArrowLeft,
@@ -20,7 +18,6 @@ import {
   FaLockOpen,
   FaSpinner,
 } from "react-icons/fa";
-
 import FocusTrap from "focus-trap-react";
 
 const iconVariants: Variants = {
@@ -56,263 +53,6 @@ const eyeIconVariants: Variants = {
     transition: { duration: 0.3, ease: "easeInOut" },
   },
 };
-
-// Стили
-const ModalBackdrop = styled(motion.div)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-`;
-
-const ModalContainer = styled(motion.div) <{ isSmall?: boolean }>`
-  background: #fff;
-  border-radius: 34.62px;
-  padding: 32px;
-  width: 100%;
-  max-width: 475px;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding-top: 0;
-`;
-
-const ModalTitle = styled(motion.h2)`
-  margin: 0 0 8px;
-  font-size: 1.75rem;
-  color: #2d3748;
-  text-align: center;
-  font-weight: 700;
-`;
-
-const ErrorMessage = styled(motion.p)`
-  font-size: 0.9rem;
-  color: #e53e3e;
-  text-align: center;
-  margin: 0 0 24px;
-  line-height: 1.4;
-`;
-
-const Form = styled(motion.form)`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const InputContainer = styled(motion.div)`
-  position: relative;
-  width: 100%;
-  min-height: 48px;
-  border: 1px solid #e2e8f0;
-  border-radius: 14.62px;
-  &[data-has-error="true"] {
-    border-color: #e53e3e;
-  }
-`;
-
-const PhoneInput = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 48px;
-  background: transparent;
-  transition: all 0.3s ease;
-  border: none;
-`;
-
-const CountryCodeSelect = styled(motion.select)`
-  padding: 12px 8px;
-  border: none;
-  font-size: 1rem;
-  outline: none;
-  background: transparent;
-  cursor: pointer;
-  width: 50px;
-  height: 100%;
-  line-height: 24px;
-  appearance: none;
-`;
-
-const CountryCodeDisplay = styled(motion.span)`
-  font-size: 1rem;
-  color: #2d3748;
-  margin-right: 8px;
-`;
-
-const Input = styled(motion.input)`
-  padding: 12px 16px;
-  border: none;
-  font-size: 1rem;
-  outline: none;
-  background: transparent;
-  width: 100%;
-  height: 100%;
-  line-height: 24px;
-  &[data-has-icon="true"] {
-    padding-left: 40px;
-  }
-  &::placeholder {
-    color: #a0aec0;
-    font-style: italic;
-  }
-`;
-
-const PasswordContainer = styled(InputContainer)`
-  position: relative;
-  overflow: visible;
-  background: #fff;
-  transition: all 0.3s ease;
-`;
-
-const InputIcon = styled(motion.div)`
-  position: absolute;
-  font-size: 1.1rem;
-  z-index: 2;
-  left: 13px;
-  top: 28%;
-`;
-
-const EyeIcon = styled(motion.div)`
-  position: absolute;
-  right: 9px;
-  top: 8px;
-  transform: translateY(-50%);
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 14.52px;
-`;
-
-const Select = styled(motion.select)`
-  padding: 12px 30px 12px 16px;
-  border: none;
-  border-radius: 21.62px;
-  font-size: 1rem;
-  outline: none;
-  background: transparent
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath d='M1 1l5 4 5-4' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")
-  no-repeat right 15px center;
-  background-size: 12px;
-  cursor: pointer;
-  width: 100%;
-  height: 48px;
-  appearance: none;
-  text-align: center;
-  &:focus {
-    outline: none;
-  }
-`;
-
-const Button = styled(motion.button)`
-  padding: 12px;
-  max-width: 100%;
-  border: none;
-  border-radius: 12.62px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: #c9c9c966;
-  color: #292c32;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  &:hover:not(:disabled) {
-    background: #3ea23e;
-    color: #fff;
-  }
-`;
-
-const RegisterLink = styled(motion.a)`
-  font-size: 0.9rem;
-  color: #10b981;
-  cursor: pointer;
-  text-decoration: none;
-  margin: 0;
-  width: auto;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  flex: 0 0 auto;
-  min-width: 0;
-  &:hover { color: #0f7a5c; text-decoration: underline; }
-  @media (max-width: 480px) {
-    flex-basis: 100%;
-    text-align: center;
-  }
-`;
-
-// const ForgotPasswordLink = styled(motion.a)`...`;
-// const OTPContainer = styled(motion.div)`...`;
-// const OTPInput = styled(motion.input)`...`;
-// const TelegramNote = styled(motion.p)`...`;
-// const ResendText = styled(motion.button)<{ disabled?: boolean }>`...`;
-
-const InputError = styled(motion.span)`
-  color: #e53e3e;
-  font-size: 0.85rem;
-  margin-top: 6px;
-  text-align: center;
-  font-weight: 500;
-`;
-
-const BackContainer = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 12px;
-  gap: 8px;
-`;
-
-const ActionsRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  @media (max-width: 480px) {
-    justify-content: center;
-    gap: 8px 16px;
-  }
-`;
-
-const BackArrow = styled(motion.div)`
-  cursor: pointer;
-  color: #10b981;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  &:hover {
-    color: #0f7a5c;
-  }
-`;
-
-const InfoText = styled(motion.p)`
-  font-size: 0.9rem;
-  color: #718096;
-  text-align: center;
-  margin: 10px 0 8px;
-  line-height: 1.4;
-`;
-
-const Subtitle = styled(motion.p)`
-  font-size: 0.9rem;
-  color: #718096;
-  text-align: center;
-  margin: 0 0 24px;
-  line-height: 1.4;
-`;
 
 const backdropVariants: Variants = {
   hidden: { opacity: 0, scale: 1.2, filter: "blur(10px)" },
@@ -389,24 +129,34 @@ export default function RegisterModal({
   onCloseAction,
 }: RegisterModalProps) {
   const { t } = useTranslation();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<number>(1);
   const [countryCode, setCountryCode] = useState("+998");
-  const [phoneDigits, setPhoneDigits] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [phoneDigits, setPhoneDigits] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [telegram, setTelegram] = useState<string>("@");
-  const [name, setName] = useState<string>("");
-  const [gender, setGender] = useState<string>("");
-  const [region, setRegion] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isPasswordFocused, setIsPasswordFocused] = useState<boolean>(false);
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState<boolean>(false);
-  const [hasLoginError, setHasLoginError] = useState<boolean>(false);
+  const [otp, setOtp] = useState("");
+  const [otpValues, setOtpValues] = useState(["", "", "", ""]); 
+  const [telegram, setTelegram] = useState("");
+  const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
+  const [region, setRegion] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
+  const [hasLoginError, setHasLoginError] = useState(false);
+
   const phoneInputRef = useRef<HTMLInputElement>(null);
+  const telegramInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const otpRefs = useRef<React.RefObject<HTMLInputElement>[]>(
+    Array(4) // 4 инпута вместо 6
+      .fill(null)
+      .map(() => React.createRef<HTMLInputElement>())
+  );
   const router = useRouter();
 
   const iconControls: { [key: string]: ReturnType<typeof useAnimationControls> } = {
@@ -416,14 +166,12 @@ export default function RegisterModal({
 
   const phoneNumber = countryCode + phoneDigits;
 
+  // Обработка клика вне модального окна
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        modalRef.current &&
-        !modalRef.current.contains(event.target as Node)
-      ) {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onCloseAction();
       }
     };
@@ -431,50 +179,104 @@ export default function RegisterModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onCloseAction]);
 
+  // Фокус на инпуте при смене шага
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     if (isOpen) {
-      phoneInputRef.current?.focus();
+      if (step === 1 || step === 2) phoneInputRef.current?.focus();
+      if (step === 3) otpRefs.current[0].current?.focus();
+      if (step === 4) telegramInputRef.current?.focus();
     } else {
       resetForm();
     }
   }, [isOpen, step]);
 
+  // Таймер для повторной отправки OTP
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (resendTimer > 0) {
+      const timer = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendTimer]);
+
   const phoneRegex = /^\+\d{7,14}$/;
-  const passwordRegex =
-    /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*-])[A-Za-z\d!@#$%^&*-]{8,}$/;
-  const telegramRegex = /^@[\w]{5,}$/;
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/; 
+  const otpRegex = /^\d{4}$/; 
+  const telegramRegex = /^@[\w]{3,}$/; 
   const nameRegex = /^[a-zA-Zа-яА-Я\s]{2,}$/;
 
-  const validatePhone = () =>
-    phoneRegex.test(phoneNumber) ? "" : t("register.errors.invalidPhone");
-  const validatePassword = () =>
-    passwordRegex.test(password) ? "" : t("register.errors.invalidPassword");
-  const validateConfirmPassword = () =>
-    password === confirmPassword ? "" : t("register.errors.passwordMismatch");
-  const validateTelegram = () =>
-    telegramRegex.test(telegram) ? "" : t("register.errors.invalidTelegram");
-  const validateName = () =>
-    nameRegex.test(name) ? "" : t("register.errors.invalidName");
-  const validateGender = () => (gender ? "" : t("register.errors.emptyGender"));
-  const validateRegion = () => (region ? "" : t("register.errors.emptyRegion"));
+  const validatePhone = () => phoneRegex.test(phoneNumber) ? "" : t("register.errors.invalidPhone");
+  const validatePassword = () => passwordRegex.test(password) ? "" : t("register.errors.invalidPassword");
+  const validateConfirmPassword = () => password === confirmPassword ? "" : t("register.errors.passwordMismatch");
+  const validateOtp = () => otpRegex.test(otp) ? "" : t("register.errors.invalidOtp");
+  const validateTelegram = () => telegramRegex.test(telegram) ? "" : t("register.errors.invalidTelegram");
+  const validateName = () => nameRegex.test(name) ? "" : t("register.errors.invalidName");
+  const validateGender = () => gender ? "" : t("register.errors.emptyGender");
+  const validateRegion = () => region ? "" : t("register.errors.emptyRegion");
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
     setPhoneDigits(value.slice(0, 14 - countryCode.length));
     setHasLoginError(false);
+    setError("");
   };
 
   const handleCountryCodeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setCountryCode(e.target.value);
     setPhoneDigits(phoneDigits.slice(0, 14 - e.target.value.length));
     setHasLoginError(false);
+    setError("");
   };
 
   const handleTelegramChange = (e: ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     if (!value.startsWith("@")) value = "@" + value.replace(/^@/, "");
     setTelegram(value);
+    setError("");
+  };
+
+  const handleOtpInput = (index: number, value: string) => {
+    const newOtpValues = [...otpValues];
+    newOtpValues[index] = value.replace(/[^0-9]/g, "").slice(0, 1);
+    setOtpValues(newOtpValues);
+    setOtp(newOtpValues.join(""));
+    setError("");
+
+    if (newOtpValues[index] && index < 3) { 
+      otpRefs.current[index + 1].current?.focus();
+    } else if (!newOtpValues[index] && index > 0) {
+      otpRefs.current[index - 1].current?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1].current?.focus();
+    }
+  };
+
+  const handleOtpPaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const raw = (e.clipboardData || (window as any).clipboardData).getData("text");
+    const chars = raw.replace(/\s+/g, "").replace(/[^\d]/g, "").split("");
+
+    if (!chars.length) return;
+
+    setOtpValues(prev => {
+      const next = [...prev];
+      let start = chars.length === 4 ? 0 : index; 
+      for (let i = 0; i < chars.length && start + i < 4; i++) { 
+        next[start + i] = chars[i];
+      }
+      return next;
+    });
+
+    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3); 
+    const nextFocus = Math.min(filledTo + 1, 3); 
+    otpRefs.current[nextFocus]?.current?.focus();
   };
 
   const resetForm = () => {
@@ -485,12 +287,15 @@ export default function RegisterModal({
     setConfirmPassword("");
     setShowPassword(false);
     setShowConfirmPassword(false);
-    setTelegram("@");
+    setOtp("");
+    setOtpValues(["", "", "", ""]); 
+    setTelegram("");
     setName("");
     setGender("");
     setRegion("");
     setError("");
     setIsLoading(false);
+    setResendTimer(0);
     setIsPasswordFocused(false);
     setIsConfirmPasswordFocused(false);
     setHasLoginError(false);
@@ -498,9 +303,11 @@ export default function RegisterModal({
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     const phoneError = validatePhone();
     const passwordError = validatePassword();
+
     if (phoneError || passwordError) {
       setError(phoneError || passwordError);
       setHasLoginError(true);
@@ -509,47 +316,132 @@ export default function RegisterModal({
 
     setIsLoading(true);
     try {
-      await apiClient.login({ phone: phoneNumber, password: password });
+      const response = await apiClient.login({ phone: phoneNumber, password });
+      localStorage.setItem("token", response.token);
       onCloseAction();
       router.push("/profile");
-    } catch (err: unknown) {
-      setError(t("register.errors.loginFailed"));
+    } catch (err: any) {
+      setError(t("register.errors.loginFailed") || "Ошибка входа");
       setHasLoginError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  const handleRegisterPhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = [
-      validateName(),
-      validatePassword(),
-      validateConfirmPassword(),
-      validateTelegram(),
-      validateGender(),
-      validateRegion(),
-    ];
-    if (errors.some(Boolean)) {
-      return setError(errors.find(Boolean) || "");
+    setError("");
+
+    const phoneError = validatePhone();
+    if (phoneError) {
+      setError(phoneError);
+      return;
     }
 
     setIsLoading(true);
     try {
-      await apiClient.register({
+      await apiClient.requestOTP(phoneNumber);
+      setStep(3);
+      setResendTimer(60);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || t("register.errors.otpRequestFailed");
+
+      if (errorMessage.includes("User exists")) {
+        setError(t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован");
+      } else if (errorMessage.includes("chat_id")) {
+        setError(t("register.errors.noTelegramChat") || "Сначала напишите боту");
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const otpError = validateOtp();
+    if (otpError) {
+      setError(otpError);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await apiClient.verifyOTP({ phone: phoneNumber, code: otp });
+      setStep(4);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t("register.errors.invalidOtp") || "Неверный код");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    setIsLoading(true);
+    try {
+      await apiClient.requestOTP(phoneNumber);
+      setResendTimer(60);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || t("register.otpResendFailed") || "Ошибка отправки";
+      if (errorMessage.includes("chat_id")) {
+        setError(t("register.errors.noTelegramChat") || "Сначала напишите боту");
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  
+  const handleTelegramSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const telegramError = validateTelegram();
+    if (telegramError) {
+      setError(telegramError);
+      return;
+    }
+    setStep(5);
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const errors = [
+      validateName(),
+      validatePassword(),
+      validateConfirmPassword(),
+      validateGender(),
+      validateRegion(),
+    ].filter(error => error);
+
+    if (errors.length > 0) {
+      setError(errors[0]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await apiClient.register({
         phone: phoneNumber,
-        name,
-        password,
+        password: password,
+        confirm_password: confirmPassword,
+        name: name,
         role: "client",
+        region: region,
       });
-      await apiClient.login({ phone: phoneNumber, password: password });
-      onCloseAction();
-      router.push("/profile");
-    } catch (err: unknown) {
-      setError(
-        (err as any).response?.data?.error ||
-        t("register.errors.registrationFailed")
-      );
+
+      localStorage.setItem("token", response.token);
+      setStep(9);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t("register.errors.registrationFailed") || "Ошибка регистрации");
     } finally {
       setIsLoading(false);
     }
@@ -593,7 +485,7 @@ export default function RegisterModal({
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
       viewBox="250 620 1500 760"
-      style={{ width: "150px", height: "75px" }}
+      className="w-[150px] h-[75px]"
     >
       <defs>
         <linearGradient
@@ -614,12 +506,12 @@ export default function RegisterModal({
         d="M608.5,998.53c39.55-42.8,36.9-109.8-5.91-149.35-19.68-18.19-44.98-28.07-71.62-28.07-1.42,0-2.85.03-4.28.08-28.21,1.11-54.29,13.15-73.45,33.88-19.16,20.74-29.1,47.69-27.98,75.9.65,16.48,5.03,32.23,12.69,46.3,5.45,10.02,12.57,19.19,21.2,27.16l187.04,172.81,126.61,116.99c-33.5,36.26-79.13,54.63-124.89,54.63-41.25,0-82.62-14.93-115.31-45.13l-188.81-174.45c-8.4-7.77-16.27-15.97-23.57-24.59-16.42-19.38-30-40.87-40.54-64.18-14.69-32.49-22.86-67.08-24.27-102.81-1.41-35.74,4-70.86,16.08-104.41,12.52-34.77,31.67-66.25,56.9-93.56,25.23-27.31,55.1-48.88,88.77-64.11,32.48-14.69,67.07-22.86,102.81-24.27,35.74-1.41,70.87,4,104.41,16.08,34.77,12.53,66.25,31.67,93.56,56.9,27.31,25.23,48.88,55.1,64.11,88.77,14.69,32.49,22.86,67.08,24.27,102.81,1.41,35.74-4,70.86-16.08,104.41-12.52,34.77-31.67,66.25-56.9,93.56-16.59,17.96-35.2,33.44-55.57,46.26l-138.56-128.03c25.6-2.01,50.53-13.28,69.29-33.59Z"
       />
       <g fill="#202020">
-        <path d="M1134.91,842.98v103h43.91v-114.62c0-19.05-5.09-34.47-15.26-46.25-10.17-11.79-25.21-17.68-45.12-17.68-11.62,0-22.2,2.56-31.72,7.67-8.85,4.75-16.01,11.27-21.51,19.51-4.13-7.48-9.8-13.64-17.07-18.46-8.77-5.81-19.99-8.72-33.66-8.72-11.95,0-22.74,2.64-32.37,7.91-7.37,4.03-13.58,9.18-18.65,15.42v-19.13h-38.75v174.35h44.23v-105.58c0-10.01,2.77-18.16,8.31-24.46,5.54-6.3,12.89-9.44,22.04-9.44s17.09,3.2,22.52,9.6c5.43,6.4,8.15,15.36,8.15,26.88v103h43.91v-105.58c0-6.67,1.26-12.56,3.79-17.68,2.53-5.11,6.05-9.09,10.57-11.95,4.52-2.85,9.85-4.28,15.98-4.28,9.58,0,17.08,3.2,22.52,9.6,5.43,6.4,8.15,15.36,8.15,26.88Z" />
+        <path d="M1134.91,842.98v103h43.91v-114.62c0-19.05-5.09-34.47-15.26-46.25-10.17-11.79-25.21-17.68-45.12-17.68-11.62,0-22.2,2.56-31.72,7.67-8.85,4.75-16.01,11.27-21.51,19.51-4.13-7.48-9.8-13.64-17.07-18.46-8.77-5.81-19.99-8.72-33.66-8.72-11.95,0-22.74,2.64-32.37,7.91-7.37,4.03-13.58,9.18-18.65,15.42v-19.13h-38.75v174.35h44.23v-105.58c0-10.01,2.77-18.16,8.31-24.46c5.54-6.3,12.89-9.44,22.04-9.44s17.09,3.2,22.52,9.6c5.43,6.4,8.15,15.36,8.15,26.88v103h43.91v-105.58c0-6.67,1.26-12.56,3.79-17.68c2.53-5.11,6.05-9.09,10.57-11.95c4.52-2.85,9.85-4.28,15.98-4.28,9.58,0,17.08,3.2,22.52,9.6c5.43,6.4,8.15,15.36,8.15,26.88Z" />
         <polygon points="1277.29,1023.46 1375.77,771.62 1331.86,771.62 1286.32,890.26 1240.49,771.62 1194.96,771.62 1265.29,944.6 1236.61,1023.46 1277.29,1023.46" />
-        <path d="M1051.93,1060.49c-12.38-7.96-26.91-11.95-43.59-11.95s-30.51,4.04-41.81,12.11c-1.05.75-2.06,1.56-3.07,2.36v-9.63h-38.75v251.84h44.23v-83.58c11.31,7.28,25.19,10.93,41.65,10.93s30.08-4.03,42.13-12.11c12.05-8.07,21.44-19.05,28.17-32.93,6.72-13.88,10.09-29.54,10.09-46.98s-3.42-33.55-10.25-47.38c-6.84-13.83-16.44-24.72-28.82-32.69ZM1040.14,1167.28c-2.91,8.02-7.37,14.39-13.4,19.13-6.03,4.74-13.78,7.1-23.25,7.1s-17.62-2.21-23.49-6.62c-5.87-4.41-10.09-10.6-12.67-18.56-2.58-7.96-3.87-17.22-3.87-27.77s1.29-19.8,3.87-27.77c2.58-7.96,6.7-14.15,12.35-18.57,5.65-4.41,13.05-6.62,22.2-6.62,9.79,0,17.84,2.4,24.13,7.18,6.3,4.79,10.95,11.19,13.96,19.21,3.01,8.02,4.52,16.87,4.52,26.56s-1.45,18.7-4.36,26.72Z" />
-        <path d="M1213.04,1052.98c-5.27.38-10.39,1.29-15.34,2.74-4.95,1.45-9.52,3.47-13.72,6.05-5.49,3.23-10.12,7.32-13.88,12.27-1.79,2.35-3.4,4.83-4.84,7.43v-28.09h-38.74v174.35h44.23v-89.11c0-6.67.91-12.67,2.74-18,1.83-5.33,4.52-9.95,8.07-13.88,3.55-3.93,7.91-7.08,13.08-9.44,5.17-2.47,10.95-3.95,17.35-4.44,6.4-.48,12.03.03,16.87,1.53v-41.01c-5.27-.65-10.55-.78-15.82-.4Z" />
-        <path d="M1381.01,1060.32c-13.29-7.86-28.71-11.79-46.25-11.79s-32.45,3.88-45.69,11.62c-13.24,7.75-23.63,18.54-31.16,32.37-7.53,13.83-11.3,29.84-11.3,48.03s3.69,33.88,11.06,47.7c7.37,13.83,17.68,24.67,30.91,32.53,13.24,7.85,28.63,11.78,46.17,11.78s32.8-3.9,46.09-11.7c13.29-7.8,23.68-18.62,31.16-32.45,7.48-13.83,11.22-29.79,11.22-47.87s-3.71-33.87-11.14-47.7c-7.43-13.83-17.79-24.67-31.08-32.53ZM1366.32,1177.29c-6.94,9.52-17.46,14.29-31.56,14.29s-24.03-4.6-31.08-13.8c-7.05-9.2-10.57-21.6-10.57-37.21,0-10.12,1.48-18.99,4.44-26.64,2.96-7.64,7.51-13.61,13.64-17.92,6.13-4.3,13.99-6.46,23.57-6.46,13.88,0,24.35,4.63,31.4,13.88,7.05,9.26,10.57,21.63,10.57,37.13s-3.47,27.2-10.41,36.73Z" />
-        <path d="M1520.74,990.66c-5.92.16-12.03,1.35-18.32,3.55-6.3,2.21-12.14,6.32-17.52,12.35-4.2,4.63-7.08,9.79-8.64,15.5-1.56,5.71-2.45,11.36-2.66,16.95-.21,5.33-.31,10.11-.32,14.37h-27.45v33.9h27.44v140.45h43.91v-140.45h40.36v-33.9h-40.36v-9.69c0-4.84,1.67-9.01,5-12.51,3.33-3.5,8.45-5.25,15.34-5.25h20.02v-35.52h-21.63c-4.2,0-9.26.08-15.18.24Z" />
+        <path d="M1051.93,1060.49c-12.38-7.96-26.91-11.95-43.59-11.95s-30.51,4.04-41.81,12.11c-1.05.75-2.06,1.56-3.07,2.36v-9.63h-38.75v251.84h44.23v-83.58c11.31,7.28,25.19,10.93,41.65,10.93s30.08-4.03,42.13-12.11c12.05-8.07,21.44-19.05,28.17-32.93c6.72-13.88,10.09-29.54,10.09-46.98s-3.42-33.55-10.25-47.38c-6.84-13.83-16.44-24.72-28.82-32.69ZM1040.14,1167.28c-2.91,8.02-7.37,14.39-13.4,19.13-6.03,4.74-13.78,7.1-23.25,7.1s-17.62-2.21-23.49-6.62c-5.87-4.41-10.09-10.6-12.67-18.56-2.58-7.96-3.87-17.22-3.87-27.77s1.29-19.8,3.87-27.77c2.58-7.96,6.7-14.15,12.35-18.57c5.65-4.41,13.05-6.62,22.2-6.62,9.79,0,17.84,2.4,24.13,7.18c6.3,4.79,10.95,11.19,13.96,19.21c3.01,8.02,4.52,16.87,4.52,26.56s-1.45,18.7-4.36,26.72Z" />
+        <path d="M1213.04,1052.98c-5.27.38-10.39,1.29-15.34,2.74-4.95,1.45-9.52,3.47-13.72,6.05-5.49,3.23-10.12,7.32-13.88,12.27-1.79,2.35-3.4,4.83-4.84,7.43v-28.09h-38.74v174.35h44.23v-89.11c0-6.67.91-12.67,2.74-18c1.83-5.33,4.52-9.95,8.07-13.88c3.55-3.93,7.91-7.08,13.08-9.44c5.17-2.47,10.95-3.95,17.35-4.44c6.4-.48,12.03.03,16.87,1.53v-41.01c-5.27-.65-10.55-.78-15.82-.4Z" />
+        <path d="M1381.01,1060.32c-13.29-7.86-28.71-11.79-46.25-11.79s-32.45,3.88-45.69,11.62c-13.24,7.75-23.63,18.54-31.16,32.37-7.53,13.83-11.3,29.84-11.3,48.03s3.69,33.88,11.06,47.7c7.37,13.83,17.68,24.67,30.91,32.53c13.24,7.85,28.63,11.78,46.17,11.78s32.8-3.9,46.09-11.7c13.29-7.8,23.68-18.62,31.16-32.45c7.48-13.83,11.22-29.79,11.22-47.87s-3.71-33.87-11.14-47.7c-7.43-13.83-17.79-24.67-31.08-32.53ZM1366.32,1177.29c-6.94,9.52-17.46,14.29-31.56,14.29s-24.03-4.6-31.08-13.8c-7.05-9.2-10.57-21.6-10.57-37.21,0-10.12,1.48-18.99,4.44-26.64c2.96-7.64,7.51-13.61,13.64-17.92c6.13-4.3,13.99-6.46,23.57-6.46,13.88,0,24.35,4.63,31.4,13.88c7.05,9.26,10.57,21.63,10.57,37.13s-3.47,27.2-10.41,36.73Z" />
+        <path d="M1520.74,990.66c-5.92.16-12.03,1.35-18.32,3.55-6.3,2.21-12.14,6.32-17.52,12.35-4.2,4.63-7.08,9.79-8.64,15.5-1.56,5.71-2.45,11.36-2.66,16.95-.21,5.33-.31,10.11-.32,14.37h-27.45v33.9h27.44v140.45h43.91v-140.45h40.36v-33.9h-40.36v-9.69c0-4.84,1.67-9.01,5-12.51c3.33-3.5,8.45-5.25,15.34-5.25h20.02v-35.52h-21.63c-4.2,0-9.26.08-15.18.24Z" />
         <polygon points="1700.9,1053.38 1655.35,1172.02 1609.52,1053.38 1564,1053.38 1634.33,1226.36 1605.65,1305.23 1646.33,1305.23 1744.81,1053.38 1700.9,1053.38" />
       </g>
     </svg>
@@ -627,43 +519,59 @@ export default function RegisterModal({
 
   return (
     <FocusTrap active={isOpen}>
-      <ModalBackdrop
+      <motion.div
+        className="fixed inset-0 bg-black/60 backdrop-blur-[8px] z-[1000] flex justify-center items-center p-5"
         variants={backdropVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
       >
-        <ModalContainer ref={modalRef} variants={containerVariants}>
+        <motion.div
+          ref={modalRef}
+          className="bg-white rounded-[34.62px] p-8 w-full max-w-[475px] relative overflow-hidden flex flex-col justify-center pt-0 shadow-2xl"
+          variants={containerVariants}
+        >
           <AnimatePresence mode="wait">
-            {/* Это bu login */}
             {step === 1 && (
-              <Form
+              <motion.form
                 key="step1"
+                className="flex flex-col gap-6"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleLoginSubmit}
               >
-                <div style={{ textAlign: "center", padding: "20px" }}>{logosvg}</div>
-                <ModalTitle variants={itemVariants}>
-                  {t("register.login.title")}
-                </ModalTitle>
-                {hasLoginError ? (
-                  <ErrorMessage variants={itemVariants}>
-                    {t("register.errors.invalidCredentials")}
-                  </ErrorMessage>
-                ) : (
-                  <InfoText variants={itemVariants}>
-                    {t("register.login.userCount")}
-                  </InfoText>
-                )}
-                <InputContainer
+                <div className="text-center p-5">{logosvg}</div>
+                <motion.h2
+                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
                   variants={itemVariants}
-                  data-has-error={hasLoginError}
                 >
-                  <PhoneInput>
-                    <CountryCodeSelect
+                  {t("register.login.title") || "Вход в аккаунт"}
+                </motion.h2>
+                {hasLoginError ? (
+                  <motion.p
+                    className="text-[0.9rem] text-[#e53e3e] text-center m-0 mb-6 leading-[1.4]"
+                    variants={itemVariants}
+                  >
+                    {t("register.errors.invalidCredentials") || "Неверный телефон или пароль"}
+                  </motion.p>
+                ) : (
+                  <motion.p
+                    className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                    variants={itemVariants}
+                  >
+                    {t("register.login.userCount") || "Войдите в свой аккаунт"}
+                  </motion.p>
+                )}
+
+                <motion.div
+                  className={`relative w-full min-h-[56px] border-2 ${hasLoginError ? "border-[#e53e3e]" : "border-[#e2e8f0] hover:border-[#3ea23e]"} rounded-[16px] transition-all duration-300`}
+                  variants={itemVariants}
+                >
+                  <div className="flex items-center w-full h-[56px] bg-transparent">
+                    <select
+                      className="p-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full leading-[24px] appearance-none"
                       value={countryCode}
                       onChange={handleCountryCodeChange}
                       required
@@ -673,38 +581,40 @@ export default function RegisterModal({
                           {flag}
                         </option>
                       ))}
-                    </CountryCodeSelect>
-                    <CountryCodeDisplay>{countryCode}</CountryCodeDisplay>
-                    <Input
-                      data-has-icon="false"
+                    </select>
+                    <span className="text-base text-[#2d3748] mr-2 font-medium">{countryCode}</span>
+                    <input
+                      className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
                       type="tel"
                       ref={phoneInputRef}
                       value={phoneDigits}
                       onChange={handlePhoneChange}
                       maxLength={14 - countryCode.length}
-                      placeholder={t("register.login.phonePlaceholder")}
+                      placeholder={t("register.login.phonePlaceholder") || "Номер телефона"}
                       required
                     />
-                  </PhoneInput>
-                </InputContainer>
-                <PasswordContainer
+                  </div>
+                </motion.div>
+
+                <div
+                  className={`relative overflow-visible bg-white transition-all duration-300 min-h-[56px] border-2 ${hasLoginError ? "border-[#e53e3e]" : "border-[#e2e8f0] hover:border-[#3ea23e]"} rounded-[16px]`}
                   variants={itemVariants}
-                  data-has-error={hasLoginError}
                 >
-                  <InputIcon
+                  <motion.div
+                    className="absolute text-[1.1rem] z-2 left-4 top-1/2 -translate-y-1/2"
                     variants={iconVariants}
                     animate={isPasswordFocused ? "hover" : "inactive"}
                   >
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
-                  </InputIcon>
-                  <Input
-                    data-has-icon="true"
+                  </motion.div>
+                  <input
+                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-12 placeholder:text-[#a0aec0] placeholder:italic font-medium"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       setPassword(e.target.value)
                     }
-                    placeholder={t("register.login.passwordPlaceholder")}
+                    placeholder={t("register.login.passwordPlaceholder") || "Пароль"}
                     required
                     onFocus={() => {
                       setIsPasswordFocused(true);
@@ -715,7 +625,8 @@ export default function RegisterModal({
                       iconControls.password.start("inactive");
                     }}
                   />
-                  <EyeIcon
+                  <motion.div
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
                     variants={eyeIconVariants}
                     animate={showPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -723,53 +634,394 @@ export default function RegisterModal({
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <FaEye /> : <FaEyeSlash />}
-                  </EyeIcon>
-                </PasswordContainer>
+                  </motion.div>
+                </div>
+
                 {error && !hasLoginError && (
-                  <InputError variants={itemVariants}>{error}</InputError>
+                  <motion.span
+                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    variants={itemVariants}
+                  >
+                    {error}
+                  </motion.span>
                 )}
-                <Button
+
+                <motion.button
                   type="submit"
                   disabled={isLoading}
+                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
                   whileTap="tap"
                 >
-                  {isLoading ? <FaSpinner /> : t("register.login.submit")}
-                </Button>
-                <ActionsRow>
+                  {isLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      <span>Загрузка...</span>
+                    </>
+                  ) : (
+                    t("register.login.submit") || "Войти"
+                  )}
+                </motion.button>
 
-                  {/* Востоновление пароля */}
-                  {/* <ForgotPasswordLink variants={itemVariants} onClick={() => setStep(6)}>
-                    {t("register.forgotPassword")}
-                  </ForgotPasswordLink> */}
-
-                  <RegisterLink variants={itemVariants} onClick={() => setStep(5)}>
-                    {t("register.registerLink")}
-                  </RegisterLink>
-                </ActionsRow>
-              </Form>
+                <div className="flex justify-center items-center mt-4">
+                  <motion.button
+                    type="button"
+                    className="text-[0.9rem] text-[#10b981] cursor-pointer no-underline bg-transparent border-none hover:text-[#0f7a5c] hover:underline font-medium"
+                    variants={itemVariants}
+                    onClick={() => setStep(2)}
+                  >
+                    {t("register.registerLink") || "Создать аккаунт"}
+                  </motion.button>
+                </div>
+              </motion.form>
             )}
 
+            {step === 2 && (
+              <motion.form
+                key="step2"
+                className="flex flex-col gap-6"
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onSubmit={handleRegisterPhoneSubmit}
+              >
+                <div className="text-center p-5">{logosvg}</div>
+                <motion.h2
+                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  variants={itemVariants}
+                >
+                  {t("register.register.title") || "Регистрация"}
+                </motion.h2>
+                <motion.p
+                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  variants={itemVariants}
+                >
+                  {t("register.login.userCount") || "Создайте новый аккаунт"}
+                </motion.p>
+
+                {/* Телефон */}
+                <motion.div
+                  className="relative w-full min-h-[56px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[16px] transition-all duration-300"
+                  variants={itemVariants}
+                >
+                  <div className="flex items-center w-full h-[56px] bg-transparent">
+                    <select
+                      className="p-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full leading-[24px] appearance-none"
+                      value={countryCode}
+                      onChange={handleCountryCodeChange}
+                      required
+                    >
+                      {countryCodes.map(({ code, flag }) => (
+                        <option key={code} value={code}>
+                          {flag}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-base text-[#2d3748] mr-2 font-medium">{countryCode}</span>
+                    <input
+                      className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                      type="tel"
+                      ref={phoneInputRef}
+                      value={phoneDigits}
+                      onChange={handlePhoneChange}
+                      maxLength={14 - countryCode.length}
+                      placeholder={t("register.register.phonePlaceholder") || "Номер телефона"}
+                      required
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.p
+                  className="text-[0.85rem] text-[#718096] text-center mt-2 leading-[1.4] bg-blue-50 py-3 px-4 rounded-lg"
+                  variants={itemVariants}
+                >
+                  {t("register.otp.note") || "Для получения кода напишите боту:"}{" "}
+                  <a
+                    href="https://t.me/myprofy_bot"
+                    target="_blank"
+                    className="text-[#10b981] font-semibold hover:underline"
+                  >
+                    @myprofy_bot
+                  </a>
+                </motion.p>
+
+                {error && (
+                  <motion.span
+                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    variants={itemVariants}
+                  >
+                    {error}
+                  </motion.span>
+                )}
+
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  variants={buttonVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  {isLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      <span>Отправка...</span>
+                    </>
+                  ) : (
+                    t("register.register.submit") || "Получить код"
+                  )}
+                </motion.button>
+
+                <motion.div
+                  className="flex items-center justify-center mt-4"
+                  variants={itemVariants}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                  >
+                    <FaArrowLeft />
+                    <span>{t("register.login.title") || "Вход в аккаунт"}</span>
+                  </button>
+                </motion.div>
+              </motion.form>
+            )}
+
+            {step === 3 && (
+              <motion.form
+                key="step3"
+                className="flex flex-col gap-6"
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onSubmit={handleOtpSubmit}
+              >
+                <div className="text-center p-5">{logosvg}</div>
+                <motion.h2
+                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  variants={itemVariants}
+                >
+                  {t("register.otp.title") || "Подтверждение кода"}
+                </motion.h2>
+                <motion.p
+                  className="text-[0.85rem] text-[#718096] text-center mt-2 leading-[1.4]"
+                  variants={itemVariants}
+                >
+                  {t("register.otp.sentMessage") || "Код отправлен в Telegram:"}
+                  <a
+                    className="text-[#10b981] ml-1 font-semibold"
+                    href="https://t.me/MyProfy_OTP_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    MyProfy_OTP_bot
+                  </a>
+                </motion.p>
+
+                <motion.div
+                  className="border-none"
+                  variants={itemVariants}
+                >
+                  <motion.div
+                    className="grid grid-cols-4 gap-4 mx-auto mb-6 w-full max-w-[280px]"
+                    variants={itemVariants}
+                  >
+                    {otpValues.map((value, index) => (
+                      <input
+                        key={index}
+                        className="w-16 h-16 border-2 border-[#e2e8f0] rounded-[12px] text-2xl font-bold text-center outline-none bg-white transition-all duration-300 focus:border-[#3ea23e] focus:shadow-md"
+                        ref={otpRefs.current[index]}
+                        type="text"
+                        value={value}
+                        maxLength={1}
+                        onChange={(e) => handleOtpInput(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        onPaste={(e) => handleOtpPaste(index, e)}
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="\d*"
+                      />
+                    ))}
+                  </motion.div>
+                </motion.div>
+
+                {error && (
+                  <motion.span
+                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    variants={itemVariants}
+                  >
+                    {error}
+                  </motion.span>
+                )}
+
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  variants={buttonVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  {isLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      <span>Проверка...</span>
+                    </>
+                  ) : (
+                    t("register.otp.submit") || "Подтвердить"
+                  )}
+                </motion.button>
+
+                <motion.button
+                  className={`text-[0.9rem] text-center mt-3 cursor-pointer bg-none border-none p-0 font-medium ${resendTimer > 0
+                      ? "text-[#718096] cursor-not-allowed"
+                      : "text-[#10b981] hover:text-[#0f7a5c] hover:underline"
+                    }`}
+                  variants={itemVariants}
+                  onClick={handleResendOtp}
+                  disabled={resendTimer > 0}
+                >
+                  {resendTimer > 0
+                    ? `${t("register.otp.resendTimer") || "Отправить повторно через"} ${resendTimer} сек.`
+                    : t("register.otp.resend") || "Отправить код повторно"}
+                </motion.button>
+
+                <motion.div
+                  className="flex items-center justify-center mt-4"
+                  variants={itemVariants}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                  >
+                    <FaArrowLeft />
+                    <span>{t("register.register.backToLogin") || "Назад к регистрации"}</span>
+                  </button>
+                </motion.div>
+              </motion.form>
+            )}
+
+            {step === 4 && (
+              <motion.form
+                key="step4"
+                className="flex flex-col gap-6"
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onSubmit={handleTelegramSubmit}
+              >
+                <div className="text-center p-5">{logosvg}</div>
+                <motion.h2
+                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  variants={itemVariants}
+                >
+                  {t("register.telegram.title") || "Telegram"}
+                </motion.h2>
+                <motion.p
+                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  variants={itemVariants}
+                >
+                  {t("register.telegram.description") || "Введите ваш Telegram username"}
+                </motion.p>
+
+                <motion.div
+                  className="relative w-full min-h-[56px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[16px] transition-all duration-300"
+                  variants={itemVariants}
+                >
+                  <input
+                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    type="text"
+                    ref={telegramInputRef}
+                    value={telegram}
+                    onChange={handleTelegramChange}
+                    placeholder={t("register.telegram.placeholder") || "@username"}
+                    required
+                  />
+                </motion.div>
+
+                {error && (
+                  <motion.span
+                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    variants={itemVariants}
+                  >
+                    {error}
+                  </motion.span>
+                )}
+
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  variants={buttonVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  {isLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      <span>Загрузка...</span>
+                    </>
+                  ) : (
+                    t("register.telegram.submit") || "Продолжить"
+                  )}
+                </motion.button>
+
+                <motion.div
+                  className="flex items-center justify-center mt-4"
+                  variants={itemVariants}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                  >
+                    <FaArrowLeft />
+                    <span>{t("register.register.backToLogin") || "Назад"}</span>
+                  </button>
+                </motion.div>
+              </motion.form>
+            )}
+
+
             {step === 5 && (
-              <Form
+              <motion.form
                 key="step5"
+                className="flex flex-col gap-5"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleProfileSubmit}
               >
-                <div style={{ textAlign: "center", marginTop: "20px" }}>{logosvg}</div>
-                <ModalTitle variants={itemVariants}>
+                <div className="text-center mt-5">{logosvg}</div>
+                <motion.h2
+                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  variants={itemVariants}
+                >
                   {t("register.profile.welcomeTitle")}
-                </ModalTitle>
-                <Subtitle variants={itemVariants}>
+                </motion.h2>
+                <motion.p
+                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  variants={itemVariants}
+                >
                   {t("register.profile.welcomeSubtitle")}
-                </Subtitle>
-                <InputContainer variants={itemVariants}>
-                  <Input
+                </motion.p>
+                <motion.div
+                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
+                  variants={itemVariants}
+                >
+                  <input
+                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
                     data-has-icon="false"
                     type="text"
                     value={name}
@@ -777,36 +1029,20 @@ export default function RegisterModal({
                     placeholder={t("register.profile.namePlaceholder")}
                     required
                   />
-                </InputContainer>
-                <InputContainer variants={itemVariants}>
-                  <Input
-                    data-has-icon="false"
-                    type="tel"
-                    ref={phoneInputRef}
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    placeholder={t("register.login.phonePlaceholder")}
-                    required
-                  />
-                </InputContainer>
-                <InputContainer variants={itemVariants}>
-                  <Input
-                    data-has-icon="false"
-                    type="text"
-                    value={telegram}
-                    onChange={handleTelegramChange}
-                    placeholder={t("register.telegram.placeholder")}
-                    required
-                  />
-                </InputContainer>
-                <PasswordContainer variants={itemVariants}>
-                  <InputIcon
+                </motion.div>
+                <div
+                  className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
+                  variants={itemVariants}
+                >
+                  <motion.div
+                    className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"
                     variants={iconVariants}
                     animate={isPasswordFocused ? "hover" : "inactive"}
                   >
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
-                  </InputIcon>
-                  <Input
+                  </motion.div>
+                  <input
+                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
                     data-has-icon="true"
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -824,7 +1060,8 @@ export default function RegisterModal({
                       iconControls.password.start("inactive");
                     }}
                   />
-                  <EyeIcon
+                  <motion.div
+                    className="absolute right-[9px] top-2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-[28px] h-[28px] rounded-[14.52px]"
                     variants={eyeIconVariants}
                     animate={showPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -832,25 +1069,28 @@ export default function RegisterModal({
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <FaEye /> : <FaEyeSlash />}
-                  </EyeIcon>
-                </PasswordContainer>
-                <PasswordContainer variants={itemVariants}>
-                  <InputIcon
+                  </motion.div>
+                </div>
+                <div
+                  className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
+                  variants={itemVariants}
+                >
+                  <motion.div
+                    className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"
                     variants={iconVariants}
                     animate={isConfirmPasswordFocused ? "hover" : "inactive"}
                   >
                     {isConfirmPasswordFocused ? <FaLockOpen /> : <FaLock />}
-                  </InputIcon>
-                  <Input
+                  </motion.div>
+                  <input
+                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
                     data-has-icon="true"
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       setConfirmPassword(e.target.value)
                     }
-                    placeholder={t(
-                      "register.profile.confirmPasswordPlaceholder"
-                    )}
+                    placeholder={t("register.profile.confirmPasswordPlaceholder")}
                     required
                     onFocus={() => {
                       setIsConfirmPasswordFocused(true);
@@ -861,7 +1101,8 @@ export default function RegisterModal({
                       iconControls.confirmPassword.start("inactive");
                     }}
                   />
-                  <EyeIcon
+                  <motion.div
+                    className="absolute right-[9px] top-2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-[28px] h-[28px] rounded-[14.52px]"
                     variants={eyeIconVariants}
                     animate={showConfirmPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -869,10 +1110,14 @@ export default function RegisterModal({
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
-                  </EyeIcon>
-                </PasswordContainer>
-                {/* <InputContainer variants={itemVariants}>
-                  <Select
+                  </motion.div>
+                </div>
+                <motion.div
+                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[21.62px]"
+                  variants={itemVariants}
+                >
+                  <select
+                    className="p-[12px]_30px_12px_16px border-none rounded-[21.62px] text-base outline-none bg-transparent bg-no-repeat bg-right-[15px]_center bg-[length:12px] cursor-pointer w-full h-[48px] appearance-none text-center focus:outline-none bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')]"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     required
@@ -886,10 +1131,14 @@ export default function RegisterModal({
                     <option value="female">
                       {t("register.profile.gender.female")}
                     </option>
-                  </Select>
-                </InputContainer>
-                <InputContainer variants={itemVariants}>
-                  <Select
+                  </select>
+                </motion.div>
+                <motion.div
+                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[21.62px]"
+                  variants={itemVariants}
+                >
+                  <select
+                    className="p-[12px]_30px_12px_16px border-none rounded-[21.62px] text-base outline-none bg-transparent bg-no-repeat bg-right-[15px]_center bg-[length:12px] cursor-pointer w-full h-[48px] appearance-none text-center focus:outline-none bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')]"
                     value={region}
                     onChange={(e) => setRegion(e.target.value)}
                     required
@@ -902,56 +1151,125 @@ export default function RegisterModal({
                         {t(`register.regions.${reg}`)}
                       </option>
                     ))}
-                  </Select>
-                </InputContainer> */}
+                  </select>
+                </motion.div>
                 {error && (
-                  <InputError variants={itemVariants}>{error}</InputError>  
+                  <motion.span
+                    className="text-[#e53e3e] text-[0.85rem] mt-[6px] text-center font-medium"
+                    variants={itemVariants}
+                  >
+                    {error}
+                  </motion.span>
                 )}
-                <Button
+                <motion.button
                   type="submit"
                   disabled={isLoading}
+                  className="p-3 max-w-full border-none rounded-[12.62px] text-base font-medium cursor-pointer bg-[#c9c9c966] text-[#292c32] flex items-center justify-center gap-2 disabled:bg-[#c9c9c966] hover:not-disabled:bg-[#3ea23e] hover:not-disabled:text-white"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
                   whileTap="tap"
                 >
                   {isLoading ? <FaSpinner /> : t("register.profile.submit")}
-                </Button>
-                <BackContainer variants={itemVariants}>
+                </motion.button>
+                <motion.div
+                  className="flex items-center justify-center mt-3 gap-2"
+                  variants={itemVariants}
+                >
                   <motion.div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => setStep(1)}
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => setStep(4)}
                     whileHover={{ color: "#0f7a5c" }}
                   >
-                    <BackArrow>
+                    <motion.div className="text-[#10b981] text-base flex items-center">
                       <FaArrowLeft />
-                    </BackArrow>
-                    <span style={{ fontSize: "0.9rem", color: "#10b981" }}>
+                    </motion.div>
+                    <span className="text-[0.9rem] text-[#10b981]">
                       {t("register.register.backToLogin")}
                     </span>
                   </motion.div>
-                </BackContainer>
-              </Form>
+                </motion.div>
+              </motion.form>
             )}
 
-            {/*               
-              - step === 2: Register Phone (с OTP запросом)
-              - step === 3: OTP Verification (для регистрации)
-              - step === 4: Telegram Username
-              - step === 6: Forgot Password Phone
-              - step === 7: OTP Verification (для сброса пароля)
-              - step === 8: New Password
-              - step === 9: Success Screen 1
-              - step === 10: Success Screen 2
-            */}
+            {step === 9 && (
+              <motion.form
+                key="step9"
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div className="flex flex-col justify-center p-6 relative">
+                  <div className="mb-4 text-center">{logosvg}</div>
+                  <h1 className="text-center text-[1.5rem] font-bold text-black m-0 mb-2">
+                    {t("registerCoolText1.title")}
+                  </h1>
+                  <p className="text-[0.9rem] text-[#666666] m-0 mb-4 text-center">
+                    {t("registerCoolText1.description")}
+                  </p>
+                  <div className="flex justify-between w-full gap-4 mb-4 h-[161px]">
+                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full">
+                      <p className="text-base text-black m-0">
+                        {t("registerCoolText1.subtitle")}
+                      </p>
+                    </div>
+                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full">
+                      <p className="text-base text-black m-0">
+                        {t("registerCoolText1.subtitle2")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
+                    onClick={() => setStep(10)}
+                    type="button"
+                  >
+                    {t("registerCoolText1.button")}
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
+            {step === 10 && (
+              <motion.form
+                key="step10"
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div className="flex flex-col justify-center p-6 relative">
+                  <div className="mb-4 text-center">{logosvg}</div>
+                  <h1 className="text-center text-[1.5rem] font-bold text-black m-0 mb-2">
+                    {t("registerCoolText2.title")}
+                  </h1>
+                  <p className="text-[0.9rem] text-[#666666] m-0 mb-4 text-center">
+                    {t("registerCoolText2.description")}
+                  </p>
+                  <div className="flex justify-between w-full gap-4 mb-4 h-[161px]">
+                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full mb-4">
+                      <p className="text-base text-black m-0">
+                        {t("registerCoolText2.boost_description")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
+                    onClick={() => {
+                      onCloseAction();
+                      router.push("/profile");
+                    }}
+                    type="button"
+                  >
+                    {t("registerCoolText2.button")}
+                  </button>
+                </div>
+              </motion.form>
+            )}
           </AnimatePresence>
-        </ModalContainer>
-      </ModalBackdrop>
+        </motion.div>
+      </motion.div>
     </FocusTrap>
   );
 }
