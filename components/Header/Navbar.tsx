@@ -7,17 +7,31 @@ import { BsFire } from "react-icons/bs";
 import { FiMenu, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { useSelector, useDispatch } from "react-redux";
+import { initializeAuth } from "../../store/slices/authSlice";
 
 import MyProfiLogo from "../../public/avatar/logo.svg";
 import UzFlag from "../../public/🇺🇿.png";
 import RusFlag from "../../public/🇷🇺.png";
 import RegionModal from "../RegionModal/RegionModal";
 import LanguageModal from "../LanguageModalProps/LanguageModalProps";
-import AuthModal from "../../components/RegisterModal/RegisterModal";
+import AuthModal from "../RegisterModal/RegisterModal";
+
+interface RootState {
+  auth: {
+    isAuthenticated: boolean;
+    user: any | null;
+    token: string | null;
+  };
+}
 
 export default function Navbar() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const dispatch = useDispatch();
+  
+  // Получаем состояние авторизации из Redux
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   const [lang, setLang] = useState(t('navbar.uzbek', "Uzbek tilida"));
   const [flag, setFlag] = useState(UzFlag);
@@ -25,13 +39,12 @@ export default function Navbar() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Инициализация авторизации при загрузке компонента
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setIsLoggedIn(true);
-  }, []);
+    dispatch(initializeAuth());
+  }, [dispatch]);
 
   const handleLanguageSelect = (language: string) => {
     if (language === t('navbar.russian', "Русский язык")) {
@@ -46,11 +59,6 @@ export default function Navbar() {
   };
 
   const handleRegionSelect = (selectedRegion: string) => setRegion(selectedRegion);
-
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-    setShowAuthModal(false);
-  };
 
   return (
     <>
@@ -84,12 +92,12 @@ export default function Navbar() {
             {lang}
           </button>
 
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <button
               onClick={() => router.push("/profile")}
               className="bg-gray-800 text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900"
             >
-              {t('navbar.profile', "Профиль")}
+              {user?.name || t('navbar.profile', "Профиль")}
             </button>
           ) : (
             <button
@@ -139,7 +147,7 @@ export default function Navbar() {
               {region}
             </button>
 
-         <button
+            <button
               className="text-sm text-gray-700 py-2"
               onClick={() => {
                 setShowLanguageModal(true);
@@ -149,7 +157,7 @@ export default function Navbar() {
               {lang}
             </button>
 
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <button
                 onClick={() => {
                   router.push("/profile");
@@ -157,7 +165,7 @@ export default function Navbar() {
                 }}
                 className="bg-gray-800 text-white px-5 py-2 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900"
               >
-                {t('navbar.profile', "Профиль")}
+                {user?.name || t('navbar.profile', "Профиль")}
               </button>
             ) : (
               <button
@@ -191,7 +199,6 @@ export default function Navbar() {
       <AuthModal
         isOpen={showAuthModal}
         onCloseAction={() => setShowAuthModal(false)}
-        onLoginSuccess={handleLoginSuccess}
       />
     </>
   );

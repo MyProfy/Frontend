@@ -8,7 +8,7 @@ import {
   Variants,
 } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { apiClient } from "../../components/types/apiClient";
+import { apiClient } from "../types/apiClient";
 import { useRouter } from "next/navigation";
 import {
   FaArrowLeft,
@@ -19,6 +19,38 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import FocusTrap from "focus-trap-react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  registerStart,
+  registerSuccess,
+  registerFailure,
+  clearError,
+  registerStepComplete,
+} from "../../store/slices/authSlice";
+import {
+  closeModal,
+  setModalStep,
+  resetModal,
+} from "../../store/slices/uiSlice";
+
+interface RootState {
+  auth: {
+    isLoading: boolean;
+    error: string | null;
+    isAuthenticated: boolean;
+    token: string | null;
+    user: any | null;
+  };
+  ui: {
+    modal: {
+      isOpen: boolean;
+      currentStep: number;
+    };
+  };
+}
 
 const iconVariants: Variants = {
   hidden: { opacity: 0, scale: 0 },
@@ -129,7 +161,12 @@ export default function RegisterModal({
   onCloseAction,
 }: RegisterModalProps) {
   const { t } = useTranslation();
-  const [step, setStep] = useState<number>(1);
+  const dispatch = useDispatch();
+  const { isLoading, error: authError } = useSelector((state: RootState) => state.auth);
+  const { modal } = useSelector((state: RootState) => state.ui);
+
+  const step = modal.currentStep;
+
   const [countryCode, setCountryCode] = useState("+998");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [password, setPassword] = useState("");
@@ -137,13 +174,11 @@ export default function RegisterModal({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState("");
-  const [otpValues, setOtpValues] = useState(["", "", "", ""]); 
+  const [otpValues, setOtpValues] = useState(["", "", "", ""]);
   const [telegram, setTelegram] = useState("");
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
   const [region, setRegion] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
@@ -153,7 +188,7 @@ export default function RegisterModal({
   const telegramInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const otpRefs = useRef<React.RefObject<HTMLInputElement>[]>(
-    Array(4) // 4 инпута вместо 6
+    Array(4)
       .fill(null)
       .map(() => React.createRef<HTMLInputElement>())
   );
@@ -166,20 +201,18 @@ export default function RegisterModal({
 
   const phoneNumber = countryCode + phoneDigits;
 
-  // Обработка клика вне модального окна
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onCloseAction();
+        handleClose();
       }
     };
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onCloseAction]);
+  }, [isOpen]);
 
-  // Фокус на инпуте при смене шага
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -192,7 +225,6 @@ export default function RegisterModal({
     }
   }, [isOpen, step]);
 
-  // Таймер для повторной отправки OTP
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -203,9 +235,9 @@ export default function RegisterModal({
   }, [resendTimer]);
 
   const phoneRegex = /^\+\d{7,14}$/;
-  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/; 
-  const otpRegex = /^\d{4}$/; 
-  const telegramRegex = /^@[\w]{3,}$/; 
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/;
+  const otpRegex = /^\d{4}$/;
+  const telegramRegex = /^@[\w]{3,}$/;
   const nameRegex = /^[a-zA-Zа-яА-Я\s]{2,}$/;
 
   const validatePhone = () => phoneRegex.test(phoneNumber) ? "" : t("register.errors.invalidPhone");
@@ -218,43 +250,77 @@ export default function RegisterModal({
   const validateRegion = () => region ? "" : t("register.errors.emptyRegion");
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    console.log("input register: ", e.target.value)
     const value = e.target.value.replace(/[^0-9]/g, "");
     setPhoneDigits(value.slice(0, 14 - countryCode.length));
     setHasLoginError(false);
-    setError("");
+    console.log("phoneDigits: ", hasLoginError)
+    dispatch(clearError());
   };
 
   const handleCountryCodeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setCountryCode(e.target.value);
     setPhoneDigits(phoneDigits.slice(0, 14 - e.target.value.length));
     setHasLoginError(false);
-    setError("");
+    dispatch(clearError());
   };
 
   const handleTelegramChange = (e: ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     if (!value.startsWith("@")) value = "@" + value.replace(/^@/, "");
     setTelegram(value);
-    setError("");
+    dispatch(clearError());
+  };
+
+
+  const handleOtpAutoSubmit = async (otpCode: string) => {
+    console.log("🚀 Auto-submitting OTP:", otpCode);
+    dispatch(clearError());
+
+    const otpError = otpRegex.test(otpCode) ? "" : t("register.errors.invalidOtp");
+    if (otpError) {
+      console.error("❌ OTP validation failed:", otpError);
+      dispatch(registerFailure(otpError));
+      return;
+    }
+
+    dispatch(registerStart());
+    try {
+      console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
+      const result = await apiClient.verifyOTP({ phone: phoneNumber, code: otpCode });
+      console.log("✅ OTP verified successfully!", result);
+      dispatch(registerStepComplete());
+      handleSetStep(4);
+    } catch (err: any) {
+      console.error("❌ OTP verification failed:", err.response?.data || err.message);
+      const errorMessage = err.response?.data?.error ||
+        err.response?.data?.detail ||
+        (Array.isArray(err.response?.data) ? err.response.data[0] : null) ||
+        t("register.errors.invalidOtp") ||
+        "Неверный код";
+      dispatch(registerFailure(errorMessage));
+    }
   };
 
   const handleOtpInput = (index: number, value: string) => {
     const newOtpValues = [...otpValues];
     newOtpValues[index] = value.replace(/[^0-9]/g, "").slice(0, 1);
     setOtpValues(newOtpValues);
-    setOtp(newOtpValues.join(""));
-    setError("");
+    const newOtp = newOtpValues.join("");
+    setOtp(newOtp);
+    dispatch(clearError());
 
-    if (newOtpValues[index] && index < 3) { 
+    if (newOtpValues[index] && index < 3) {
       otpRefs.current[index + 1].current?.focus();
     } else if (!newOtpValues[index] && index > 0) {
       otpRefs.current[index - 1].current?.focus();
     }
-  };
 
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
-      otpRefs.current[index - 1].current?.focus();
+    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
+      console.log("🔢 All 4 digits entered, auto-submitting OTP:", newOtp);
+      setTimeout(() => {
+        handleOtpAutoSubmit(newOtp);
+      }, 300);
     }
   };
 
@@ -265,22 +331,39 @@ export default function RegisterModal({
 
     if (!chars.length) return;
 
-    setOtpValues(prev => {
-      const next = [...prev];
-      let start = chars.length === 4 ? 0 : index; 
-      for (let i = 0; i < chars.length && start + i < 4; i++) { 
-        next[start + i] = chars[i];
-      }
-      return next;
-    });
+    const newOtpValues = [...otpValues];
+    let start = chars.length === 4 ? 0 : index;
 
-    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3); 
-    const nextFocus = Math.min(filledTo + 1, 3); 
+    for (let i = 0; i < chars.length && start + i < 4; i++) {
+      newOtpValues[start + i] = chars[i];
+    }
+
+    setOtpValues(newOtpValues);
+    const newOtp = newOtpValues.join("");
+    setOtp(newOtp);
+    dispatch(clearError());
+
+    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3);
+    const nextFocus = Math.min(filledTo, 3);
     otpRefs.current[nextFocus]?.current?.focus();
+
+    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
+      console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
+      setTimeout(() => {
+        handleOtpAutoSubmit(newOtp);
+      }, 300);
+    }
   };
 
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1].current?.focus();
+    }
+  };
+
+
   const resetForm = () => {
-    setStep(1);
+    dispatch(resetModal());
     setCountryCode("+998");
     setPhoneDigits("");
     setPassword("");
@@ -288,131 +371,195 @@ export default function RegisterModal({
     setShowPassword(false);
     setShowConfirmPassword(false);
     setOtp("");
-    setOtpValues(["", "", "", ""]); 
+    setOtpValues(["", "", "", ""]);
     setTelegram("");
     setName("");
     setGender("");
     setRegion("");
-    setError("");
-    setIsLoading(false);
     setResendTimer(0);
     setIsPasswordFocused(false);
     setIsConfirmPasswordFocused(false);
     setHasLoginError(false);
+    dispatch(clearError());
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onCloseAction();
+    dispatch(closeModal());
+  };
+
+  const handleSetStep = (newStep: number) => {
+    dispatch(setModalStep(newStep));
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    dispatch(clearError());
 
     const phoneError = validatePhone();
-    const passwordError = validatePassword();
+    // const passwordError = validatePassword();
 
-    if (phoneError || passwordError) {
-      setError(phoneError || passwordError);
+    console.log("📞 Login - Phone:", phoneNumber);
+    console.log("🔐 Login - Password length:", password.length);
+
+    if (phoneError) {
+      console.error("❌ Phone validation failed:", phoneError);
+      dispatch(loginFailure(phoneError));
       setHasLoginError(true);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await apiClient.login({ phone: phoneNumber, password });
-      localStorage.setItem("token", response.token);
-      onCloseAction();
-      router.push("/profile");
-    } catch (err: any) {
-      setError(t("register.errors.loginFailed") || "Ошибка входа");
+    if (!password || password.length < 1) {
+      console.error("❌ Password is empty");
+      dispatch(loginFailure(t("register.errors.emptyPassword") || "Введите пароль"));
       setHasLoginError(true);
-    } finally {
-      setIsLoading(false);
+      return;
+    }
+
+    dispatch(loginStart());
+    try {
+      console.log("🔄 Attempting login with:", { phone: phoneNumber, password: "***" });
+      const response = await apiClient.login({ phone: phoneNumber, password: password });
+      console.log("✅ Login successful:", response);
+
+      localStorage.setItem("token", response.token);
+      dispatch(loginSuccess({ token: response.token, user: response.user }));
+      handleClose();
+    } catch (err: any) {
+      console.error("❌ Login failed:", err.response?.data || err.message);
+
+      let errorMessage = t("register.errors.loginFailed") || "Ошибка входа";
+
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        } else if (err.response.data.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        } else if (err.response.data.non_field_errors) {
+          errorMessage = Array.isArray(err.response.data.non_field_errors)
+            ? err.response.data.non_field_errors[0]
+            : err.response.data.non_field_errors;
+        }
+      }
+
+      if (err.response?.status === 401) {
+        errorMessage = t("register.errors.invalidCredentials") || "Неверный телефон или пароль";
+      }
+
+      dispatch(loginFailure(errorMessage));
+      setHasLoginError(true);
     }
   };
 
   const handleRegisterPhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    dispatch(clearError());
 
     const phoneError = validatePhone();
     if (phoneError) {
-      setError(phoneError);
+      dispatch(registerFailure(phoneError));
       return;
     }
 
-    setIsLoading(true);
+    dispatch(registerStart());
     try {
       await apiClient.requestOTP(phoneNumber);
-      setStep(3);
+      dispatch(registerStepComplete());
+      handleSetStep(3);
       setResendTimer(60);
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.message || t("register.errors.otpRequestFailed");
 
       if (errorMessage.includes("User exists")) {
-        setError(t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован");
+        dispatch(registerFailure(t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован"));
       } else if (errorMessage.includes("chat_id")) {
-        setError(t("register.errors.noTelegramChat") || "Сначала напишите боту");
+        dispatch(registerFailure(t("register.errors.noTelegramChat") || "Сначала напишите боту"));
       } else {
-        setError(errorMessage);
+        dispatch(registerFailure(errorMessage));
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    dispatch(clearError());
 
     const otpError = validateOtp();
     if (otpError) {
-      setError(otpError);
+      dispatch(registerFailure(otpError));
       return;
     }
 
-    setIsLoading(true);
+    dispatch(registerStart());
     try {
       await apiClient.verifyOTP({ phone: phoneNumber, code: otp });
-      setStep(4);
+      dispatch(registerStepComplete()); // Используем новое действие
+      handleSetStep(4);
     } catch (err: any) {
-      setError(err.response?.data?.error || t("register.errors.invalidOtp") || "Неверный код");
-    } finally {
-      setIsLoading(false);
+      dispatch(registerFailure(err.response?.data?.error || t("register.errors.invalidOtp") || "Неверный код"));
     }
   };
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
-    setIsLoading(true);
+    dispatch(registerStart());
     try {
       await apiClient.requestOTP(phoneNumber);
+      dispatch(registerStepComplete());
       setResendTimer(60);
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || t("register.otpResendFailed") || "Ошибка отправки";
       if (errorMessage.includes("chat_id")) {
-        setError(t("register.errors.noTelegramChat") || "Сначала напишите боту");
+        dispatch(registerFailure(t("register.errors.noTelegramChat") || "Сначала напишите боту"));
       } else {
-        setError(errorMessage);
+        dispatch(registerFailure(errorMessage));
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  
+
+
   const handleTelegramSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    dispatch(clearError());
 
     const telegramError = validateTelegram();
     if (telegramError) {
-      setError(telegramError);
+      dispatch(registerFailure(telegramError));
       return;
     }
-    setStep(5);
-  };
 
+    dispatch(registerStart());
+    try {
+      // const result = await apiClient.getTelegramId(telegram);
+      // setTelegramId(result.telegram_id);
+
+      // setTelegramId(0);
+
+      dispatch(registerStepComplete());
+      handleSetStep(5);
+    } catch (err: any) {
+      dispatch(registerFailure(
+        err.response?.data?.error ||
+        t("register.errors.telegramNotFound") ||
+        "Telegram не найден"
+      ));
+    }
+  };
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    dispatch(clearError());
+
+    console.log("🔍 Валидация полей:", {
+      name: name, validateName: validateName(),
+      password: password ? '***' : 'empty', validatePassword: validatePassword(),
+      confirmPassword: confirmPassword ? '***' : 'empty', validateConfirmPassword: validateConfirmPassword(),
+      gender: gender, validateGender: validateGender(),
+      region: region, validateRegion: validateRegion(),
+    });
 
     const errors = [
       validateName(),
@@ -420,30 +567,56 @@ export default function RegisterModal({
       validateConfirmPassword(),
       validateGender(),
       validateRegion(),
-    ].filter(error => error);
+    ].filter(Boolean);
 
     if (errors.length > 0) {
-      setError(errors[0]);
+      console.error("❌ Валидация провалилась:", errors[0]);
+      dispatch(registerFailure(errors[0]));
       return;
     }
+    console.log("✅ Валидация прошла, отправляем API...");
+    console.log("📤 Отправка данных:", {
+      phone: phoneNumber,
+      name: name,
+      gender: gender,
+      region: region,
+      telegram_username: telegram,
+      role: "client"
+    });
 
-    setIsLoading(true);
+    dispatch(registerStart());
     try {
       const response = await apiClient.register({
         phone: phoneNumber,
         password: password,
-        confirm_password: confirmPassword,
         name: name,
         role: "client",
         region: region,
+        gender: gender as "male" | "female",
+        telegram_id: 0,
+        telegram_username: telegram,
       });
 
+      console.log("✅ Регистрация успешна:", response);
       localStorage.setItem("token", response.token);
-      setStep(9);
+      dispatch(registerSuccess({ token: response.token, user: response.user }));
+      handleSetStep(9);
     } catch (err: any) {
-      setError(err.response?.data?.error || t("register.errors.registrationFailed") || "Ошибка регистрации");
-    } finally {
-      setIsLoading(false);
+      console.error("❌ Ошибка регистрации:", err.response?.data || err.message);
+      let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
+
+      if (err.response?.data) {
+        if (Array.isArray(err.response.data)) {
+          errorMessage = err.response.data[0];
+        } else if (typeof err.response.data === 'object') {
+          const firstError = Object.values(err.response.data)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError as string;
+        } else if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        }
+      }
+
+      dispatch(registerFailure(errorMessage));
     }
   };
 
@@ -477,6 +650,8 @@ export default function RegisterModal({
   ];
 
   if (!isOpen) return null;
+
+  const error = authError;
 
   const logosvg = (
     <svg
@@ -607,7 +782,7 @@ export default function RegisterModal({
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
                   </motion.div>
                   <input
-                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-12 placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-12 placeholder:text-[#a0aec0] placeholder:italic font-medium rounded-xl"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -669,7 +844,7 @@ export default function RegisterModal({
                     type="button"
                     className="text-[0.9rem] text-[#10b981] cursor-pointer no-underline bg-transparent border-none hover:text-[#0f7a5c] hover:underline font-medium"
                     variants={itemVariants}
-                    onClick={() => setStep(2)}
+                    onClick={() => handleSetStep(2)}
                   >
                     {t("register.registerLink") || "Создать аккаунт"}
                   </motion.button>
@@ -701,7 +876,6 @@ export default function RegisterModal({
                   {t("register.login.userCount") || "Создайте новый аккаунт"}
                 </motion.p>
 
-                {/* Телефон */}
                 <motion.div
                   className="relative w-full min-h-[56px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[16px] transition-all duration-300"
                   variants={itemVariants}
@@ -781,7 +955,7 @@ export default function RegisterModal({
                 >
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => handleSetStep(1)}
                     className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
                   >
                     <FaArrowLeft />
@@ -880,8 +1054,8 @@ export default function RegisterModal({
 
                 <motion.button
                   className={`text-[0.9rem] text-center mt-3 cursor-pointer bg-none border-none p-0 font-medium ${resendTimer > 0
-                      ? "text-[#718096] cursor-not-allowed"
-                      : "text-[#10b981] hover:text-[#0f7a5c] hover:underline"
+                    ? "text-[#718096] cursor-not-allowed"
+                    : "text-[#10b981] hover:text-[#0f7a5c] hover:underline"
                     }`}
                   variants={itemVariants}
                   onClick={handleResendOtp}
@@ -898,7 +1072,7 @@ export default function RegisterModal({
                 >
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => handleSetStep(2)}
                     className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
                   >
                     <FaArrowLeft />
@@ -981,7 +1155,7 @@ export default function RegisterModal({
                 >
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
+                    onClick={() => handleSetStep(3)}
                     className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
                   >
                     <FaArrowLeft />
@@ -991,63 +1165,67 @@ export default function RegisterModal({
               </motion.form>
             )}
 
-
             {step === 5 && (
               <motion.form
                 key="step5"
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-3"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleProfileSubmit}
               >
-                <div className="text-center mt-5">{logosvg}</div>
+                <div className="text-center mt-3">{logosvg}</div>
+
                 <motion.h2
-                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 mb-1 text-[1.35rem] text-[#2d3748] text-center font-bold"
                   variants={itemVariants}
                 >
                   {t("register.profile.welcomeTitle")}
                 </motion.h2>
+
                 <motion.p
-                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  className="text-[0.8rem] text-[#718096] text-center m-0 mb-3 leading-[1.3]"
                   variants={itemVariants}
                 >
                   {t("register.profile.welcomeSubtitle")}
                 </motion.p>
+
                 <motion.div
-                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
+                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
                   variants={itemVariants}
                 >
                   <input
-                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
-                    data-has-icon="false"
+                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      dispatch(clearError());
+                    }}
                     placeholder={t("register.profile.namePlaceholder")}
                     required
                   />
                 </motion.div>
-                <div
-                  className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
-                  // variants={itemVariants}
-                >
+
+                {/* Password Input */}
+                <div className="relative overflow-visible bg-white transition-all duration-300 min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px]">
                   <motion.div
-                    className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"
+                    className="absolute text-[0.95rem] z-2 left-3 top-1/2 -translate-y-1/2"
                     variants={iconVariants}
                     animate={isPasswordFocused ? "hover" : "inactive"}
                   >
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
                   </motion.div>
+
                   <input
-                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
-                    data-has-icon="true"
+                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] pl-10 placeholder:text-[#a0aec0] placeholder:italic font-medium"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setPassword(e.target.value);
+                      dispatch(clearError());
+                    }}
                     placeholder={t("register.profile.passwordPlaceholder")}
                     required
                     onFocus={() => {
@@ -1059,8 +1237,9 @@ export default function RegisterModal({
                       iconControls.password.start("inactive");
                     }}
                   />
+
                   <motion.div
-                    className="absolute right-[9px] top-2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-[28px] h-[28px] rounded-[14.52px]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-[1rem] flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 transition-colors"
                     variants={eyeIconVariants}
                     animate={showPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -1070,25 +1249,25 @@ export default function RegisterModal({
                     {showPassword ? <FaEye /> : <FaEyeSlash />}
                   </motion.div>
                 </div>
-                <div
-                  className="relative overflow-visible bg-white transition-all duration-300 min-h-[48px] border border-[#e2e8f0] rounded-[14.62px]"
-                  // variants={itemVariants}
-                >
+
+                {/* Confirm Password Input */}
+                <div className="relative overflow-visible bg-white transition-all duration-300 min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px]">
                   <motion.div
-                    className="absolute text-[1.1rem] z-2 left-[13px] top-[28%]"
+                    className="absolute text-[0.95rem] z-2 left-3 top-1/2 -translate-y-1/2"
                     variants={iconVariants}
                     animate={isConfirmPasswordFocused ? "hover" : "inactive"}
                   >
                     {isConfirmPasswordFocused ? <FaLockOpen /> : <FaLock />}
                   </motion.div>
+
                   <input
-                    className="p-[12px]_16px border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-10 placeholder:text-[#a0aec0] placeholder:italic"
-                    data-has-icon="true"
+                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] pl-10 placeholder:text-[#a0aec0] placeholder:italic font-medium"
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setConfirmPassword(e.target.value)
-                    }
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setConfirmPassword(e.target.value);
+                      dispatch(clearError());
+                    }}
                     placeholder={t("register.profile.confirmPasswordPlaceholder")}
                     required
                     onFocus={() => {
@@ -1100,8 +1279,9 @@ export default function RegisterModal({
                       iconControls.confirmPassword.start("inactive");
                     }}
                   />
+
                   <motion.div
-                    className="absolute right-[9px] top-2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-[28px] h-[28px] rounded-[14.52px]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-[1rem] flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 transition-colors"
                     variants={eyeIconVariants}
                     animate={showConfirmPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -1111,14 +1291,19 @@ export default function RegisterModal({
                     {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
                   </motion.div>
                 </div>
+
+                {/* Gender Select */}
                 <motion.div
-                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[21.62px]"
+                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
                   variants={itemVariants}
                 >
                   <select
-                    className="p-[12px]_30px_12px_16px border-none rounded-[21.62px] text-base outline-none bg-transparent bg-no-repeat bg-right-[15px]_center bg-[length:12px] cursor-pointer w-full h-[48px] appearance-none text-center focus:outline-none bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')]"
+                    className="px-3 py-2 border-none rounded-[12px] text-sm outline-none bg-transparent bg-no-repeat cursor-pointer w-full h-[44px] appearance-none text-center focus:outline-none font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_0.8rem_center] bg-[length:12px]"
                     value={gender}
-                    onChange={(e) => setGender(e.target.value)}
+                    onChange={(e) => {
+                      setGender(e.target.value);
+                      dispatch(clearError());
+                    }}
                     required
                   >
                     <option value="">
@@ -1132,14 +1317,19 @@ export default function RegisterModal({
                     </option>
                   </select>
                 </motion.div>
+
+                {/* Region Select */}
                 <motion.div
-                  className="relative w-full min-h-[48px] border border-[#e2e8f0] rounded-[21.62px]"
+                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
                   variants={itemVariants}
                 >
                   <select
-                    className="p-[12px]_30px_12px_16px border-none rounded-[21.62px] text-base outline-none bg-transparent bg-no-repeat bg-right-[15px]_center bg-[length:12px] cursor-pointer w-full h-[48px] appearance-none text-center focus:outline-none bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')]"
+                    className="px-3 py-2 border-none rounded-[12px] text-sm outline-none bg-transparent bg-no-repeat cursor-pointer w-full h-[44px] appearance-none text-center focus:outline-none font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_0.8rem_center] bg-[length:12px]"
                     value={region}
-                    onChange={(e) => setRegion(e.target.value)}
+                    onChange={(e) => {
+                      setRegion(e.target.value);
+                      dispatch(clearError());
+                    }}
                     required
                   >
                     <option value="">
@@ -1152,41 +1342,50 @@ export default function RegisterModal({
                     ))}
                   </select>
                 </motion.div>
+
+                {/* Error Message */}
                 {error && (
                   <motion.span
-                    className="text-[#e53e3e] text-[0.85rem] mt-[6px] text-center font-medium"
+                    className="text-[#e53e3e] text-[0.75rem] mt-1 text-center font-medium bg-red-50 py-1.5 px-3 rounded-lg"
                     variants={itemVariants}
                   >
                     {error}
                   </motion.span>
                 )}
+
+                {/* Submit Button */}
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-3 max-w-full border-none rounded-[12.62px] text-base font-medium cursor-pointer bg-[#c9c9c966] text-[#292c32] flex items-center justify-center gap-2 disabled:bg-[#c9c9c966] hover:not-disabled:bg-[#3ea23e] hover:not-disabled:text-white"
+                  className="p-3 w-full border-none rounded-[12px] text-sm font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-11"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
                   whileTap="tap"
                 >
-                  {isLoading ? <FaSpinner /> : t("register.profile.submit")}
+                  {isLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      <span>Регистрация...</span>
+                    </>
+                  ) : (
+                    t("register.profile.submit")
+                  )}
                 </motion.button>
+
+                {/* Back Button */}
                 <motion.div
-                  className="flex items-center justify-center mt-3 gap-2"
+                  className="flex items-center justify-center mt-2"
                   variants={itemVariants}
                 >
-                  <motion.div
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setStep(4)}
-                    whileHover={{ color: "#0f7a5c" }}
+                  <button
+                    type="button"
+                    onClick={() => handleSetStep(4)}
+                    className="flex items-center gap-1.5 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium text-sm"
                   >
-                    <motion.div className="text-[#10b981] text-base flex items-center">
-                      <FaArrowLeft />
-                    </motion.div>
-                    <span className="text-[0.9rem] text-[#10b981]">
-                      {t("register.register.backToLogin")}
-                    </span>
-                  </motion.div>
+                    <FaArrowLeft className="text-xs" />
+                    <span>{t("register.register.backToLogin")}</span>
+                  </button>
                 </motion.div>
               </motion.form>
             )}
@@ -1221,7 +1420,7 @@ export default function RegisterModal({
                   </div>
                   <button
                     className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
-                    onClick={() => setStep(10)}
+                    onClick={() => handleSetStep(10)}
                     type="button"
                   >
                     {t("registerCoolText1.button")}
@@ -1256,7 +1455,7 @@ export default function RegisterModal({
                   <button
                     className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
                     onClick={() => {
-                      onCloseAction();
+                      handleClose();
                       router.push("/profile");
                     }}
                     type="button"
