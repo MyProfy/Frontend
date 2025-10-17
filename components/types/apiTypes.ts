@@ -190,12 +190,14 @@ export interface LoginPayload {
 export interface RegisterPayload {
   phone: string;
   password: string;
-  confirm_password: string;
+  confirm_password?: string; 
   name: string;
   role: "client" | "executor";
   region: string;
+  gender?: "male" | "female";
+  telegram_id?: number;
+  telegram_username?: string;
 }
-
 export interface OTPRequestPayload {
   phone: string;
 }

@@ -66,20 +66,68 @@ api.interceptors.request.use(
 );
 
 export const apiClient = {
-  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/login/", credentials)).data,
 
-  register: async (userData: RegisterPayload): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/register/", userData)).data,
+  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> => {
+    console.log("🔐 Login request:", credentials);
+    try {
+      const response = await api.post("auth/login/", credentials);
+      console.log("✅ Полный ответ API:", response);  
+      console.log("✅ response.data:", response.data);  
+      console.log("✅ Ключи в data:", Object.keys(response.data || {}));
+      return response.data;  
+    } catch (error: any) {
+      console.error("❌ Login error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-  requestOTP: async (phone: string): Promise<{ message: string }> =>
-    ( await api.post("/auth/otp/request/", { phone })).data,
+  register: async (userData: RegisterPayload): Promise<{ token: string; user: User }> => {
+    const { confirm_password, ...dataToSend } = userData;
+    console.log("📝 Register request:", dataToSend);
+    try {
+      const response = await api.post("auth/register/", dataToSend);
+      console.log("✅ Register success:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Register error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-  verifyOTP: async (data: { phone: string; code: string }): Promise<{ token: string; user: User }> =>
-    (await api.post("/auth/otp/verify/", data)).data,
+  requestOTP: async (phone: string): Promise<{ message: string }> => {
+    console.log("📱 OTP request:", { phone });
+    try {
+      const response = await api.post("auth/otp/request/", { phone });
+      console.log("✅ OTP request success:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ OTP request error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-  logout: async (): Promise<void> =>
-    (await api.post("/auth/logout/")).data,
+  verifyOTP: async (data: { phone: string; code: string }): Promise<{ message: string; token?: string }> => {
+    console.log("🔢 OTP verify request:", data);
+    try {
+      const response = await api.post("auth/otp/verify/", data);
+      console.log("✅ OTP verify success:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ OTP verify error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      const response = await api.post("auth/logout/");
+      console.log("✅ Logout success");
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Logout error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
   getCategories: async (): Promise<Category[] | { results: Category[]; count: number }> =>
     (await withRetry(() => api.get("/categories/"))).data,
@@ -111,7 +159,6 @@ export const apiClient = {
   getUserById: async (id: string | number): Promise<User> =>
     (await withRetry(() => api.get(`/users/${id}/`))).data,
 
-  // Заказы
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
 
@@ -121,7 +168,6 @@ export const apiClient = {
   createOrder: async (data: OrderData): Promise<Order> =>
     (await api.post("/orders/", data)).data,
 
-  // Отзывы исполнителей
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
     const response = await withRetry(() => api.get("/executor-reviews/"));
 

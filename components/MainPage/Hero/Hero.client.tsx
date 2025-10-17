@@ -25,7 +25,6 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
   const router = useRouter();
   const apiClient = useMemo(() => getAPIClient(), []);
 
-  // State management
   const [mode, setMode] = useState<'client' | 'specialist'>('client');
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -40,7 +39,6 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
   const [imageError, setImageError] = useState<boolean>(false);
   const [errorTimerExpired, setErrorTimerExpired] = useState<boolean>(false);
 
-  // Memoized data
   const reviews = useMemo(
     () =>
       Array.from({ length: 9 }, (_, i) => ({
@@ -153,7 +151,6 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
     fetchData();
   }, [apiClient, t, i18n]);
 
-  // Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const allowedKeys = [
       "Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
@@ -171,23 +168,20 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
     }
   };
 
-  const handleCategoryClick = (categoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?category=${categoryId}`);
+  const handleSpecialtyClick = (link: string) => {
+    router.push(link);
   };
 
-  const handleSubCategoryClick = (subCategoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?subcategory=${subCategoryId}`);
+  const handleCategoryClick = (categoryId: number) => {
+    router.push(`/vacancies?category=${categoryId}`);
+  };
+
+  const handleSubCategoryClick = (subCategoryId: number, categoryId: number) => {
+    router.push(`/vacancies?category=${categoryId}&subcategory=${subCategoryId}`);
   };
 
   const handleShowAllClick = (categoryId: number) => {
-    const path = mode === 'client' ? '/search' : '/register-specialist';
-    router.push(`${path}?category=${categoryId}&all=true`);
-  };
-
-  const handleSpecialtyClick = (link: string) => {
-    router.push(link);
+    router.push(`/vacancies?category=${categoryId}`);
   };
 
   const getDisplayName = (item: Category | SubCategory) => {
@@ -196,13 +190,14 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
     return item.name;
   };
 
+
   const mainTitle = mode === 'client'
     ? t("hero.title", "Найдите надежного специалиста")
     : t("hero.titleSpecialist", "Станьте специалистом и зарабатывайте");
 
   const specialistsTitle = mode === 'client'
     ? t("specialists.title", "Специалисты по категориям")
-    : t("specialists.titleSpecialist", "Популярные категории для специалистов");
+    : t("specialists. ", "Популярные категории для специалистов");
 
   const specialistsDescFull = `5 ${mode === 'client'
     ? t("specialists.description", "минут на заказ")
@@ -412,13 +407,14 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
                       })
                       .slice(0, 5)
                       .map((subCategory) => (
-                        <li
-                          key={subCategory.id}
-                          onClick={() => handleSubCategoryClick(subCategory.id)}
-                          className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
-                        >
-                          {getDisplayName(subCategory)}
-                        </li>
+                        // <Link href="../../specialists/[id]" as={`../specialists/${subCategory.>
+                          <li
+                            key={subCategory.id}
+                            className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
+                          >
+                            {getDisplayName(subCategory)}
+                          </li>
+                        // </Link>
                       ))}
                   </ul>
 

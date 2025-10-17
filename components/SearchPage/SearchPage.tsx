@@ -2,7 +2,7 @@
 // import styled from "@emotion/styled";
 // import { useTranslation } from "react-i18next";
 // import Filters from "./Filter";
-// import Results from "./Results";
+// // import Results from "./Results";
 // import { Category, SubCategory, Service, Vacancy } from "../types/apiTypes";
 // import { Filters as FiltersType } from "./types";
 // import { useSearchParams, useRouter, usePathname } from "next/navigation";

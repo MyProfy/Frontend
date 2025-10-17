@@ -32,9 +32,9 @@ export default function App() {
     setShowContent(true);
   };
 
-  if (process.env.NODE_ENV === "development") {
-    console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
-  }
+  // if (process.env.NODE_ENV === "development") {
+  //   console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+  // }
 
   return (
     <ClientRoot>
