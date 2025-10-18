@@ -361,7 +361,6 @@ export default function RegisterModal({
     }
   };
 
-
   const resetForm = () => {
     dispatch(resetModal());
     setCountryCode("+998");
@@ -553,13 +552,13 @@ export default function RegisterModal({
     e.preventDefault();
     dispatch(clearError());
 
-    console.log("🔍 Валидация полей:", {
-      name: name, validateName: validateName(),
-      password: password ? '***' : 'empty', validatePassword: validatePassword(),
-      confirmPassword: confirmPassword ? '***' : 'empty', validateConfirmPassword: validateConfirmPassword(),
-      gender: gender, validateGender: validateGender(),
-      region: region, validateRegion: validateRegion(),
-    });
+    console.log("🔍 Детальная информация о телефоне:");
+    console.log("- phoneNumber:", phoneNumber);
+    console.log("- countryCode:", countryCode);
+    console.log("- phoneDigits:", phoneDigits);
+    console.log("- Итоговый номер:", `${countryCode}${phoneDigits}`);
+    console.log("- Длина номера:", phoneNumber.length);
+    console.log("- Проверка regex:", phoneRegex.test(phoneNumber));
 
     const errors = [
       validateName(),
@@ -569,50 +568,95 @@ export default function RegisterModal({
       validateRegion(),
     ].filter(Boolean);
 
-    if (errors.length > 0) {
-      console.error("❌ Валидация провалилась:", errors[0]);
-      dispatch(registerFailure(errors[0]));
-      return;
-    }
-    console.log("✅ Валидация прошла, отправляем API...");
-    console.log("📤 Отправка данных:", {
+    const registrationData = {
       phone: phoneNumber,
+      password: password,
       name: name,
-      gender: gender,
+      role: "client" as const,
       region: region,
+      gender: gender as "male" | "female",
+      telegram_id: 0,
       telegram_username: telegram,
-      role: "client"
-    });
+    };
+
+    console.log("📤 Отправка данных:", JSON.stringify(registrationData, null, 2));
 
     dispatch(registerStart());
     try {
-      const response = await apiClient.register({
+      const response = await apiClient.register(registrationData);
+      console.log("✅ Регистрация успешна:", response);
+
+      // Автоматический вход
+      console.log("🔐 Автоматический вход после регистрации...");
+      const loginResponse = await apiClient.login({
         phone: phoneNumber,
         password: password,
-        name: name,
-        role: "client",
-        region: region,
-        gender: gender as "male" | "female",
-        telegram_id: 0,
-        telegram_username: telegram,
       });
 
-      console.log("✅ Регистрация успешна:", response);
-      localStorage.setItem("token", response.token);
-      dispatch(registerSuccess({ token: response.token, user: response.user }));
+      console.log("✅ Автоматический вход выполнен:", loginResponse);
+
+      if (!loginResponse.token) {
+        throw new Error("Token not received from server");
+      }
+
+      localStorage.setItem("token", loginResponse.token);
+      dispatch(registerSuccess({ token: loginResponse.token, user: loginResponse.user }));
       handleSetStep(9);
     } catch (err: any) {
-      console.error("❌ Ошибка регистрации:", err.response?.data || err.message);
+      console.error("❌ Ошибка регистрации:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+
+      // ВАЖНО: Выводим ТОЧНУЮ ошибку от сервера
+      if (err.response?.data?.phone) {
+        console.error("❌ Ошибка в поле phone:", err.response.data.phone);
+      }
+
       let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
 
       if (err.response?.data) {
-        if (Array.isArray(err.response.data)) {
-          errorMessage = err.response.data[0];
-        } else if (typeof err.response.data === 'object') {
-          const firstError = Object.values(err.response.data)[0];
-          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError as string;
-        } else if (typeof err.response.data === 'string') {
-          errorMessage = err.response.data;
+        const data = err.response.data;
+
+        // Специальная обработка ошибки телефона
+        if (data.phone) {
+          const phoneError = Array.isArray(data.phone) ? data.phone[0] : data.phone;
+          console.error("📱 Ошибка телефона:", phoneError);
+
+          // Переводим частые ошибки
+          if (phoneError.includes("already exists") || phoneError.includes("уже существует")) {
+            errorMessage = "Этот номер телефона уже зарегистрирован";
+          } else if (phoneError.includes("invalid") || phoneError.includes("неверный")) {
+            errorMessage = "Неверный формат номера телефона";
+          } else if (phoneError.includes("required") || phoneError.includes("обязательн")) {
+            errorMessage = "Номер телефона обязателен";
+          } else {
+            errorMessage = phoneError;
+          }
+        }
+        // Обработка других ошибок
+        else if (Array.isArray(data)) {
+          errorMessage = data[0];
+        } else if (typeof data === 'object') {
+          if (data.password) {
+            errorMessage = Array.isArray(data.password) ? data.password[0] : data.password;
+          } else if (data.name) {
+            errorMessage = Array.isArray(data.name) ? data.name[0] : data.name;
+          } else if (data.telegram_username) {
+            errorMessage = Array.isArray(data.telegram_username)
+              ? data.telegram_username[0]
+              : data.telegram_username;
+          } else if (data.detail) {
+            errorMessage = data.detail;
+          } else if (data.error) {
+            errorMessage = data.error;
+          } else {
+            const firstError = Object.values(data)[0];
+            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError as string;
+          }
+        } else if (typeof data === 'string') {
+          errorMessage = data;
         }
       }
 

@@ -38,10 +38,8 @@ const authSlice = createSlice({
       state.user = action.payload.user
       state.error = null
       
-      // ВАЖНО: Сохраняем токен в localStorage синхронно
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', action.payload.token)
-        // Также сохраняем пользователя
         localStorage.setItem('user', JSON.stringify(action.payload.user))
       }
     },
