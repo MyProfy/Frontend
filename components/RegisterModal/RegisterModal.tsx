@@ -29,6 +29,7 @@ import {
   registerFailure,
   clearError,
   registerStepComplete,
+  setSuccessMessage,
 } from "../../store/slices/authSlice";
 import {
   closeModal,
@@ -260,7 +261,6 @@ export default function RegisterModal({
     setHasLoginError(false);
     dispatch(clearError());
   };
-  
   const handleCountryCodeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setCountryCode(e.target.value);
     setPhoneDigits(phoneDigits.slice(0, 14 - e.target.value.length));
@@ -553,8 +553,6 @@ export default function RegisterModal({
     e.preventDefault();
     dispatch(clearError());
 
-    console.log("📋 Проверка данных перед отправкой");
-
     const errors = [
       validateName(),
       validatePassword(),
@@ -564,7 +562,6 @@ export default function RegisterModal({
     ].filter(Boolean);
 
     if (errors.length > 0) {
-      console.error("❌ Валидация не прошла:", errors[0]);
       dispatch(registerFailure(errors[0]));
       return;
     }
@@ -580,18 +577,15 @@ export default function RegisterModal({
       role: "client" as const,
     };
 
-    console.log("✅ Валидация пройдена, отправка данных");
-
     dispatch(registerStart());
 
     try {
-      console.log("🔄 Этап 1: Регистрация пользователя");
+      // 1️⃣ РЕГИСТРАЦИЯ
       const registerResponse = await apiClient.register(registrationData);
-      console.log("✅ Регистрация завершена:", registerResponse);
 
-      // Проверяем, вернул ли сервер токен сразу
+      // Проверяем, вернул ли API токен сразу
       if (registerResponse?.token) {
-        console.log("🎉 Токен получен сразу при регистрации!");
+        // Токен получен при регистрации
         localStorage.setItem("token", registerResponse.token);
 
         dispatch(registerSuccess({
@@ -599,30 +593,21 @@ export default function RegisterModal({
           user: registerResponse.user || { name: name, phone: phoneNumber }
         }));
 
-        // ВАЖНО: Ждём обновления Redux перед переходом
         await new Promise(resolve => setTimeout(resolve, 100));
-
-        console.log("➡️ Переход на шаг 9");
         handleSetStep(9);
         return;
       }
 
-      // Если токена нет, делаем автоматический логин
-      console.log("🔄 Этап 2: Автоматический вход в систему");
-
+      // 2️⃣ АВТОЛОГИН (если токена не было)
       try {
         const loginResponse = await apiClient.login({
           phone: phoneNumber,
           password: password,
         });
 
-        console.log("✅ Автологин успешен:", loginResponse);
-
-        // Проверяем наличие токена
-        if (!loginResponse?.token) {
-          console.error("❌ Токен отсутствует в ответе login");
-          console.error("loginResponse:", loginResponse);
-          throw new Error("Token not found in login response");
+        // Проверяем структуру ответа
+        if (!loginResponse || !loginResponse.token) {
+          throw new Error("Invalid login response structure");
         }
 
         localStorage.setItem("token", loginResponse.token);
@@ -632,104 +617,58 @@ export default function RegisterModal({
           user: loginResponse.user || { name: name, phone: phoneNumber }
         }));
 
-        // ВАЖНО: Ждём обновления Redux перед переходом
         await new Promise(resolve => setTimeout(resolve, 100));
-
-        console.log("🎉 Успешная регистрация и вход!");
-        console.log("➡️ Переход на шаг 9");
         handleSetStep(9);
 
       } catch (loginErr: any) {
-        console.error("❌ Ошибка автологина:", loginErr);
-        console.error("Детали:", {
-          message: loginErr.message,
-          response: loginErr.response?.data
-        });
+        console.error("❌ Автологин не удался:", loginErr.message);
 
-        // Регистрация прошла успешно, но не удалось войти автоматически
+        // Регистрация прошла, но логин не удался
         dispatch(registerSuccess({
           token: null,
           user: { name: name, phone: phoneNumber }
         }));
 
-        // Переводим на экран входа
-        console.log("➡️ Переход на шаг 1 (Login)");
         handleSetStep(1);
 
-        // Показываем сообщение
         setTimeout(() => {
-          dispatch(registerFailure(
+          dispatch(setSuccessMessage(
             t("register.success.registeredPleaseLogin") ||
-            "✅ Регистрация успешна! Пожалуйста, войдите в систему."
+            "✅ Регистрация успешна! Войдите в систему."
           ));
         }, 200);
       }
 
     } catch (err: any) {
-      console.error("❌ Ошибка на этапе регистрации:", err);
-      console.error("Детали ошибки:", {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        message: err.message
-      });
-
       let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
 
       if (err.response?.data) {
         const data = err.response.data;
 
-        // Словарь ошибок с переводами
-        const fieldErrorMessages: Record<string, string> = {
-          phone: "Этот номер уже зарегистрирован",
-          password: "Неверный формат пароля",
-          name: "Неверный формат имени",
-          telegram_username: "Неверный формат Telegram username",
-          telegram_id: "Неверный Telegram ID",
-          gender: "Выберите пол",
-          region: "Выберите регион",
-          role: "Неверная роль пользователя"
+        const fieldErrors: Record<string, string> = {
+          phone: t("register.errors.phoneAlreadyRegistered") || "Этот номер уже зарегистрирован",
+          password: t("register.errors.invalidPassword") || "Неверный формат пароля",
+          name: t("register.errors.invalidName") || "Неверный формат имени",
+          telegram_username: t("register.errors.invalidTelegram") || "Неверный формат Telegram",
+          gender: t("register.errors.emptyGender") || "Выберите пол",
+          region: t("register.errors.emptyRegion") || "Выберите регион",
         };
 
-        // Проверяем ошибки по каждому полю
-        for (const [field, defaultMsg] of Object.entries(fieldErrorMessages)) {
+        for (const [field, defaultMsg] of Object.entries(fieldErrors)) {
           if (data[field]) {
-            const fieldError = Array.isArray(data[field]) ? data[field][0] : data[field];
-            console.error(`❌ Ошибка поля "${field}":`, fieldError);
-
-            // Используем сообщение с сервера или дефолтное
-            errorMessage = fieldError || defaultMsg;
+            errorMessage = Array.isArray(data[field]) ? data[field][0] : data[field] || defaultMsg;
             break;
           }
         }
 
-        // Проверяем общие ошибки
         if (!errorMessage || errorMessage === t("register.errors.registrationFailed")) {
-          if (data.detail) {
-            errorMessage = data.detail;
-          } else if (data.error) {
-            errorMessage = data.error;
-          } else if (data.message) {
-            errorMessage = data.message;
-          } else if (data.non_field_errors) {
-            errorMessage = Array.isArray(data.non_field_errors)
-              ? data.non_field_errors[0]
-              : data.non_field_errors;
-          } else if (Array.isArray(data) && data.length > 0) {
-            errorMessage = data[0];
-          } else if (typeof data === 'object' && Object.keys(data).length > 0) {
-            const firstKey = Object.keys(data)[0];
-            const firstError = data[firstKey];
-            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-          } else if (typeof data === 'string') {
-            errorMessage = data;
-          }
+          errorMessage = data.detail || data.error || data.message ||
+            (Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors) ||
+            (Array.isArray(data) && data[0]) ||
+            (typeof data === 'string' ? data : errorMessage);
         }
-      } else if (err.message) {
-        errorMessage = err.message;
       }
 
-      console.error("📢 Финальное сообщение об ошибке:", errorMessage);
       dispatch(registerFailure(errorMessage));
     }
   };
