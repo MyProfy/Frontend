@@ -7,7 +7,7 @@ import { FaMapMarkerAlt, FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import FocusTrap from "focus-trap-react";
 import Image from "next/image";
-import LogoMyProfi from "@/public/MyProfyLogo.png";
+import LogoMyProfi from "@/public/avatar/my_profy_logo-10.png";
 
 interface RegionModalProps {
   isOpen: boolean;
@@ -52,7 +52,6 @@ export default function RegionModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onCloseAction]);
 
-  // Закрытие по ESC
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCloseAction();
@@ -97,8 +96,8 @@ export default function RegionModal({
                 <Image
                   src={LogoMyProfi}
                   alt="MyProfi Logo"
-                  width={46}
-                  height={46}
+                  width={86}
+                  height={86}
                   className="mb-6"
                 />
 

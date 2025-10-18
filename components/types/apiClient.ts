@@ -84,26 +84,54 @@ export const apiClient = {
   register: async (userData: RegisterPayload): Promise<User> => {
     const { confirm_password, ...dataToSend } = userData;
 
-    console.log("📝 Register request:", dataToSend);
-    console.log("📝 Register endpoint:", `${API_BASE_URL}auth/register/`);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📝 РЕГИСТРАЦИЯ - ДЕТАЛИ ЗАПРОСА");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("Endpoint:", `${API_BASE_URL}auth/register/`);
+    console.log("Метод: POST");
+    console.log("Headers:", {
+      "Content-Type": "application/json"
+    });
+    console.log("\n📦 Данные для отправки:");
+    console.log(JSON.stringify(dataToSend, null, 2));
+    console.log("\n🔍 Проверка полей:");
+    console.log("- phone:", dataToSend.phone, "| Тип:", typeof dataToSend.phone);
+    console.log("- password:", "***", "| Длина:", dataToSend.password.length);
+    console.log("- name:", dataToSend.name, "| Тип:", typeof dataToSend.name);
+    console.log("- telegram_id:", dataToSend.telegram_id, "| Тип:", typeof dataToSend.telegram_id);
+    console.log("- telegram_username:", dataToSend.telegram_username, "| Тип:", typeof dataToSend.telegram_username);
+    console.log("- gender:", dataToSend.gender, "| Тип:", typeof dataToSend.gender);
+    console.log("- region:", dataToSend.region, "| Тип:", typeof dataToSend.region);
+    console.log("- role:", dataToSend.role, "| Тип:", typeof dataToSend.role);
 
     try {
       const response = await api.post("auth/register/", dataToSend);
-      console.log("Register success:", response.data);
-      console.log("Response status:", response.status);
+
+      console.log("РЕГИСТРАЦИЯ УСПЕШНА");
+      console.log("Status:", response.status);
+      console.log("Data:", response.data);
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Register error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-        message: error.message,
-      });
+      console.error("ОШИБКА РЕГИСТРАЦИИ");
+      console.error("Status:", error.response?.status);
+      console.error("Status Text:", error.response?.statusText);
+      console.error("Data:", error.response?.data);
+      console.error("Message:", error.message);
+
+      if (error.response?.data && typeof error.response.data === 'object') {
+        console.log("\n🔍 Ошибки по полям:");
+        Object.keys(error.response.data).forEach(key => {
+          const value = error.response.data[key];
+          console.error(`  - ${key}:`, Array.isArray(value) ? value[0] : value);
+        });
+      }
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
       throw error;
     }
   },
+
   requestOTP: async (phone: string): Promise<{ message: string }> => {
     console.log("OTP request:", { phone });
     try {

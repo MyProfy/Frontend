@@ -552,14 +552,18 @@ export default function RegisterModal({
     e.preventDefault();
     dispatch(clearError());
 
-    console.log("🔍 Детальная информация о телефоне:");
+    console.log("🔍 Детальная информация о полях:");
     console.log("- phoneNumber:", phoneNumber);
     console.log("- countryCode:", countryCode);
     console.log("- phoneDigits:", phoneDigits);
-    console.log("- Итоговый номер:", `${countryCode}${phoneDigits}`);
-    console.log("- Длина номера:", phoneNumber.length);
-    console.log("- Проверка regex:", phoneRegex.test(phoneNumber));
+    console.log("- name:", name);
+    console.log("- gender:", gender);
+    console.log("- region:", region);
+    console.log("- telegram:", telegram);
+    console.log("- password length:", password.length);
+    console.log("- confirmPassword match:", password === confirmPassword);
 
+    // ВАЖНО: Сначала валидация
     const errors = [
       validateName(),
       validatePassword(),
@@ -568,94 +572,143 @@ export default function RegisterModal({
       validateRegion(),
     ].filter(Boolean);
 
+    if (errors.length > 0) {
+      console.error("❌ Валидация провалилась:", errors[0]);
+      dispatch(registerFailure(errors[0]));
+      return;
+    }
+
+    console.log("✅ Валидация прошла успешно");
+
     const registrationData = {
-      phone: phoneNumber,
-      password: password,
-      name: name,
-      role: "client" as const,
-      region: region,
-      gender: gender as "male" | "female",
-      telegram_id: 0,
-      telegram_username: telegram,
+      phone: phoneNumber,           
+      password: password,           
+      name: name.trim(),           
+      telegram_id: 0,              
+      telegram_username: telegram.trim(),  
+      gender: gender as "male" | "female", 
+      region: region,              
+      role: "client" as const,     
     };
 
-    console.log("📤 Отправка данных:", JSON.stringify(registrationData, null, 2));
+    console.log("📤 Отправка данных на сервер:");
+    console.log(JSON.stringify(registrationData, null, 2));
 
     dispatch(registerStart());
     try {
+      console.log("📝 Отправка регистрации...");
       const response = await apiClient.register(registrationData);
       console.log("✅ Регистрация успешна:", response);
 
-      // Автоматический вход
-      console.log("🔐 Автоматический вход после регистрации...");
+      console.log("🔐 Автоматический вход...");
       const loginResponse = await apiClient.login({
         phone: phoneNumber,
         password: password,
       });
 
-      console.log("✅ Автоматический вход выполнен:", loginResponse);
+      console.log("✅ Вход выполнен успешно:", loginResponse);
 
       if (!loginResponse.token) {
         throw new Error("Token not received from server");
       }
 
       localStorage.setItem("token", loginResponse.token);
-      dispatch(registerSuccess({ token: loginResponse.token, user: loginResponse.user }));
+      dispatch(registerSuccess({
+        token: loginResponse.token,
+        user: loginResponse.user
+      }));
+
       handleSetStep(9);
+
     } catch (err: any) {
-      console.error("❌ Ошибка регистрации:", {
+      console.error("❌ Ошибка:", {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message
       });
 
-      // ВАЖНО: Выводим ТОЧНУЮ ошибку от сервера
-      if (err.response?.data?.phone) {
-        console.error("❌ Ошибка в поле phone:", err.response.data.phone);
-      }
-
-      let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
+      let errorMessage = "Ошибка регистрации";
 
       if (err.response?.data) {
         const data = err.response.data;
 
-        // Специальная обработка ошибки телефона
+        console.log("📋 Полные данные ошибки:", data);
+
         if (data.phone) {
           const phoneError = Array.isArray(data.phone) ? data.phone[0] : data.phone;
-          console.error("📱 Ошибка телефона:", phoneError);
+          console.error("📱 Ошибка phone:", phoneError);
 
-          // Переводим частые ошибки
-          if (phoneError.includes("already exists") || phoneError.includes("уже существует")) {
-            errorMessage = "Этот номер телефона уже зарегистрирован";
-          } else if (phoneError.includes("invalid") || phoneError.includes("неверный")) {
-            errorMessage = "Неверный формат номера телефона";
-          } else if (phoneError.includes("required") || phoneError.includes("обязательн")) {
-            errorMessage = "Номер телефона обязателен";
+          if (phoneError.includes("already exists") || phoneError.includes("уже")) {
+            errorMessage = "Этот номер уже зарегистрирован";
+          } else if (phoneError.includes("invalid") || phoneError.includes("Invalid")) {
+            errorMessage = "Неверный формат телефона";
+          } else if (phoneError.includes("Enter a valid phone")) {
+            errorMessage = "Введите корректный номер телефона";
           } else {
             errorMessage = phoneError;
           }
         }
-        // Обработка других ошибок
+        else if (data.password) {
+          const passError = Array.isArray(data.password) ? data.password[0] : data.password;
+          console.error("🔐 Ошибка password:", passError);
+          errorMessage = passError;
+        }
+        else if (data.name) {
+          const nameError = Array.isArray(data.name) ? data.name[0] : data.name;
+          console.error("👤 Ошибка name:", nameError);
+          errorMessage = nameError;
+        }
+        else if (data.telegram_username) {
+          const tgError = Array.isArray(data.telegram_username)
+            ? data.telegram_username[0]
+            : data.telegram_username;
+          console.error("💬 Ошибка telegram_username:", tgError);
+          errorMessage = tgError;
+        }
+        else if (data.telegram_id) {
+          const tgIdError = Array.isArray(data.telegram_id)
+            ? data.telegram_id[0]
+            : data.telegram_id;
+          console.error("🆔 Ошибка telegram_id:", tgIdError);
+          errorMessage = tgIdError;
+        }
+        else if (data.gender) {
+          const genderError = Array.isArray(data.gender) ? data.gender[0] : data.gender;
+          console.error("⚧ Ошибка gender:", genderError);
+          errorMessage = genderError;
+        }
+        else if (data.region) {
+          const regionError = Array.isArray(data.region) ? data.region[0] : data.region;
+          console.error("🌍 Ошибка region:", regionError);
+          errorMessage = regionError;
+        }
+        else if (data.role) {
+          const roleError = Array.isArray(data.role) ? data.role[0] : data.role;
+          console.error("👔 Ошибка role:", roleError);
+          errorMessage = roleError;
+        }
+        else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.non_field_errors) {
+          errorMessage = Array.isArray(data.non_field_errors)
+            ? data.non_field_errors[0]
+            : data.non_field_errors;
+        }
+
         else if (Array.isArray(data)) {
           errorMessage = data[0];
-        } else if (typeof data === 'object') {
-          if (data.password) {
-            errorMessage = Array.isArray(data.password) ? data.password[0] : data.password;
-          } else if (data.name) {
-            errorMessage = Array.isArray(data.name) ? data.name[0] : data.name;
-          } else if (data.telegram_username) {
-            errorMessage = Array.isArray(data.telegram_username)
-              ? data.telegram_username[0]
-              : data.telegram_username;
-          } else if (data.detail) {
-            errorMessage = data.detail;
-          } else if (data.error) {
-            errorMessage = data.error;
-          } else {
-            const firstError = Object.values(data)[0];
-            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError as string;
-          }
-        } else if (typeof data === 'string') {
+        }
+
+        else if (typeof data === 'object') {
+          const firstKey = Object.keys(data)[0];
+          const firstError = data[firstKey];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+          console.error(`❌ Ошибка в поле ${firstKey}:`, firstError);
+        }
+
+        else if (typeof data === 'string') {
           errorMessage = data;
         }
       }
