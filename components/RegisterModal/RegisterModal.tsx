@@ -226,6 +226,11 @@ export default function RegisterModal({
   }, [isOpen, step]);
 
   useEffect(() => {
+     dispatch(clearError());
+  }, [step])
+  
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     if (resendTimer > 0) {
@@ -271,7 +276,6 @@ export default function RegisterModal({
     setTelegram(value);
     dispatch(clearError());
   };
-
 
   const handleOtpAutoSubmit = async (otpCode: string) => {
     console.log("🚀 Auto-submitting OTP:", otpCode);
@@ -389,6 +393,7 @@ export default function RegisterModal({
   };
 
   const handleSetStep = (newStep: number) => {
+    dispatch(clearError());
     dispatch(setModalStep(newStep));
   };
 
@@ -495,7 +500,7 @@ export default function RegisterModal({
     dispatch(registerStart());
     try {
       await apiClient.verifyOTP({ phone: phoneNumber, code: otp });
-      dispatch(registerStepComplete()); // Используем новое действие
+      dispatch(registerStepComplete()); 
       handleSetStep(4);
     } catch (err: any) {
       dispatch(registerFailure(err.response?.data?.error || t("register.errors.invalidOtp") || "Неверный код"));
@@ -518,8 +523,6 @@ export default function RegisterModal({
       }
     }
   };
-
-
 
   const handleTelegramSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -552,18 +555,17 @@ export default function RegisterModal({
     e.preventDefault();
     dispatch(clearError());
 
-    console.log("🔍 Детальная информация о полях:");
-    console.log("- phoneNumber:", phoneNumber);
-    console.log("- countryCode:", countryCode);
-    console.log("- phoneDigits:", phoneDigits);
-    console.log("- name:", name);
-    console.log("- gender:", gender);
-    console.log("- region:", region);
-    console.log("- telegram:", telegram);
-    console.log("- password length:", password.length);
-    console.log("- confirmPassword match:", password === confirmPassword);
+    console.log(" Детальная информация о полях:");
+    console.log("phoneNumber:", phoneNumber);
+    console.log(" countryCode:", countryCode);
+    console.log(" phoneDigits:", phoneDigits);
+    console.log(" name:", name);
+    console.log(" gender:", gender);
+    console.log(" region:", region);
+    console.log(" telegram:", telegram);
+    console.log(" password length:", password.length);
+    console.log(" confirmPassword match:", password === confirmPassword);
 
-    // ВАЖНО: Сначала валидация
     const errors = [
       validateName(),
       validatePassword(),
@@ -573,40 +575,40 @@ export default function RegisterModal({
     ].filter(Boolean);
 
     if (errors.length > 0) {
-      console.error("❌ Валидация провалилась:", errors[0]);
+      console.error("Валидация провалилась:", errors[0]);
       dispatch(registerFailure(errors[0]));
       return;
     }
 
-    console.log("✅ Валидация прошла успешно");
+    console.log("Валидация прошла успешно");
 
     const registrationData = {
-      phone: phoneNumber,           
-      password: password,           
-      name: name.trim(),           
-      telegram_id: 0,              
-      telegram_username: telegram.trim(),  
-      gender: gender as "male" | "female", 
-      region: region,              
-      role: "client" as const,     
+      phone: phoneNumber,
+      password: password,
+      name: name.trim(),
+      telegram_id: 0,
+      telegram_username: telegram.trim(),
+      gender: gender as "male" | "female",
+      region: region,
+      role: "client" as const,
     };
 
-    console.log("📤 Отправка данных на сервер:");
+    console.log("Отправка данных на сервер:");
     console.log(JSON.stringify(registrationData, null, 2));
 
     dispatch(registerStart());
     try {
-      console.log("📝 Отправка регистрации...");
+      console.log("Отправка регистрации...");
       const response = await apiClient.register(registrationData);
-      console.log("✅ Регистрация успешна:", response);
+      console.log("Регистрация успешна:", response);
 
-      console.log("🔐 Автоматический вход...");
+      console.log("Автоматический вход...");
       const loginResponse = await apiClient.login({
         phone: phoneNumber,
         password: password,
       });
 
-      console.log("✅ Вход выполнен успешно:", loginResponse);
+      console.log("Вход выполнен успешно:", loginResponse);
 
       if (!loginResponse.token) {
         throw new Error("Token not received from server");
@@ -621,7 +623,7 @@ export default function RegisterModal({
       handleSetStep(9);
 
     } catch (err: any) {
-      console.error("❌ Ошибка:", {
+      console.error(" Ошибка:", {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message
@@ -757,7 +759,7 @@ export default function RegisterModal({
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
       viewBox="250 620 1500 760"
-      className="w-[150px] h-[75px]"
+      className="w-[150px] h-[75px] "
     >
       <defs>
         <linearGradient
@@ -1272,9 +1274,9 @@ export default function RegisterModal({
                 exit="exit"
                 onSubmit={handleProfileSubmit}
               >
-                <div className="text-center mt-3">{logosvg}</div>
+                <div className="text-center mt-3 ">{logosvg}</div>
 
-                <motion.h2
+                <motion.h2  
                   className="m-0 mb-1 text-[1.35rem] text-[#2d3748] text-center font-bold"
                   variants={itemVariants}
                 >
@@ -1305,7 +1307,6 @@ export default function RegisterModal({
                   />
                 </motion.div>
 
-                {/* Password Input */}
                 <div className="relative overflow-visible bg-white transition-all duration-300 min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px]">
                   <motion.div
                     className="absolute text-[0.95rem] z-2 left-3 top-1/2 -translate-y-1/2"
@@ -1450,7 +1451,6 @@ export default function RegisterModal({
                   </motion.span>
                 )}
 
-                {/* Submit Button */}
                 <motion.button
                   type="submit"
                   disabled={isLoading}
