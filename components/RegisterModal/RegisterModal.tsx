@@ -175,7 +175,7 @@ export default function RegisterModal({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState("");
-  const [otpValues, setOtpValues] = useState(["", "", "", ""]);
+  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [telegram, setTelegram] = useState("");
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
@@ -190,7 +190,7 @@ export default function RegisterModal({
   const telegramInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const otpRefs = useRef<React.RefObject<HTMLInputElement>[]>(
-    Array(4)
+    Array(6)
       .fill(null)
       .map(() => React.createRef<HTMLInputElement>())
   );
@@ -243,7 +243,7 @@ export default function RegisterModal({
 
   const phoneRegex = /^\+\d{7,14}$/;
   const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/;
-  const otpRegex = /^\d{4}$/;
+  const otpRegex = /^\d{6}$/;
   const telegramRegex = /^@[\w]{3,}$/;
   const nameRegex = /^[a-zA-Zа-яА-Я\s]{2,}$/;
 
@@ -341,9 +341,9 @@ export default function RegisterModal({
     if (!chars.length) return;
 
     const newOtpValues = [...otpValues];
-    let start = chars.length === 4 ? 0 : index;
+    let start = chars.length === 6 ? 0 : index;  // 6 вместо 4
 
-    for (let i = 0; i < chars.length && start + i < 4; i++) {
+    for (let i = 0; i < chars.length && start + i < 6; i++) {  // 6 вместо 4
       newOtpValues[start + i] = chars[i];
     }
 
@@ -352,17 +352,18 @@ export default function RegisterModal({
     setOtp(newOtp);
     dispatch(clearError());
 
-    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3);
-    const nextFocus = Math.min(filledTo, 3);
+    const filledTo = Math.min((chars.length === 6 ? 0 : index) + chars.length, 5);  // 5 вместо 3
+    const nextFocus = Math.min(filledTo, 5);  // 5 вместо 3
     otpRefs.current[nextFocus]?.current?.focus();
 
-    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
+    if (newOtp.length === 6 && newOtpValues.every(v => v !== "")) {  // 6 вместо 4
       console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
       }, 300);
     }
   };
+
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otpValues[index] && index > 0) {
@@ -379,7 +380,7 @@ export default function RegisterModal({
     setShowPassword(false);
     setShowConfirmPassword(false);
     setOtp("");
-    setOtpValues(["", "", "", ""]);
+    setOtpValues(["", "", "", "", "", ""]);
     setTelegram("");
     setName("");
     setGender("");
@@ -481,18 +482,13 @@ export default function RegisterModal({
       const response = await apiClient.requestOTP(phoneNumber);
       console.log("✅ OTP request response:", response);
 
-      // Проверяем наличие ссылки
-      if (response.data?.link) {
-        setTelegramLink(response.data.link);
-        console.log("🔗 Telegram link получен:", response.data.link);
-        window.open(response.data.link, '_blank');
-      } else {
-        // Если ссылки нет, используем стандартную ссылку на бота
-        const fallbackLink = "https://t.me/myprofy_bot";
-        setTelegramLink(fallbackLink);
-        console.log("⚠️ Ссылка не получена, используем fallback:", fallbackLink);
-        window.open(fallbackLink, '_blank');
-      }
+      const botLink = response.data?.link || "https://t.me/myprofy_bot";
+      setTelegramLink(botLink);
+      console.log("🔗 Telegram link:", botLink);
+
+      setTimeout(() => {
+        window.open(botLink, '_blank', 'noopener,noreferrer');
+      }, 100);
 
       dispatch(registerStepComplete());
       handleSetStep(3);
@@ -503,16 +499,16 @@ export default function RegisterModal({
 
       let errorMessage = "";
       let shouldProceed = false;
+      const fallbackLink = "https://t.me/myprofy_bot";
 
       if (err.response?.status === 500) {
-        // При ошибке 500 предлагаем пользователю написать боту вручную
         errorMessage = "Напишите боту @myprofy_bot для получения кода";
-        shouldProceed = true; // Переходим к шагу 3 даже при ошибке
-
-        // Открываем бота вручную
-        const fallbackLink = "https://t.me/myprofy_bot";
+        shouldProceed = true;
         setTelegramLink(fallbackLink);
-        window.open(fallbackLink, '_blank');
+
+        setTimeout(() => {
+          window.open(fallbackLink, '_blank', 'noopener,noreferrer');
+        }, 100);
       } else if (err.response?.data) {
         const data = err.response.data;
 
@@ -528,13 +524,16 @@ export default function RegisterModal({
           errorMessage = Array.isArray(data.phone) ? data.phone[0] : data.phone;
         }
 
-        // Специфичные ошибки
         if (errorMessage.includes("User exists") || errorMessage.includes("already registered")) {
           errorMessage = t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован";
         } else if (errorMessage.includes("chat_id") || errorMessage.includes("telegram")) {
           errorMessage = t("register.errors.noTelegramChat") || "Сначала напишите боту @myprofy_bot";
           shouldProceed = true;
-          window.open("https://t.me/myprofy_bot", '_blank');
+          setTelegramLink(fallbackLink);
+
+          setTimeout(() => {
+            window.open(fallbackLink, '_blank', 'noopener,noreferrer');
+          }, 100);
         }
       }
 
@@ -543,7 +542,6 @@ export default function RegisterModal({
       }
 
       if (shouldProceed) {
-        // Показываем ошибку, но переходим к следующему шагу
         dispatch(registerFailure(errorMessage));
         setTimeout(() => {
           dispatch(clearError());
@@ -587,12 +585,12 @@ export default function RegisterModal({
       console.log("🔄 Повторная отправка OTP для:", phoneNumber);
       const response = await apiClient.requestOTP(phoneNumber);
 
-      if (response.data?.link) {
-        setTelegramLink(response.data.link);
-        window.open(response.data.link, '_blank');
-      } else {
-        window.open("https://t.me/myprofy_bot", '_blank');
-      }
+      const botLink = response.data?.link || "https://t.me/myprofy_bot";
+      setTelegramLink(botLink);
+
+      setTimeout(() => {
+        window.open(botLink, '_blank', 'noopener,noreferrer');
+      }, 100);
 
       dispatch(registerStepComplete());
       setResendTimer(60);
@@ -600,8 +598,12 @@ export default function RegisterModal({
     } catch (err: any) {
       console.error("❌ Ошибка повторной отправки OTP:", err);
 
-      // При любой ошибке просто открываем бота
-      window.open("https://t.me/myprofy_bot", '_blank');
+      const fallbackLink = "https://t.me/myprofy_bot";
+      setTelegramLink(fallbackLink);
+
+      setTimeout(() => {
+        window.open(fallbackLink, '_blank', 'noopener,noreferrer');
+      }, 100);
 
       let errorMessage = "Откройте бота @myprofy_bot для получения кода";
 
@@ -610,7 +612,7 @@ export default function RegisterModal({
       }
 
       dispatch(registerFailure(errorMessage));
-      setResendTimer(60); // Устанавливаем таймер даже при ошибке
+      setResendTimer(60);
     }
   };
 
@@ -677,7 +679,6 @@ export default function RegisterModal({
       const registerResponse = await apiClient.register(registrationData);
       console.log("✅ Регистрация успешна!", registerResponse);
 
-      // ✅ ИСПРАВЛЕНИЕ: Автоматический вход после регистрации
       console.log("🔐 Выполняем автоматический вход...");
 
       try {
@@ -694,13 +695,11 @@ export default function RegisterModal({
           user: loginResponse.user
         }));
 
-        // Теперь показываем приветственные экраны
         handleSetStep(9);
 
       } catch (loginErr: any) {
         console.error("❌ Автоматический вход не удался:", loginErr);
 
-        // Регистрация прошла, но вход не удался - показываем сообщение
         dispatch(registerSuccess({
           token: null,
           user: { name: name, phone: phoneNumber }
@@ -711,7 +710,6 @@ export default function RegisterModal({
           "Регистрация успешна! Пожалуйста, войдите в систему."
         ));
 
-        // Перенаправляем на форму входа
         await new Promise(resolve => setTimeout(resolve, 2000));
         handleSetStep(1);
       }
@@ -893,7 +891,7 @@ export default function RegisterModal({
                     </select>
                     <span className="text-base text-gray-800 mr-2 font-semibold">{countryCode}</span>
                     <input
-                      className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
+                      className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium rounded-r-2xl"
                       type="tel"
                       ref={phoneInputRef}
                       value={phoneDigits}
@@ -916,7 +914,7 @@ export default function RegisterModal({
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
                   </motion.div>
                   <input
-                    className="px-4 border-none text-base outline-none bg-transparent w-full h-full pl-12 placeholder:text-gray-400 font-medium rounded-2xl"
+                    className="px-4 border-none text-base outline-none bg-transparent w-full h-full pl-12 placeholder:text-gray-400 font-medium rounded-2xl  p-5"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -1119,26 +1117,33 @@ export default function RegisterModal({
                 </motion.h2>
 
                 <motion.p
-                  className="text-sm text-gray-600 text-center m-0 leading-relaxed"
+                  className="text-sm text-gray-600 text-center m-0 leading-relaxed flex flex-wrap justify-center items-center gap-1"
                   variants={itemVariants}
                 >
-                  Код отправлен в{" "}
-                  <a
-                    className="text-green-600 font-semibold hover:text-green-700 transition-colors"
-                    href="https://t.me/MyProfy_OTP_bot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    @MyProfy_OTP_bot
-                  </a>
+                  Код отправлен в
+                  {telegramLink ? (
+                    <a
+                      href={telegramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-2 font-semibold text-blue-600 hover:underline"
+                    >
+                      Telegram
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <span className="font-semibold text-gray-800">SMS</span>
+                  )}
                 </motion.p>
 
                 <motion.div className="my-3" variants={itemVariants}>
-                  <div className="grid grid-cols-4 gap-3 mx-auto w-full max-w-[280px]">
+                  <div className="grid grid-cols-6 gap-2 mx-auto w-full max-w-[360px]">
                     {otpValues.map((value, index) => (
                       <input
                         key={index}
-                        className="w-full h-16 border-2 border-gray-200 rounded-2xl text-3xl font-bold text-gray-900 text-center outline-none bg-white transition-all duration-200 focus:border-green-500 focus:ring-4 focus:ring-green-100"
+                        className="w-full h-14 border-2 border-gray-200 rounded-xl text-2xl font-bold text-gray-900 text-center outline-none bg-white transition-all duration-200 focus:border-green-500 focus:ring-4 focus:ring-green-100"
                         ref={otpRefs.current[index]}
                         type="text"
                         value={value}

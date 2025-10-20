@@ -86,14 +86,14 @@ export interface Image extends BaseEntity {
 }
 
 export interface ExecutorReview extends BaseEntity {
-  id?: number;
-  rating: number;
-  review?: string;
+  id: number;
   created_at: string;
-  reviewer?: User;
-  executor: number | User;
-  vacancy: number | Vacancy;
-  order: number | Order;
+  rating: number;
+  review: string;
+  order: number;
+  vacancy: number;
+  executor: number;
+  client: number;
 }
 
 export interface OTPVerifyResponse {
@@ -152,18 +152,34 @@ export interface Service extends BaseEntity {
   reviews?: Review[];
 }
 
-export interface Vacancy extends BaseEntity {
+export interface VacancyImage {
+  url: string;
   id?: number;
-  title?: string;
-  price: number;
-  description?: string;
-  category: number | Category;
-  sub_categories?: (number | SubCategory)[];
-  client: number | User;
-  images?: Image[];
-  boosts?: Boost[];
-  reviews?: Review[];
 }
+
+
+export interface Vacancy {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  category: number;
+  sub_category: number;
+  client: number;
+  images?: (VacancyImage | string)[]; 
+  moderation: 'pending' | 'approved' | 'rejected';
+  moderation_display: string;
+  boost: number;
+}
+
+
+export interface PaginatedReviewsResponse {
+  results: ExecutorReview[];
+  count: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
 
 export interface OrderData {
   client: number;
@@ -196,6 +212,7 @@ export interface LoginPayload {
   phone: string;
   password: string;
 }
+
 export interface OTPRequestResponse {
   message: string;
   data?: {
@@ -210,10 +227,10 @@ export interface RegisterPayload {
   name: string;
   role: "client" | "executor";
   region: string;
-  gender: "male" | "female"; 
-  telegram_id?: number; 
-  telegram_username: string; 
-  confirm_password?: string; 
+  gender: "male" | "female";
+  telegram_id?: number;
+  telegram_username: string;
+  confirm_password?: string;
 }
 
 export interface OTPRequestPayload {

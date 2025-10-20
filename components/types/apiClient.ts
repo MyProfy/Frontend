@@ -150,8 +150,6 @@ export const apiClient = {
       console.log("📄 Response Data:", JSON.stringify(response.data, null, 2));
       console.log("🔑 Доступные ключи:", Object.keys(response.data || {}));
 
-      // Регистрация не возвращает токен - это нормально
-      // Пользователь должен войти после регистрации
       console.log("\n💡 Регистрация завершена. Токен НЕ возвращается сервером.");
       console.log("   Пользователь будет перенаправлен на вход.");
 
@@ -183,58 +181,28 @@ export const apiClient = {
     }
   },
 
-  requestOTP: async (phone: string): Promise<{
-    message: string;
-    data?: {
-      link?: string;
-      expires_at?: string;
-    };
-  }> => {
+  requestOTP: async (
+    phone: string
+  ): Promise<{ message: string; data?: { link?: string; expires_at?: string } }> => {
     console.log("📱 Отправка OTP request для:", phone);
 
-    if (!phone || typeof phone !== 'string') {
-      console.error("❌ Некорректный номер телефона:", phone);
-      throw new Error("Phone number is required");
-    }
+    if (!phone) throw new Error("Phone number is required");
 
     try {
-      const response = await api.post("auth/otp/request/",
-        { phone },
-        {
-          timeout: 10000, 
-          validateStatus: (status) => status < 600 
-        }
-      );
+      const response = await api.post("auth/otp/request/", { phone }, { timeout: 10000 });
 
-      console.log("✅ OTP request ответ получен");
-      console.log("📊 Status:", response.status);
-      console.log("📄 Data:", JSON.stringify(response.data, null, 2));
-
-      // Даже если сервер вернул ошибку, возвращаем данные
-      if (response.status === 500) {
-        console.warn("⚠️ Сервер вернул 500, но продолжаем");
-        return {
-          message: "Напишите боту @myprofy_bot",
-          data: {
-            link: "https://t.me/myprofy_bot"
-          }
-        };
+      if (!response.data?.message) {
+        throw new Error("Invalid server response");
       }
 
       return response.data;
-
     } catch (error: any) {
-      console.error("❌ OTP request ошибка:");
-      console.error("  Status:", error.response?.status);
-      console.error("  Data:", error.response?.data);
-      console.error("  Message:", error.message);
+      console.error("❌ OTP request ошибка:", error?.response?.data || error);
 
-      if (error.code === 'ECONNABORTED' || !error.response) {
+      if (error.code === "ECONNABORTED" || !error.response) {
         return {
-          message: "Проблемы с соединением. Откройте бота вручную",
-          data: {
-            link: "https://t.me/myprofy_bot"
-          }
+          message: "Сервер не отвечает. Откройте бота вручную",
+          data: { link: "https://t.me/myprofy_bot" },
         };
       }
 
@@ -275,7 +243,6 @@ export const apiClient = {
       throw error;
     }
   },
-
 
   logout: async (): Promise<void> => {
     try {
@@ -328,16 +295,21 @@ export const apiClient = {
     (await api.post("/orders/", data)).data,
 
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
-    const response = await withRetry(() => api.get("/executor-reviews/"));
-    if (response.data && Array.isArray(response.data.results)) {
-      return response.data.results;
+    try {
+      const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
+      return [];
+    } catch (error) {
+      console.error("❌ Ошибка загрузки отзывов:", error);
+      throw error;
     }
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-    console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
-    return [];
   },
+
 
   getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
     (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,

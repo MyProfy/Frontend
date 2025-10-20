@@ -474,7 +474,7 @@
 //       >
 //         <ResultContent>
 //           <ResultHeaderContainer>
-//             <ResultName>{result.name}</ResultName>
+//             <ResultName>{result.}</ResultName>
 //             <ResultPrice>
 //               {t("order.price")}: {result.price} UZS
 //             </ResultPrice>
@@ -489,7 +489,7 @@
 //           >
 //             <UserInfoContainer>
 //               {avatarUrl ? (
-//                 <UserImage src={avatarUrl} alt={result.name} />
+//                 <UserImage src={avatarUrl} alt={result.images} />
 //               ) : (
 //                 <ResultAvatar />
 //               )}
