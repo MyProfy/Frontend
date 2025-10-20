@@ -184,6 +184,7 @@ export default function RegisterModal({
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
   const [hasLoginError, setHasLoginError] = useState(false);
+  const [telegramLink, setTelegramLink] = useState<string | null>(null);
 
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const telegramInputRef = useRef<HTMLInputElement>(null);
@@ -291,6 +292,12 @@ export default function RegisterModal({
       console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
       const result = await apiClient.verifyOTP({ phone: phoneNumber, code: otpCode });
       console.log("✅ OTP verified successfully!", result);
+
+      if (result.data?.link) {
+        setTelegramLink(result.data.link);
+        console.log("🔗 Telegram link received:", result.data.link);
+      }
+
       dispatch(registerStepComplete());
       handleSetStep(4);
     } catch (err: any) {
@@ -382,6 +389,7 @@ export default function RegisterModal({
     setIsConfirmPasswordFocused(false);
     setHasLoginError(false);
     dispatch(clearError());
+    setTelegramLink(null); // 
   };
 
   const handleClose = () => {
@@ -400,7 +408,7 @@ export default function RegisterModal({
     dispatch(clearError());
 
     const phoneError = validatePhone();
-    // const passwordError = validatePassword();
+    const passwordError = validatePassword();
 
     console.log("📞 Login - Phone:", phoneNumber);
     console.log("🔐 Login - Password length:", password.length);
@@ -468,17 +476,81 @@ export default function RegisterModal({
 
     dispatch(registerStart());
     try {
-      await apiClient.requestOTP(phoneNumber);
+      console.log("📱 Отправка запроса OTP для номера:", phoneNumber);
+
+      const response = await apiClient.requestOTP(phoneNumber);
+      console.log("✅ OTP request response:", response);
+
+      // Проверяем наличие ссылки
+      if (response.data?.link) {
+        setTelegramLink(response.data.link);
+        console.log("🔗 Telegram link получен:", response.data.link);
+        window.open(response.data.link, '_blank');
+      } else {
+        // Если ссылки нет, используем стандартную ссылку на бота
+        const fallbackLink = "https://t.me/myprofy_bot";
+        setTelegramLink(fallbackLink);
+        console.log("⚠️ Ссылка не получена, используем fallback:", fallbackLink);
+        window.open(fallbackLink, '_blank');
+      }
+
       dispatch(registerStepComplete());
       handleSetStep(3);
       setResendTimer(60);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || t("register.errors.otpRequestFailed");
 
-      if (errorMessage.includes("User exists")) {
-        dispatch(registerFailure(t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован"));
-      } else if (errorMessage.includes("chat_id")) {
-        dispatch(registerFailure(t("register.errors.noTelegramChat") || "Сначала напишите боту"));
+    } catch (err: any) {
+      console.error("❌ Ошибка запроса OTP:", err);
+
+      let errorMessage = "";
+      let shouldProceed = false;
+
+      if (err.response?.status === 500) {
+        // При ошибке 500 предлагаем пользователю написать боту вручную
+        errorMessage = "Напишите боту @myprofy_bot для получения кода";
+        shouldProceed = true; // Переходим к шагу 3 даже при ошибке
+
+        // Открываем бота вручную
+        const fallbackLink = "https://t.me/myprofy_bot";
+        setTelegramLink(fallbackLink);
+        window.open(fallbackLink, '_blank');
+      } else if (err.response?.data) {
+        const data = err.response.data;
+
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.phone) {
+          errorMessage = Array.isArray(data.phone) ? data.phone[0] : data.phone;
+        }
+
+        // Специфичные ошибки
+        if (errorMessage.includes("User exists") || errorMessage.includes("already registered")) {
+          errorMessage = t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован";
+        } else if (errorMessage.includes("chat_id") || errorMessage.includes("telegram")) {
+          errorMessage = t("register.errors.noTelegramChat") || "Сначала напишите боту @myprofy_bot";
+          shouldProceed = true;
+          window.open("https://t.me/myprofy_bot", '_blank');
+        }
+      }
+
+      if (!errorMessage) {
+        errorMessage = t("register.errors.otpRequestFailed") || "Ошибка отправки кода";
+      }
+
+      if (shouldProceed) {
+        // Показываем ошибку, но переходим к следующему шагу
+        dispatch(registerFailure(errorMessage));
+        setTimeout(() => {
+          dispatch(clearError());
+          dispatch(registerStepComplete());
+          handleSetStep(3);
+          setResendTimer(60);
+        }, 2000);
       } else {
         dispatch(registerFailure(errorMessage));
       }
@@ -507,18 +579,38 @@ export default function RegisterModal({
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
+
+    dispatch(clearError());
     dispatch(registerStart());
+
     try {
-      await apiClient.requestOTP(phoneNumber);
+      console.log("🔄 Повторная отправка OTP для:", phoneNumber);
+      const response = await apiClient.requestOTP(phoneNumber);
+
+      if (response.data?.link) {
+        setTelegramLink(response.data.link);
+        window.open(response.data.link, '_blank');
+      } else {
+        window.open("https://t.me/myprofy_bot", '_blank');
+      }
+
       dispatch(registerStepComplete());
       setResendTimer(60);
+
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || t("register.otpResendFailed") || "Ошибка отправки";
-      if (errorMessage.includes("chat_id")) {
-        dispatch(registerFailure(t("register.errors.noTelegramChat") || "Сначала напишите боту"));
-      } else {
-        dispatch(registerFailure(errorMessage));
+      console.error("❌ Ошибка повторной отправки OTP:", err);
+
+      // При любой ошибке просто открываем бота
+      window.open("https://t.me/myprofy_bot", '_blank');
+
+      let errorMessage = "Откройте бота @myprofy_bot для получения кода";
+
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
+
+      dispatch(registerFailure(errorMessage));
+      setResendTimer(60); // Устанавливаем таймер даже при ошибке
     }
   };
 
@@ -549,6 +641,7 @@ export default function RegisterModal({
       ));
     }
   };
+
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
@@ -580,66 +673,52 @@ export default function RegisterModal({
     dispatch(registerStart());
 
     try {
-      // 1️⃣ РЕГИСТРАЦИЯ
+      console.log("📝 Начинаем регистрацию...");
       const registerResponse = await apiClient.register(registrationData);
+      console.log("✅ Регистрация успешна!", registerResponse);
 
-      // Проверяем, вернул ли API токен сразу
-      if (registerResponse?.token) {
-        // Токен получен при регистрации
-        localStorage.setItem("token", registerResponse.token);
+      // ✅ ИСПРАВЛЕНИЕ: Автоматический вход после регистрации
+      console.log("🔐 Выполняем автоматический вход...");
 
-        dispatch(registerSuccess({
-          token: registerResponse.token,
-          user: registerResponse.user || { name: name, phone: phoneNumber }
-        }));
-
-        await new Promise(resolve => setTimeout(resolve, 100));
-        handleSetStep(9);
-        return;
-      }
-
-      // 2️⃣ АВТОЛОГИН (если токена не было)
       try {
         const loginResponse = await apiClient.login({
           phone: phoneNumber,
-          password: password,
+          password: password
         });
 
-        // Проверяем структуру ответа
-        if (!loginResponse || !loginResponse.token) {
-          throw new Error("Invalid login response structure");
-        }
+        console.log("✅ Автоматический вход успешен!");
 
         localStorage.setItem("token", loginResponse.token);
-
-        dispatch(registerSuccess({
+        dispatch(loginSuccess({
           token: loginResponse.token,
-          user: loginResponse.user || { name: name, phone: phoneNumber }
+          user: loginResponse.user
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Теперь показываем приветственные экраны
         handleSetStep(9);
 
       } catch (loginErr: any) {
-        console.error("❌ Автологин не удался:", loginErr.message);
+        console.error("❌ Автоматический вход не удался:", loginErr);
 
-        // Регистрация прошла, но логин не удался
+        // Регистрация прошла, но вход не удался - показываем сообщение
         dispatch(registerSuccess({
           token: null,
           user: { name: name, phone: phoneNumber }
         }));
 
-        handleSetStep(1);
+        dispatch(setSuccessMessage(
+          t("register.success.pleaseLogin") ||
+          "Регистрация успешна! Пожалуйста, войдите в систему."
+        ));
 
-        setTimeout(() => {
-          dispatch(setSuccessMessage(
-            t("register.success.registeredPleaseLogin") ||
-            "✅ Регистрация успешна! Войдите в систему."
-          ));
-        }, 200);
+        // Перенаправляем на форму входа
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        handleSetStep(1);
       }
 
     } catch (err: any) {
+      console.error("❌ Ошибка регистрации:", err);
+
       let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
 
       if (err.response?.data) {
@@ -662,7 +741,9 @@ export default function RegisterModal({
         }
 
         if (!errorMessage || errorMessage === t("register.errors.registrationFailed")) {
-          errorMessage = data.detail || data.error || data.message ||
+          errorMessage = data.detail ||
+            data.error ||
+            data.message ||
             (Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors) ||
             (Array.isArray(data) && data[0]) ||
             (typeof data === 'string' ? data : errorMessage);
@@ -763,30 +844,30 @@ export default function RegisterModal({
             {step === 1 && (
               <motion.form
                 key="step1"
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleLoginSubmit}
               >
-                <div className="text-center p-5">{logosvg}</div>
+                <div className="text-center py-6">{logosvg}</div>
                 <motion.h2
-                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
                 >
                   {t("register.login.title") || "Вход в аккаунт"}
                 </motion.h2>
                 {hasLoginError ? (
                   <motion.p
-                    className="text-[0.9rem] text-[#e53e3e] text-center m-0 mb-6 leading-[1.4]"
+                    className="text-sm text-red-600 text-center m-0 mb-4"
                     variants={itemVariants}
                   >
                     {t("register.errors.invalidCredentials") || "Неверный телефон или пароль"}
                   </motion.p>
                 ) : (
                   <motion.p
-                    className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                    className="text-sm text-gray-500 text-center m-0 mb-4"
                     variants={itemVariants}
                   >
                     {t("register.login.userCount") || "Войдите в свой аккаунт"}
@@ -794,12 +875,12 @@ export default function RegisterModal({
                 )}
 
                 <motion.div
-                  className={`relative w-full min-h-[56px] border-2 ${hasLoginError ? "border-[#e53e3e]" : "border-[#e2e8f0] hover:border-[#3ea23e]"} rounded-[16px] transition-all duration-300`}
+                  className={`relative w-full min-h-[58px] border-2 ${hasLoginError ? "border-red-500" : "border-gray-200 hover:border-green-600 focus-within:border-green-600"} rounded-2xl transition-all duration-200`}
                   variants={itemVariants}
                 >
-                  <div className="flex items-center w-full h-[56px] bg-transparent">
+                  <div className="flex items-center w-full h-[58px] bg-transparent">
                     <select
-                      className="p-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full leading-[24px] appearance-none"
+                      className="px-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full appearance-none"
                       value={countryCode}
                       onChange={handleCountryCodeChange}
                       required
@@ -810,9 +891,9 @@ export default function RegisterModal({
                         </option>
                       ))}
                     </select>
-                    <span className="text-base text-[#2d3748] mr-2 font-medium">{countryCode}</span>
+                    <span className="text-base text-gray-800 mr-2 font-semibold">{countryCode}</span>
                     <input
-                      className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                      className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
                       type="tel"
                       ref={phoneInputRef}
                       value={phoneDigits}
@@ -825,17 +906,17 @@ export default function RegisterModal({
                 </motion.div>
 
                 <div
-                  className={`relative overflow-visible bg-white transition-all duration-300 min-h-[56px] border-2 ${hasLoginError ? "border-[#e53e3e]" : "border-[#e2e8f0] hover:border-[#3ea23e]"} rounded-[16px]`}
+                  className={`relative overflow-visible bg-white transition-all duration-200 min-h-[58px] border-2 ${hasLoginError ? "border-red-500" : "border-gray-200 hover:border-green-600 focus-within:border-green-600"} rounded-2xl`}
                 >
                   <motion.div
-                    className="absolute text-[1.1rem] z-2 left-4 top-1/2 -translate-y-1/2"
+                    className="absolute text-lg z-10 left-4 top-1/2 -translate-y-1/2 text-gray-500"
                     variants={iconVariants}
                     animate={isPasswordFocused ? "hover" : "inactive"}
                   >
                     {isPasswordFocused ? <FaLockOpen /> : <FaLock />}
                   </motion.div>
                   <input
-                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] pl-12 placeholder:text-[#a0aec0] placeholder:italic font-medium rounded-xl"
+                    className="px-4 border-none text-base outline-none bg-transparent w-full h-full pl-12 placeholder:text-gray-400 font-medium rounded-2xl"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -853,7 +934,7 @@ export default function RegisterModal({
                     }}
                   />
                   <motion.div
-                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[1.2rem] flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-lg flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
                     variants={eyeIconVariants}
                     animate={showPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -866,7 +947,7 @@ export default function RegisterModal({
 
                 {error && !hasLoginError && (
                   <motion.span
-                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    className="text-red-600 text-sm mt-1 text-center font-medium bg-red-50 py-2.5 px-4 rounded-xl"
                     variants={itemVariants}
                   >
                     {error}
@@ -876,7 +957,7 @@ export default function RegisterModal({
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  className="px-4 py-3.5 w-full border-none rounded-2xl text-base font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
@@ -892,10 +973,10 @@ export default function RegisterModal({
                   )}
                 </motion.button>
 
-                <div className="flex justify-center items-center mt-4">
+                <div className="flex justify-center items-center mt-2">
                   <motion.button
                     type="button"
-                    className="text-[0.9rem] text-[#10b981] cursor-pointer no-underline bg-transparent border-none hover:text-[#0f7a5c] hover:underline font-medium"
+                    className="text-sm text-green-600 cursor-pointer bg-transparent border-none hover:text-green-700 hover:underline font-semibold transition-colors duration-200"
                     variants={itemVariants}
                     onClick={() => handleSetStep(2)}
                   >
@@ -908,34 +989,34 @@ export default function RegisterModal({
             {step === 2 && (
               <motion.form
                 key="step2"
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleRegisterPhoneSubmit}
               >
-                <div className="text-center p-5">{logosvg}</div>
+                <div className="text-center py-6">{logosvg}</div>
                 <motion.h2
-                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
                 >
                   {t("register.register.title") || "Регистрация"}
                 </motion.h2>
                 <motion.p
-                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  className="text-sm text-gray-500 text-center m-0 mb-4"
                   variants={itemVariants}
                 >
                   {t("register.login.userCount") || "Создайте новый аккаунт"}
                 </motion.p>
 
                 <motion.div
-                  className="relative w-full min-h-[56px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[16px] transition-all duration-300"
+                  className="relative w-full min-h-[58px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-2xl transition-all duration-200"
                   variants={itemVariants}
                 >
-                  <div className="flex items-center w-full h-[56px] bg-transparent">
+                  <div className="flex items-center w-full h-[58px] bg-transparent">
                     <select
-                      className="p-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full leading-[24px] appearance-none"
+                      className="px-4 border-none text-base outline-none bg-transparent cursor-pointer w-[60px] h-full appearance-none"
                       value={countryCode}
                       onChange={handleCountryCodeChange}
                       required
@@ -946,9 +1027,9 @@ export default function RegisterModal({
                         </option>
                       ))}
                     </select>
-                    <span className="text-base text-[#2d3748] mr-2 font-medium">{countryCode}</span>
+                    <span className="text-base text-gray-800 mr-2 font-semibold">{countryCode}</span>
                     <input
-                      className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                      className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
                       type="tel"
                       ref={phoneInputRef}
                       value={phoneDigits}
@@ -961,14 +1042,14 @@ export default function RegisterModal({
                 </motion.div>
 
                 <motion.p
-                  className="text-[0.85rem] text-[#718096] text-center mt-2 leading-[1.4] bg-blue-50 py-3 px-4 rounded-lg"
+                  className="text-sm text-gray-600 text-center mt-1 bg-blue-50 py-3 px-4 rounded-xl border border-blue-100"
                   variants={itemVariants}
                 >
                   {t("register.otp.note") || "Для получения кода напишите боту:"}{" "}
                   <a
                     href="https://t.me/myprofy_bot"
                     target="_blank"
-                    className="text-[#10b981] font-semibold hover:underline"
+                    className="text-green-600 font-semibold hover:text-green-700 hover:underline transition-colors duration-200"
                   >
                     @myprofy_bot
                   </a>
@@ -976,7 +1057,7 @@ export default function RegisterModal({
 
                 {error && (
                   <motion.span
-                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    className="text-red-600 text-sm mt-1 text-center font-medium bg-red-50 py-2.5 px-4 rounded-xl"
                     variants={itemVariants}
                   >
                     {error}
@@ -986,7 +1067,7 @@ export default function RegisterModal({
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  className="px-4 py-3.5 w-full border-none rounded-2xl text-base font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
@@ -1003,13 +1084,13 @@ export default function RegisterModal({
                 </motion.button>
 
                 <motion.div
-                  className="flex items-center justify-center mt-4"
+                  className="flex items-center justify-center mt-2"
                   variants={itemVariants}
                 >
                   <button
                     type="button"
                     onClick={() => handleSetStep(1)}
-                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                    className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-semibold text-sm transition-colors duration-200"
                   >
                     <FaArrowLeft />
                     <span>{t("register.login.title") || "Вход в аккаунт"}</span>
@@ -1021,47 +1102,43 @@ export default function RegisterModal({
             {step === 3 && (
               <motion.form
                 key="step3"
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-4"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleOtpSubmit}
               >
-                <div className="text-center p-5">{logosvg}</div>
+                <div className="text-center py-5">{logosvg}</div>
+
                 <motion.h2
-                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 text-2xl text-gray-900 text-center font-bold"
                   variants={itemVariants}
                 >
-                  {t("register.otp.title") || "Подтверждение кода"}
+                  Введите код подтверждения
                 </motion.h2>
+
                 <motion.p
-                  className="text-[0.85rem] text-[#718096] text-center mt-2 leading-[1.4]"
+                  className="text-sm text-gray-600 text-center m-0 leading-relaxed"
                   variants={itemVariants}
                 >
-                  {t("register.otp.sentMessage") || "Код отправлен в Telegram:"}
+                  Код отправлен в{" "}
                   <a
-                    className="text-[#10b981] ml-1 font-semibold"
+                    className="text-green-600 font-semibold hover:text-green-700 transition-colors"
                     href="https://t.me/MyProfy_OTP_bot"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    MyProfy_OTP_bot
+                    @MyProfy_OTP_bot
                   </a>
                 </motion.p>
 
-                <motion.div
-                  className="border-none"
-                  variants={itemVariants}
-                >
-                  <motion.div
-                    className="grid grid-cols-4 gap-4 mx-auto mb-6 w-full max-w-[280px]"
-                    variants={itemVariants}
-                  >
+                <motion.div className="my-3" variants={itemVariants}>
+                  <div className="grid grid-cols-4 gap-3 mx-auto w-full max-w-[280px]">
                     {otpValues.map((value, index) => (
                       <input
                         key={index}
-                        className="w-16 h-16 border-2 border-[#e2e8f0] rounded-[12px] text-2xl font-bold text-center outline-none bg-white transition-all duration-300 focus:border-[#3ea23e] focus:shadow-md"
+                        className="w-full h-16 border-2 border-gray-200 rounded-2xl text-3xl font-bold text-gray-900 text-center outline-none bg-white transition-all duration-200 focus:border-green-500 focus:ring-4 focus:ring-green-100"
                         ref={otpRefs.current[index]}
                         type="text"
                         value={value}
@@ -1074,22 +1151,37 @@ export default function RegisterModal({
                         pattern="\d*"
                       />
                     ))}
-                  </motion.div>
+                  </div>
                 </motion.div>
 
+                <motion.p
+                  className="text-xs text-center text-gray-500 -mt-1"
+                  variants={itemVariants}
+                >
+                  Не получили код?{" "}
+                  <a
+                    href="https://t.me/myprofy_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 font-semibold hover:underline"
+                  >
+                    Напишите боту
+                  </a>
+                </motion.p>
+
                 {error && (
-                  <motion.span
-                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                  <motion.div
+                    className="text-red-600 text-sm text-center font-medium bg-red-50 py-2.5 px-4 rounded-xl border border-red-100"
                     variants={itemVariants}
                   >
                     {error}
-                  </motion.span>
+                  </motion.div>
                 )}
 
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  className="px-4 py-3.5 w-full border-none rounded-2xl text-base font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 mt-2"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
@@ -1097,39 +1189,40 @@ export default function RegisterModal({
                 >
                   {isLoading ? (
                     <>
-                      <FaSpinner className="animate-spin" />
+                      <FaSpinner className="animate-spin text-lg" />
                       <span>Проверка...</span>
                     </>
                   ) : (
-                    t("register.otp.submit") || "Подтвердить"
+                    "Подтвердить"
                   )}
                 </motion.button>
 
                 <motion.button
-                  className={`text-[0.9rem] text-center mt-3 cursor-pointer bg-none border-none p-0 font-medium ${resendTimer > 0
-                    ? "text-[#718096] cursor-not-allowed"
-                    : "text-[#10b981] hover:text-[#0f7a5c] hover:underline"
+                  type="button"
+                  className={`text-sm text-center cursor-pointer bg-transparent border-none p-0 font-medium transition-colors duration-200 ${resendTimer > 0
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-green-600 hover:text-green-700 hover:underline"
                     }`}
                   variants={itemVariants}
                   onClick={handleResendOtp}
                   disabled={resendTimer > 0}
                 >
                   {resendTimer > 0
-                    ? `${t("register.otp.resendTimer") || "Отправить повторно через"} ${resendTimer} сек.`
-                    : t("register.otp.resend") || "Отправить код повторно"}
+                    ? `Повторная отправка через ${resendTimer} сек`
+                    : "Отправить код повторно"}
                 </motion.button>
 
                 <motion.div
-                  className="flex items-center justify-center mt-4"
+                  className="flex items-center justify-center mt-2"
                   variants={itemVariants}
                 >
                   <button
                     type="button"
                     onClick={() => handleSetStep(2)}
-                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                    className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-medium text-sm transition-colors duration-200"
                   >
-                    <FaArrowLeft />
-                    <span>{t("register.register.backToLogin") || "Назад к регистрации"}</span>
+                    <FaArrowLeft className="text-xs" />
+                    <span>Назад</span>
                   </button>
                 </motion.div>
               </motion.form>
@@ -1138,33 +1231,33 @@ export default function RegisterModal({
             {step === 4 && (
               <motion.form
                 key="step4"
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleTelegramSubmit}
               >
-                <div className="text-center p-5">{logosvg}</div>
+                <div className="text-center py-6">{logosvg}</div>
                 <motion.h2
-                  className="m-0 mb-2 text-[1.75rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
                 >
                   {t("register.telegram.title") || "Telegram"}
                 </motion.h2>
                 <motion.p
-                  className="text-[0.9rem] text-[#718096] text-center m-0 mb-6 leading-[1.4]"
+                  className="text-sm text-gray-500 text-center m-0 mb-4"
                   variants={itemVariants}
                 >
                   {t("register.telegram.description") || "Введите ваш Telegram username"}
                 </motion.p>
 
                 <motion.div
-                  className="relative w-full min-h-[56px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[16px] transition-all duration-300"
+                  className="relative w-full min-h-[58px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-2xl transition-all duration-200"
                   variants={itemVariants}
                 >
                   <input
-                    className="p-4 border-none text-base outline-none bg-transparent w-full h-full leading-[24px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
                     type="text"
                     ref={telegramInputRef}
                     value={telegram}
@@ -1176,7 +1269,7 @@ export default function RegisterModal({
 
                 {error && (
                   <motion.span
-                    className="text-[#e53e3e] text-[0.85rem] mt-2 text-center font-medium bg-red-50 py-2 px-4 rounded-lg"
+                    className="text-red-600 text-sm mt-1 text-center font-medium bg-red-50 py-2.5 px-4 rounded-xl"
                     variants={itemVariants}
                   >
                     {error}
@@ -1186,7 +1279,7 @@ export default function RegisterModal({
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-4 w-full border-none rounded-[16px] text-base font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-14"
+                  className="px-4 py-3.5 w-full border-none rounded-2xl text-base font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
@@ -1203,13 +1296,13 @@ export default function RegisterModal({
                 </motion.button>
 
                 <motion.div
-                  className="flex items-center justify-center mt-4"
+                  className="flex items-center justify-center mt-2"
                   variants={itemVariants}
                 >
                   <button
                     type="button"
                     onClick={() => handleSetStep(3)}
-                    className="flex items-center gap-2 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium"
+                    className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-semibold text-sm transition-colors duration-200"
                   >
                     <FaArrowLeft />
                     <span>{t("register.register.backToLogin") || "Назад"}</span>
@@ -1221,35 +1314,35 @@ export default function RegisterModal({
             {step === 5 && (
               <motion.form
                 key="step5"
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-4"
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
                 onSubmit={handleProfileSubmit}
               >
-                <div className="text-center mt-3 ">{logosvg}</div>
+                <div className="text-center mt-4">{logosvg}</div>
 
                 <motion.h2
-                  className="m-0 mb-1 text-[1.35rem] text-[#2d3748] text-center font-bold"
+                  className="m-0 mb-1 text-2xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
                 >
                   {t("register.profile.welcomeTitle")}
                 </motion.h2>
 
                 <motion.p
-                  className="text-[0.8rem] text-[#718096] text-center m-0 mb-3 leading-[1.3]"
+                  className="text-sm text-gray-500 text-center m-0 mb-3"
                   variants={itemVariants}
                 >
                   {t("register.profile.welcomeSubtitle")}
                 </motion.p>
 
                 <motion.div
-                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
+                  className="relative w-full min-h-[50px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-xl transition-all duration-200"
                   variants={itemVariants}
                 >
                   <input
-                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    className="px-4 py-3 border-none text-sm outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
                     type="text"
                     value={name}
                     onChange={(e) => {
@@ -1261,9 +1354,9 @@ export default function RegisterModal({
                   />
                 </motion.div>
 
-                <div className="relative overflow-visible bg-white transition-all duration-300 min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px]">
+                <div className="relative overflow-visible bg-white transition-all duration-200 min-h-[50px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-xl">
                   <motion.div
-                    className="absolute text-[0.95rem] z-2 left-3 top-1/2 -translate-y-1/2"
+                    className="absolute text-base z-10 left-3 top-1/2 -translate-y-1/2 text-gray-500"
                     variants={iconVariants}
                     animate={isPasswordFocused ? "hover" : "inactive"}
                   >
@@ -1271,7 +1364,7 @@ export default function RegisterModal({
                   </motion.div>
 
                   <input
-                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] pl-10 placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    className="px-4 py-3 border-none text-sm outline-none bg-transparent w-full h-full pl-10 placeholder:text-gray-400 font-medium"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -1291,7 +1384,7 @@ export default function RegisterModal({
                   />
 
                   <motion.div
-                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-[1rem] flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-base flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
                     variants={eyeIconVariants}
                     animate={showPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -1302,9 +1395,9 @@ export default function RegisterModal({
                   </motion.div>
                 </div>
 
-                <div className="relative overflow-visible bg-white transition-all duration-300 min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px]">
+                <div className="relative overflow-visible bg-white transition-all duration-200 min-h-[50px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-xl">
                   <motion.div
-                    className="absolute text-[0.95rem] z-2 left-3 top-1/2 -translate-y-1/2"
+                    className="absolute text-base z-10 left-3 top-1/2 -translate-y-1/2 text-gray-500"
                     variants={iconVariants}
                     animate={isConfirmPasswordFocused ? "hover" : "inactive"}
                   >
@@ -1312,7 +1405,7 @@ export default function RegisterModal({
                   </motion.div>
 
                   <input
-                    className="p-3 border-none text-sm outline-none bg-transparent w-full h-full leading-[20px] pl-10 placeholder:text-[#a0aec0] placeholder:italic font-medium"
+                    className="px-4 py-3 border-none text-sm outline-none bg-transparent w-full h-full pl-10 placeholder:text-gray-400 font-medium"
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -1332,7 +1425,7 @@ export default function RegisterModal({
                   />
 
                   <motion.div
-                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-[1rem] flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-base flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
                     variants={eyeIconVariants}
                     animate={showConfirmPassword ? "visible" : "hidden"}
                     whileHover="hover"
@@ -1343,13 +1436,12 @@ export default function RegisterModal({
                   </motion.div>
                 </div>
 
-                {/* Gender Select */}
                 <motion.div
-                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
+                  className="relative w-full min-h-[50px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-xl transition-all duration-200"
                   variants={itemVariants}
                 >
                   <select
-                    className="px-3 py-2 border-none rounded-[12px] text-sm outline-none bg-transparent bg-no-repeat cursor-pointer w-full h-[44px] appearance-none text-center focus:outline-none font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_0.8rem_center] bg-[length:12px]"
+                    className="px-4 py-3 border-none rounded-xl text-sm outline-none bg-transparent cursor-pointer w-full h-[50px] appearance-none text-center font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%236B7280%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_1rem_center] bg-[length:12px]"
                     value={gender}
                     onChange={(e) => {
                       setGender(e.target.value);
@@ -1369,13 +1461,12 @@ export default function RegisterModal({
                   </select>
                 </motion.div>
 
-                {/* Region Select */}
                 <motion.div
-                  className="relative w-full min-h-[44px] border-2 border-[#e2e8f0] hover:border-[#3ea23e] rounded-[12px] transition-all duration-300"
+                  className="relative w-full min-h-[50px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-xl transition-all duration-200"
                   variants={itemVariants}
                 >
                   <select
-                    className="px-3 py-2 border-none rounded-[12px] text-sm outline-none bg-transparent bg-no-repeat cursor-pointer w-full h-[44px] appearance-none text-center focus:outline-none font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%23000%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_0.8rem_center] bg-[length:12px]"
+                    className="px-4 py-3 border-none rounded-xl text-sm outline-none bg-transparent cursor-pointer w-full h-[50px] appearance-none text-center font-medium bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27 viewBox=%270 0 12 6%27%3E%3Cpath d=%27M1 1l5 4 5-4%27 stroke=%27%236B7280%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E')] bg-[right_1rem_center] bg-[length:12px]"
                     value={region}
                     onChange={(e) => {
                       setRegion(e.target.value);
@@ -1394,10 +1485,9 @@ export default function RegisterModal({
                   </select>
                 </motion.div>
 
-                {/* Error Message */}
                 {error && (
                   <motion.span
-                    className="text-[#e53e3e] text-[0.75rem] mt-1 text-center font-medium bg-red-50 py-1.5 px-3 rounded-lg"
+                    className="text-red-600 text-sm mt-1 text-center font-medium bg-red-50 py-2 px-3 rounded-xl"
                     variants={itemVariants}
                   >
                     {error}
@@ -1407,7 +1497,7 @@ export default function RegisterModal({
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="p-3 w-full border-none rounded-[12px] text-sm font-semibold cursor-pointer bg-gradient-to-r from-[#3ea23e] to-[#2d8b2d] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-300 h-11"
+                  className="px-4 py-3 w-full border-none rounded-xl text-sm font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                   variants={buttonVariants}
                   initial="initial"
                   whileHover="hover"
@@ -1423,7 +1513,6 @@ export default function RegisterModal({
                   )}
                 </motion.button>
 
-                {/* Back Button */}
                 <motion.div
                   className="flex items-center justify-center mt-2"
                   variants={itemVariants}
@@ -1431,7 +1520,7 @@ export default function RegisterModal({
                   <button
                     type="button"
                     onClick={() => handleSetStep(4)}
-                    className="flex items-center gap-1.5 no-underline bg-transparent border-none text-[#10b981] hover:text-[#0f7a5c] cursor-pointer font-medium text-sm"
+                    className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-semibold text-sm transition-colors duration-200"
                   >
                     <FaArrowLeft className="text-xs" />
                     <span>{t("register.register.backToLogin")}</span>
@@ -1449,27 +1538,27 @@ export default function RegisterModal({
                 exit="exit"
               >
                 <div className="flex flex-col justify-center p-6 relative">
-                  <div className="mb-4 text-center">{logosvg}</div>
-                  <h1 className="text-center text-[1.5rem] font-bold text-black m-0 mb-2">
+                  <div className="mb-5 text-center">{logosvg}</div>
+                  <h1 className="text-center text-2xl font-bold text-gray-800 m-0 mb-3 tracking-tight">
                     {t("registerCoolText1.title")}
                   </h1>
-                  <p className="text-[0.9rem] text-[#666666] m-0 mb-4 text-center">
+                  <p className="text-sm text-gray-600 m-0 mb-5 text-center leading-relaxed">
                     {t("registerCoolText1.description")}
                   </p>
-                  <div className="flex justify-between w-full gap-4 mb-4 h-[161px]">
-                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full">
-                      <p className="text-base text-black m-0">
+                  <div className="flex justify-between w-full gap-4 mb-5">
+                    <div className="flex justify-start bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 w-full min-h-[160px] border border-green-200">
+                      <p className="text-sm text-gray-800 m-0 leading-relaxed">
                         {t("registerCoolText1.subtitle")}
                       </p>
                     </div>
-                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full">
-                      <p className="text-base text-black m-0">
+                    <div className="flex justify-start bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 w-full min-h-[160px] border border-green-200">
+                      <p className="text-sm text-gray-800 m-0 leading-relaxed">
                         {t("registerCoolText1.subtitle2")}
                       </p>
                     </div>
                   </div>
                   <button
-                    className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
+                    className="w-full py-3.5 text-base font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 border-none rounded-xl cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                     onClick={() => handleSetStep(10)}
                     type="button"
                   >
@@ -1488,22 +1577,22 @@ export default function RegisterModal({
                 exit="exit"
               >
                 <div className="flex flex-col justify-center p-6 relative">
-                  <div className="mb-4 text-center">{logosvg}</div>
-                  <h1 className="text-center text-[1.5rem] font-bold text-black m-0 mb-2">
+                  <div className="mb-5 text-center">{logosvg}</div>
+                  <h1 className="text-center text-2xl font-bold text-gray-800 m-0 mb-3 tracking-tight">
                     {t("registerCoolText2.title")}
                   </h1>
-                  <p className="text-[0.9rem] text-[#666666] m-0 mb-4 text-center">
+                  <p className="text-sm text-gray-600 m-0 mb-5 text-center leading-relaxed">
                     {t("registerCoolText2.description")}
                   </p>
-                  <div className="flex justify-between w-full gap-4 mb-4 h-[161px]">
-                    <div className="flex justify-start bg-[#e6ffe6] rounded-[8px] p-3 w-full mb-4">
-                      <p className="text-base text-black m-0">
+                  <div className="flex justify-between w-full gap-4 mb-5">
+                    <div className="flex justify-start bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 w-full min-h-[160px] border border-green-200">
+                      <p className="text-sm text-gray-800 m-0 leading-relaxed">
                         {t("registerCoolText2.boost_description")}
                       </p>
                     </div>
                   </div>
                   <button
-                    className="w-full p-3 text-base font-medium text-white bg-[#3ea240] border-none rounded-[8px] cursor-pointer"
+                    className="w-full py-3.5 text-base font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 border-none rounded-xl cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                     onClick={() => {
                       handleClose();
                       router.push("/profile");
@@ -1518,6 +1607,6 @@ export default function RegisterModal({
           </AnimatePresence>
         </motion.div>
       </motion.div>
-    </FocusTrap>
+    </FocusTrap >
   );
 }

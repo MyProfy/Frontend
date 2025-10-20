@@ -96,6 +96,15 @@ export interface ExecutorReview extends BaseEntity {
   order: number | Order;
 }
 
+export interface OTPVerifyResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    link?: string;
+    expires_at?: string;
+  };
+}
+
 export interface ClientReview extends BaseEntity {
   rating: number;
   review?: string;
@@ -144,7 +153,8 @@ export interface Service extends BaseEntity {
 }
 
 export interface Vacancy extends BaseEntity {
-  name: string;
+  id?: number;
+  title?: string;
   price: number;
   description?: string;
   category: number | Category;
@@ -186,6 +196,13 @@ export interface LoginPayload {
   phone: string;
   password: string;
 }
+export interface OTPRequestResponse {
+  message: string;
+  data?: {
+    link?: string;
+    expires_at?: string;
+  };
+}
 
 export interface RegisterPayload {
   phone: string;
@@ -194,7 +211,7 @@ export interface RegisterPayload {
   role: "client" | "executor";
   region: string;
   gender: "male" | "female"; 
-  telegram_id: number; 
+  telegram_id?: number; 
   telegram_username: string; 
   confirm_password?: string; 
 }

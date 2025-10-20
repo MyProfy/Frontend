@@ -120,7 +120,6 @@ export default function LanguageModal({
                   </div>
                 </motion.div>
 
-                {/* Русский */}
                 <motion.div
                   whileHover={{
                     scale: 1.03,

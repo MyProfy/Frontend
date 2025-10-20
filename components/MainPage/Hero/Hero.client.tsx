@@ -199,7 +199,7 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
     ? t("specialists.title", "Специалисты по категориям")
     : t("specialists. ", "Популярные категории для специалистов");
 
-  const specialistsDescFull = `5 ${mode === 'client'
+  const specialistsDescFull = `371 ${mode === 'client'
     ? t("specialists.description", "минут на заказ")
     : t("specialists.descriptionSpecialist", "минут на регистрацию")}`;
 
@@ -307,20 +307,19 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-center mt-50 fixed  bg-[#C9C9C966] py-2 px-4 rounded-xl z-50">
-          <button className="flex items-center gap-2 bg-black text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-l-xl transition-all hover:bg-[#222] cursor-pointer">
-            <FaFireFlameCurved className="text-lg" />
-            Найти специалиста
-          </button>
-
-          <Link href="/VacanciesCategory/Vacancies">
-            <button className="flex gap-2 bg-[#292B2FBF] text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-r-xl transition-all hover:bg-[#333539bf] cursor-pointer">
-              <BsFillLightningFill className="text-lg mt-0.5" />
-              Найти клиентов
+        {/* <div className="flex items-center justify-center mt-50 fixed  bg-[#C9C9C966] py-2 px-4 rounded-xl z-50">
+            <button className="flex items-center gap-2 bg-black text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-l-xl transition-all hover:bg-[#222] cursor-pointer">
+              <FaFireFlameCurved className="text-lg" />
+              Найти специалиста
             </button>
-          </Link>
 
-        </div>
+            <Link href="/VacanciesCategory/Vacancies">
+              <button className="flex gap-2 bg-[#292B2FBF] text-white text-base md:text-[0.98rem] font-normal py-3 px-4 rounded-r-xl transition-all hover:bg-[#333539bf] cursor-pointer">
+                <BsFillLightningFill className="text-lg mt-0.5" />
+                Найти клиентов
+              </button>
+            </Link>
+          </div> */}
 
         {mode === 'specialist' && (
           <div className="bg-gradient-to-br from-[#3ea240] to-[#218838] text-white py-12 md:py-16 px-8 md:px-9 rounded-3xl my-10 max-w-[1400px] w-full text-center">
@@ -366,13 +365,16 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
           ))}
         </div>
 
-        <div className="bg-white w-full max-w-[1400px] my-5 p-4 md:p-7 rounded-3xl min-w-[320px] relative overflow-hidden max-md:w-[90%]">
-          <h2 className="text-2xl md:text-3xl font-light text-black mb-8 md:mb-32 text-left relative z-10 break-words max-w-[50%] max-md:max-w-full p-3 md:p-4 w-full mt-3">
-            {specialistsTitle}
-          </h2>
 
-          <div className="absolute md:top-14 right-8 md:right-6 max-md:right-7 bg-[#f2f3f7] text-[#676e7e] text-xs md:text-sm py-2 px-3 md:py-2.5 md:px-3.5 rounded-xl w-fit max-w-[35vw] max-md:max-w-[80vw] flex items-center justify-center whitespace-nowrap box-border shadow-sm">
-            {specialistsDescFull}
+        <div className="bg-white w-full max-w-[1400px] my-5 p-4 md:p-7 rounded-3xl min-w-[320px] relative overflow-hidden max-md:w-[90%]">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-light text-black mb-8 md:mb-10 text-left relative z-10 break-words max-w-[50%] max-md:max-w-full p-3 md:p-4 w-full mt-3">
+              {specialistsTitle}
+            </h2>
+
+            <div className="absolute md:top-14 right-8 md:right-6 max-md:right-7 bg-[#f2f3f7] text-[#676e7e] text-xs md:text-sm py-2 px-3 md:py-2.5 md:px-3.5 rounded-xl w-fit max-w-[35vw] max-md:max-w-[80vw] flex items-center justify-center whitespace-nowrap box-border shadow-sm">
+              {specialistsDescFull}
+            </div>
           </div>
 
           <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start px-4 mb-5 justify-center overflow-hidden">
@@ -407,14 +409,13 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
                       })
                       .slice(0, 5)
                       .map((subCategory) => (
-                        // <Link href="../../specialists/[id]" as={`../specialists/${subCategory.>
-                          <li
-                            key={subCategory.id}
-                            className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
-                          >
-                            {getDisplayName(subCategory)}
-                          </li>
-                        // </Link>
+                        <li
+                          key={subCategory.id}
+                          onClick={() => handleSubCategoryClick(subCategory.id, category.id)}
+                          className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
+                        >
+                          {getDisplayName(subCategory)}
+                        </li>
                       ))}
                   </ul>
 
@@ -430,7 +431,6 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
           </div>
         </div>
 
-
         <div className="w-full max-w-[1400px] mx-auto my-5 md:my-6 rounded-3xl bg-white flex justify-between items-start gap-6 md:gap-8 px-6 md:px-9 py-8 md:py-12 max-md:flex-col max-md:w-[90%] min-w-[320px] box-border">
           <div className="flex flex-col gap-3 md:gap-4 items-start text-left w-full max-w-[600px] p-3 md:p-4">
             <h3 className="font-semibold text-3xl md:text-3xl max-md:text-xl max-[480px]:text-lg leading-tight text-[#292c32]">
@@ -443,16 +443,16 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
 
             <div
               className="
-        flex items-center justify-center
-        text-[15px] max-md:text-sm max-[480px]:text-[13px]
-        font-medium text-[#676e7e] text-center
-        bg-[#f2f3f7] rounded-lg
-        w-full max-w-[400px] md:max-w-[500px]
-        min-h-[32px] md:h-[34px]
-        px-4 md:px-5
-        leading-snug
-        whitespace-nowrap max-md:whitespace-normal
-      "
+          flex items-center justify-center
+          text-[15px] max-md:text-sm max-[480px]:text-[13px]
+          font-medium text-[#676e7e] text-center
+          bg-[#f2f3f7] rounded-lg
+          w-full max-w-[400px] md:max-w-[500px]
+          min-h-[32px] md:h-[34px]
+          px-4 md:px-5
+          leading-snug
+          whitespace-nowrap max-md:whitespace-normal
+        "
             >
               {styledDescContent}
             </div>
@@ -467,13 +467,13 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
               onKeyDown={handleKeyDown}
               maxLength={250}
               className="
-        w-full h-[120px] md:h-[130px]
-        p-4 md:p-6
-        rounded-lg border-none
-        text-sm md:text-base text-[#292c32]
-        bg-[#f2f3f7] resize-none outline-none
-        overflow-y-auto placeholder:text-[#a0a0a0]
-      "
+          w-full h-[120px] md:h-[130px]
+          p-4 md:p-6
+          rounded-lg border-none
+          text-sm md:text-base text-[#292c32]
+          bg-[#f2f3f7] resize-none outline-none
+          overflow-y-auto placeholder:text-[#a0a0a0]
+        "
             />
             <span
               className={` absolute right-3 bottom-16 md:bottom-20 text-xs md:text-sm ${requestText.length === 250 ? "text-red-500" : "text-gray-500"}`}
@@ -483,19 +483,18 @@ export default function BannerClient({ initialSlide = 1 }: BannerClientProps) {
 
             <button
               className="
-        w-full h-[46px] md:h-[50px]
-        mt-2 md:mt-3
-        bg-[#3ea240] hover:bg-[#218838]
-        text-white font-medium
-        rounded-lg transition-colors
-        text-sm md:text-base
-      "
+          w-full h-[46px] md:h-[50px]
+          mt-2 md:mt-3
+          bg-[#3ea240] hover:bg-[#218838]
+          text-white font-medium
+          rounded-lg transition-colors
+          text-sm md:text-base
+        "
             >
               {requestButton}
             </button>
           </div>
         </div>
-
 
         <ReviewsBlock reviews={reviews} />
       </div>
