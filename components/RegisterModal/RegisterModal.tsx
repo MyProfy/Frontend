@@ -175,7 +175,7 @@ export default function RegisterModal({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState("");
-  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
+  const [otpValues, setOtpValues] = useState(["", "", "", ""]);
   const [telegram, setTelegram] = useState("");
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
@@ -243,7 +243,7 @@ export default function RegisterModal({
 
   const phoneRegex = /^\+\d{7,14}$/;
   const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/;
-  const otpRegex = /^\d{6}$/;
+  const otpRegex = /^\d{4}$/;
   const telegramRegex = /^@[\w]{3,}$/;
   const nameRegex = /^[a-zA-Zа-яА-Я\s]{2,}$/;
 
@@ -341,9 +341,9 @@ export default function RegisterModal({
     if (!chars.length) return;
 
     const newOtpValues = [...otpValues];
-    let start = chars.length === 6 ? 0 : index;  // 6 вместо 4
+    let start = chars.length === 4 ? 0 : index;
 
-    for (let i = 0; i < chars.length && start + i < 6; i++) {  // 6 вместо 4
+    for (let i = 0; i < chars.length && start + i < 4; i++) {  
       newOtpValues[start + i] = chars[i];
     }
 
@@ -352,11 +352,11 @@ export default function RegisterModal({
     setOtp(newOtp);
     dispatch(clearError());
 
-    const filledTo = Math.min((chars.length === 6 ? 0 : index) + chars.length, 5);  // 5 вместо 3
-    const nextFocus = Math.min(filledTo, 5);  // 5 вместо 3
+    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3);  
+    const nextFocus = Math.min(filledTo, 3);  
     otpRefs.current[nextFocus]?.current?.focus();
 
-    if (newOtp.length === 6 && newOtpValues.every(v => v !== "")) {  // 6 вместо 4
+    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {  
       console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
@@ -380,7 +380,7 @@ export default function RegisterModal({
     setShowPassword(false);
     setShowConfirmPassword(false);
     setOtp("");
-    setOtpValues(["", "", "", "", "", ""]);
+    setOtpValues(["", "", "", ""]);
     setTelegram("");
     setName("");
     setGender("");
@@ -390,7 +390,7 @@ export default function RegisterModal({
     setIsConfirmPasswordFocused(false);
     setHasLoginError(false);
     dispatch(clearError());
-    setTelegramLink(null); // 
+    setTelegramLink(null); 
   };
 
   const handleClose = () => {
@@ -1139,7 +1139,7 @@ export default function RegisterModal({
                 </motion.p>
 
                 <motion.div className="my-3" variants={itemVariants}>
-                  <div className="grid grid-cols-6 gap-2 mx-auto w-full max-w-[360px]">
+                  <div className="grid grid-cols-4  gap-2 mx-auto w-full max-w-[260px]">
                     {otpValues.map((value, index) => (
                       <input
                         key={index}
