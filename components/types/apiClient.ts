@@ -227,7 +227,6 @@ export const apiClient = {
     }
 
     try {
-      // ✅ Отправляем phone и code в теле запроса
       const response = await api.post("auth/otp/verify/", {
         phone: data.phone,
         code: data.code
