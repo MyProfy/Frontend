@@ -36,6 +36,7 @@ import {
   setModalStep,
   resetModal,
 } from "../../store/slices/uiSlice";
+// import { log } from "console";
 
 interface RootState {
   auth: {
@@ -169,6 +170,7 @@ export default function RegisterModal({
   const step = modal.currentStep;
 
   const [countryCode, setCountryCode] = useState("+998");
+  const [savedPhoneNumber, setSavedPhoneNumber] = useState("");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -227,10 +229,6 @@ export default function RegisterModal({
     }
   }, [isOpen, step]);
 
-  useEffect(() => {
-    dispatch(clearError());
-  }, [step])
-
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -258,6 +256,7 @@ export default function RegisterModal({
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
+    // console.log("ASD", value);
     setPhoneDigits(value.slice(0, 14 - countryCode.length));
     setHasLoginError(false);
     dispatch(clearError());
@@ -277,7 +276,7 @@ export default function RegisterModal({
   };
 
   const handleOtpAutoSubmit = async (otpCode: string) => {
-    console.log("🚀 Auto-submitting OTP:", otpCode);
+    // console.log("🚀 Auto-submitting OTP:", otpCode);
     dispatch(clearError());
 
     const otpError = otpRegex.test(otpCode) ? "" : t("register.errors.invalidOtp");
@@ -289,13 +288,13 @@ export default function RegisterModal({
 
     dispatch(registerStart());
     try {
-      console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
+      // console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
       const result = await apiClient.verifyOTP({ phone: phoneNumber, code: otpCode });
-      console.log("✅ OTP verified successfully!", result);
+      // console.log("✅ OTP verified successfully!", result);
 
       if (result.data?.link) {
         setTelegramLink(result.data.link);
-        console.log("🔗 Telegram link received:", result.data.link);
+        // console.log("🔗 Telegram link received:", result.data.link);
       }
 
       dispatch(registerStepComplete());
@@ -326,7 +325,7 @@ export default function RegisterModal({
     }
 
     if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
-      console.log("🔢 All 4 digits entered, auto-submitting OTP:", newOtp);
+      // console.log("🔢 All 4 digits entered, auto-submitting OTP:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
       }, 300);
@@ -343,7 +342,7 @@ export default function RegisterModal({
     const newOtpValues = [...otpValues];
     let start = chars.length === 4 ? 0 : index;
 
-    for (let i = 0; i < chars.length && start + i < 4; i++) {  
+    for (let i = 0; i < chars.length && start + i < 4; i++) {
       newOtpValues[start + i] = chars[i];
     }
 
@@ -352,12 +351,12 @@ export default function RegisterModal({
     setOtp(newOtp);
     dispatch(clearError());
 
-    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3);  
-    const nextFocus = Math.min(filledTo, 3);  
+    const filledTo = Math.min((chars.length === 4 ? 0 : index) + chars.length, 3);
+    const nextFocus = Math.min(filledTo, 3);
     otpRefs.current[nextFocus]?.current?.focus();
 
-    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {  
-      console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
+    if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
+      // console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
       }, 300);
@@ -384,13 +383,14 @@ export default function RegisterModal({
     setTelegram("");
     setName("");
     setGender("");
+    setSavedPhoneNumber("");
     setRegion("");
     setResendTimer(0);
     setIsPasswordFocused(false);
     setIsConfirmPasswordFocused(false);
     setHasLoginError(false);
     dispatch(clearError());
-    setTelegramLink(null); 
+    setTelegramLink(null);
   };
 
   const handleClose = () => {
@@ -411,8 +411,8 @@ export default function RegisterModal({
     const phoneError = validatePhone();
     const passwordError = validatePassword();
 
-    console.log("📞 Login - Phone:", phoneNumber);
-    console.log("🔐 Login - Password length:", password.length);
+    // console.log("📞 Login - Phone:", phoneNumber);
+    // console.log("🔐 Login - Password length:", password.length);
 
     if (phoneError) {
       console.error("❌ Phone validation failed:", phoneError);
@@ -430,9 +430,9 @@ export default function RegisterModal({
 
     dispatch(loginStart());
     try {
-      console.log("🔄 Attempting login with:", { phone: phoneNumber, password: "***" });
+      // console.log("🔄 Attempting login with:", { phone: phoneNumber, password: "***" });
       const response = await apiClient.login({ phone: phoneNumber, password: password });
-      console.log("✅ Login successful:", response);
+      // console.log("✅ Login successful:", response);
 
       localStorage.setItem("token", response.token);
       dispatch(loginSuccess({ token: response.token, user: response.user }));
@@ -468,23 +468,26 @@ export default function RegisterModal({
   const handleRegisterPhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
-
+    // console.log("ASD")
     const phoneError = validatePhone();
     if (phoneError) {
       dispatch(registerFailure(phoneError));
       return;
     }
 
+    const fullPhoneNumber = countryCode + phoneDigits;
+    setSavedPhoneNumber(fullPhoneNumber);
+
     dispatch(registerStart());
     try {
-      console.log("📱 Отправка запроса OTP для номера:", phoneNumber);
+      // console.log("📱 Отправка запроса OTP для номера:", phoneNumber);
 
       const response = await apiClient.requestOTP(phoneNumber);
-      console.log("✅ OTP request response:", response);
+      // console.log("✅ OTP request response:", response);
 
       const botLink = response.data?.link || "https://t.me/myprofy_bot";
       setTelegramLink(botLink);
-      console.log("🔗 Telegram link:", botLink);
+      // console.log("🔗 Telegram link:", botLink);
 
       setTimeout(() => {
         window.open(botLink, '_blank', 'noopener,noreferrer');
@@ -535,6 +538,18 @@ export default function RegisterModal({
             window.open(fallbackLink, '_blank', 'noopener,noreferrer');
           }, 100);
         }
+      };
+
+      if (errorMessage.includes("User exists") || errorMessage.includes("already registered")) {
+        errorMessage = t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован";
+      } else if (errorMessage.includes("chat_id") || errorMessage.includes("telegram")) {
+        errorMessage = t("register.errors.noTelegramChat") || "Сначала напишите боту @myprofy_bot";
+        shouldProceed = true;
+        setTelegramLink(fallbackLink);
+
+        setTimeout(() => {
+          window.open(fallbackLink, '_blank', 'noopener,noreferrer');
+        }, 100);
       }
 
       if (!errorMessage) {
@@ -576,13 +591,14 @@ export default function RegisterModal({
   };
 
   const handleResendOtp = async () => {
+
     if (resendTimer > 0) return;
 
     dispatch(clearError());
     dispatch(registerStart());
 
     try {
-      console.log("🔄 Повторная отправка OTP для:", phoneNumber);
+      // console.log("🔄 Повторная отправка OTP для:", phoneNumber);
       const response = await apiClient.requestOTP(phoneNumber);
 
       const botLink = response.data?.link || "https://t.me/myprofy_bot";
@@ -596,7 +612,7 @@ export default function RegisterModal({
       setResendTimer(60);
 
     } catch (err: any) {
-      console.error("❌ Ошибка повторной отправки OTP:", err);
+      // console.error("❌ Ошибка повторной отправки OTP:", err);
 
       const fallbackLink = "https://t.me/myprofy_bot";
       setTelegramLink(fallbackLink);
@@ -634,8 +650,10 @@ export default function RegisterModal({
       // setTelegramId(0);
 
       dispatch(registerStepComplete());
+      // Move to the next step
       handleSetStep(5);
     } catch (err: any) {
+      // Handle error from API
       dispatch(registerFailure(
         err.response?.data?.error ||
         t("register.errors.telegramNotFound") ||
@@ -648,6 +666,8 @@ export default function RegisterModal({
     e.preventDefault();
     dispatch(clearError());
 
+    // console.log("📞 Phone Number:", phoneNumber);
+
     const errors = [
       validateName(),
       validatePassword(),
@@ -656,13 +676,16 @@ export default function RegisterModal({
       validateRegion(),
     ].filter(Boolean);
 
+
+
+
     if (errors.length > 0) {
       dispatch(registerFailure(errors[0]));
       return;
     }
 
     const registrationData = {
-      phone: phoneNumber,
+      phone: savedPhoneNumber || phoneNumber,
       password: password,
       name: name.trim(),
       telegram_id: 0,
@@ -1202,7 +1225,7 @@ export default function RegisterModal({
                   )}
                 </motion.button>
 
-                <motion.button
+                {/* <motion.button
                   type="button"
                   className={`text-sm text-center cursor-pointer bg-transparent border-none p-0 font-medium transition-colors duration-200 ${resendTimer > 0
                       ? "text-gray-400 cursor-not-allowed"
@@ -1215,7 +1238,7 @@ export default function RegisterModal({
                   {resendTimer > 0
                     ? `Повторная отправка через ${resendTimer} сек`
                     : "Отправить код повторно"}
-                </motion.button>
+                </motion.button> */}
 
                 <motion.div
                   className="flex items-center justify-center mt-2"
