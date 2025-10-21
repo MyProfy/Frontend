@@ -1,3 +1,5 @@
+// frontend/src/types/apiClient.ts - ПОЛНЫЙ ОБНОВЛЕННЫЙ КОД
+
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -22,6 +24,7 @@ import {
   Reklama,
   RegisterPayload,
   OTPVerifyResponse,
+  LoginPayload,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -29,6 +32,20 @@ const API_BASE_URL =
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
+
+console.log('🌐 API Base URL:', API_BASE_URL);
+
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || null;
+  }
+  return null;
+}
 
 const withRetry = async <T>(
   fn: () => Promise<AxiosResponse<T>>,
@@ -52,70 +69,116 @@ const withRetry = async <T>(
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { 
+    "Content-Type": "application/json",
+  },
   timeout: 15000,
+  withCredentials: true, 
 });
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token && token !== 'session') {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+    if (csrfToken && config.method !== 'get' && config.method !== 'head' && config.method !== 'options') {
+      config.headers['X-CSRFToken'] = csrfToken;
+    }
+
+    console.log('📤 Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      hasAuth: !!token,
+      hasCsrf: !!csrfToken,
+      withCredentials: config.withCredentials
+    });
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('❌ Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('📥 Response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response) {
-      console.error("🚨 API Error Response:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers,
-      });
+      // console.error("🚨 API Error Response:", {
+      //   status: error.response.status,
+      //   statusText: error.response.statusText,
+      //   data: error.response.data,
+      //   url: error.config?.url,
+      // });
+
+      // Специальная обработка 403 Forbidden
+      if (error.response.status === 403) {
+        // console.error("⚠️ 403 Forbidden - проблема с CSRF");
+        // console.log("CSRF token:", getCookie('csrftoken'));
+      }
     } else if (error.request) {
-      console.error("🚨 API No Response:", error.request);
+      // console.error("🚨 API No Response:", error.request);
     } else {
-      console.error("🚨 API Error:", error.message);
+      // console.error("🚨 API Error:", error.message);
     }
     return Promise.reject(error);
   }
 );
 
 export const apiClient = {
-
-  login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> => {
-    console.log("🔐 Login request:", { phone: credentials.phone });
+  getCsrfToken: async (): Promise<void> => {
     try {
+      // console.log('🔐 Getting CSRF token...');
+      await api.get('auth/csrf/');
+      const csrfToken = getCookie('csrftoken');
+      // console.log('✅ CSRF token obtained:', csrfToken ? 'YES' : 'NO');
+    } catch (error) {
+      // console.warn('⚠️ CSRF endpoint not available, continuing anyway');
+    }
+  },
+
+  login: async (credentials: LoginPayload): Promise<{ token: string; user: User }> => {
+    // console.log("🔐 Login request:", { phone: credentials.phone });
+    
+    try {
+      await apiClient.getCsrfToken();
+      
       const response = await api.post("auth/login/", credentials);
       console.log("✅ Login response:", response.data);
 
-      const token = response.data?.token ||
-        response.data?.access_token ||
-        response.data?.accessToken ||
-        response.data?.auth_token ||
-        response.data?.data?.token ||
-        response.data?.data?.access_token;
-
-      const user = response.data?.user ||
-        response.data?.data?.user ||
-        response.data?.data ||
-        response.data;
-
-      if (!token) {
-        console.error("❌ Token not found in response:", Object.keys(response.data || {}));
-        throw new Error("Token not found in server response");
-      }
+      const user: User = {
+        id: response.data.id || response.data.user?.id || 0,
+        phone: response.data.phone || credentials.phone,
+        name: response.data.name || response.data.user?.name || credentials.phone,
+        email: response.data.email || response.data.user?.email,
+        telegram_username: response.data.telegram_username || response.data.user?.telegram_username,
+        gender: response.data.gender || response.data.user?.gender,
+        region: response.data.region || response.data.user?.region,
+        executor_rating: response.data.executor_rating || response.data.user?.executor_rating || 0,
+        client_rating: response.data.client_rating || response.data.user?.client_rating || 0,
+      };
 
       return {
-        token,
-        user: user || { name: credentials.phone, phone: credentials.phone }
+        token: 'session',
+        user,
       };
     } catch (error: any) {
-      console.error("❌ Login error:", error.response?.data || error.message);
+      // console.error("❌ Login error:", {
+      //   status: error.response?.status,
+      //   data: error.response?.data,
+      //   message: error.message
+      // });
       throw error;
     }
   },
@@ -123,35 +186,20 @@ export const apiClient = {
   register: async (userData: RegisterPayload): Promise<any> => {
     const { confirm_password, ...dataToSend } = userData;
 
-    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📝 РЕГИСТРАЦИЯ - ПОЛНЫЙ DEBUG");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🌐 API URL:", API_BASE_URL);
-    console.log("📍 Endpoint:", `${API_BASE_URL}auth/register/`);
-    console.log("\n📦 Данные для отправки:");
-    console.log(JSON.stringify(dataToSend, null, 2));
-    console.log("\n🔍 Валидация данных:");
-    console.log("  ✓ Phone:", dataToSend.phone);
-    console.log("  ✓ Password length:", dataToSend.password?.length);
-    console.log("  ✓ Name:", dataToSend.name);
-    console.log("  ✓ Role:", dataToSend.role);
-    console.log("  ✓ Region:", dataToSend.region);
-    console.log("  ✓ Gender:", dataToSend.gender);
-    console.log("  ✓ Telegram ID:", dataToSend.telegram_id);
-    console.log("  ✓ Telegram Username:", dataToSend.telegram_username);
+    // console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📝 РЕГИСТРАЦИЯ - ПОЛНЫЙ DEBUG");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📦 Данные:", JSON.stringify(dataToSend, null, 2));
 
     try {
-      console.log("\n⏳ Отправка запроса...");
+      // Получаем CSRF токен перед регистрацией
+      await apiClient.getCsrfToken();
+      
+      // console.log("\n⏳ Отправка запроса...");
       const response = await api.post("auth/register/", dataToSend);
 
-      console.log("\n✅ РЕГИСТРАЦИЯ УСПЕШНА");
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("📊 Response Status:", response.status);
+      // console.log("\n✅ РЕГИСТРАЦИЯ УСПЕШНА");
       console.log("📄 Response Data:", JSON.stringify(response.data, null, 2));
-      console.log("🔑 Доступные ключи:", Object.keys(response.data || {}));
-
-      console.log("\n💡 Регистрация завершена. Токен НЕ возвращается сервером.");
-      console.log("   Пользователь будет перенаправлен на вход.");
 
       return {
         success: true,
@@ -160,23 +208,9 @@ export const apiClient = {
       };
 
     } catch (error: any) {
-      console.error("\n❌ ОШИБКА РЕГИСТРАЦИИ");
-      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.error("📊 Status:", error.response?.status);
-      console.error("📄 Status Text:", error.response?.statusText);
-
-      if (error.response?.data) {
-        console.error("🚨 Error Data:", JSON.stringify(error.response.data, null, 2));
-
-        if (typeof error.response.data === 'object') {
-          console.error("\n🔍 Ошибки по полям:");
-          Object.keys(error.response.data).forEach(key => {
-            const value = error.response.data[key];
-            console.error(`  ❌ ${key}:`, Array.isArray(value) ? value[0] : value);
-          });
-        }
-      }
-
+      // console.error("\n❌ ОШИБКА РЕГИСТРАЦИИ");
+      // console.error("📊 Status:", error.response?.status);
+      // console.error("📄 Data:", JSON.stringify(error.response?.data, null, 2));
       throw error;
     }
   },
@@ -184,11 +218,12 @@ export const apiClient = {
   requestOTP: async (
     phone: string
   ): Promise<{ message: string; data?: { link?: string; expires_at?: string } }> => {
-    console.log("📱 Отправка OTP request для:", phone);
+    // console.log("📱 Отправка OTP request для:", phone);
 
     if (!phone) throw new Error("Phone number is required");
 
     try {
+      await apiClient.getCsrfToken();
       const response = await api.post("auth/otp/request/", { phone }, { timeout: 10000 });
 
       if (!response.data?.message) {
@@ -197,7 +232,7 @@ export const apiClient = {
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ OTP request ошибка:", error?.response?.data || error);
+      // console.error("❌ OTP request ошибка:", error?.response?.data || error);
 
       if (error.code === "ECONNABORTED" || !error.response) {
         return {
@@ -210,7 +245,6 @@ export const apiClient = {
     }
   },
 
-
   verifyOTP: async (data: { phone: string; code: string }): Promise<{
     success: boolean;
     message: string;
@@ -219,37 +253,35 @@ export const apiClient = {
       expires_at?: string;
     };
   }> => {
-    console.log("🔐 Отправка OTP verify:", { phone: data.phone, code: data.code });
+    // console.log("🔐 Отправка OTP verify:", { phone: data.phone, code: data.code });
 
     if (!data.phone || !data.code) {
-      console.error("❌ Некорректные данные для верификации:", data);
       throw new Error("Phone and code are required");
     }
 
     try {
+      await apiClient.getCsrfToken();
       const response = await api.post("auth/otp/verify/", {
         phone: data.phone,
         code: data.code
       });
 
-      console.log("✅ OTP verify успешен:", response.data);
+      // console.log("✅ OTP verify успешен:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ OTP verify ошибка:");
-      console.error("  Status:", error.response?.status);
-      console.error("  Data:", error.response?.data);
-
+      // console.error("❌ OTP verify ошибка:", error.response?.data);
       throw error;
     }
   },
 
   logout: async (): Promise<void> => {
     try {
+      await apiClient.getCsrfToken();
       const response = await api.post("auth/logout/");
-      console.log("✅ Logout success");
+      // console.log("✅ Logout success");
       return response.data;
     } catch (error: any) {
-      console.error("❌ Logout error:", error.response?.data || error.message);
+      // console.error("❌ Logout error:", error.response?.data || error.message);
       throw error;
     }
   },
@@ -296,19 +328,12 @@ export const apiClient = {
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
     try {
       const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
-
-      if (Array.isArray(response.data)) {
-        return response.data;
-      }
-
-      console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
-      return [];
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
-      console.error("❌ Ошибка загрузки отзывов:", error);
+      // console.error("❌ Ошибка загрузки отзывов:", error);
       throw error;
     }
   },
-
 
   getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
     (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,
