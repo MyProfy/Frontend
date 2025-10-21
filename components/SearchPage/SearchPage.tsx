@@ -8,22 +8,10 @@
 // import { useSearchParams, useRouter, usePathname } from "next/navigation";
 // import { FaChevronDown, FaFilter } from "react-icons/fa6";
 // import { debounce } from "lodash";
-// import {
-//   SearchPageWrapper,
-//   ToggleContainer,
-//   ToggleButton,
-//   ResultsGrid,
-//   ErrorMessage,
-//   LoadingContainer,
-//   LoadingSpinner,
-//   RetryButton,
-//   SearchContainer,
-//   SearchInput,
-//   SearchIcon,
-//   SearchTitle,
-// } from "./styles";
+
 // import { motion, AnimatePresence } from "framer-motion";
 // import { getAPIClient } from "../types/apiClient";
+// import Results from "./Results";
 
 // const SearchHeader = styled.div`
 //   display: flex;

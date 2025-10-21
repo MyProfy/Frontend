@@ -21,6 +21,7 @@ import {
   OrderData,
   Reklama,
   RegisterPayload,
+  OTPVerifyResponse,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -65,55 +66,180 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response) {
+      console.error("🚨 API Error Response:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers,
+      });
+    } else if (error.request) {
+      console.error("🚨 API No Response:", error.request);
+    } else {
+      console.error("🚨 API Error:", error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const apiClient = {
 
   login: async (credentials: { phone: string; password: string }): Promise<{ token: string; user: User }> => {
-    console.log("🔐 Login request:", credentials);
+    console.log("🔐 Login request:", { phone: credentials.phone });
     try {
       const response = await api.post("auth/login/", credentials);
-      console.log("✅ Полный ответ API:", response);  
-      console.log("✅ response.data:", response.data);  
-      console.log("✅ Ключи в data:", Object.keys(response.data || {}));
-      return response.data;  
+      console.log("✅ Login response:", response.data);
+
+      const token = response.data?.token ||
+        response.data?.access_token ||
+        response.data?.accessToken ||
+        response.data?.auth_token ||
+        response.data?.data?.token ||
+        response.data?.data?.access_token;
+
+      const user = response.data?.user ||
+        response.data?.data?.user ||
+        response.data?.data ||
+        response.data;
+
+      if (!token) {
+        console.error("❌ Token not found in response:", Object.keys(response.data || {}));
+        throw new Error("Token not found in server response");
+      }
+
+      return {
+        token,
+        user: user || { name: credentials.phone, phone: credentials.phone }
+      };
     } catch (error: any) {
       console.error("❌ Login error:", error.response?.data || error.message);
       throw error;
     }
   },
 
-  register: async (userData: RegisterPayload): Promise<{ token: string; user: User }> => {
+  register: async (userData: RegisterPayload): Promise<any> => {
     const { confirm_password, ...dataToSend } = userData;
-    console.log("📝 Register request:", dataToSend);
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📝 РЕГИСТРАЦИЯ - ПОЛНЫЙ DEBUG");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🌐 API URL:", API_BASE_URL);
+    console.log("📍 Endpoint:", `${API_BASE_URL}auth/register/`);
+    console.log("\n📦 Данные для отправки:");
+    console.log(JSON.stringify(dataToSend, null, 2));
+    console.log("\n🔍 Валидация данных:");
+    console.log("  ✓ Phone:", dataToSend.phone);
+    console.log("  ✓ Password length:", dataToSend.password?.length);
+    console.log("  ✓ Name:", dataToSend.name);
+    console.log("  ✓ Role:", dataToSend.role);
+    console.log("  ✓ Region:", dataToSend.region);
+    console.log("  ✓ Gender:", dataToSend.gender);
+    console.log("  ✓ Telegram ID:", dataToSend.telegram_id);
+    console.log("  ✓ Telegram Username:", dataToSend.telegram_username);
+
     try {
+      console.log("\n⏳ Отправка запроса...");
       const response = await api.post("auth/register/", dataToSend);
-      console.log("✅ Register success:", response.data);
-      return response.data;
+
+      console.log("\n✅ РЕГИСТРАЦИЯ УСПЕШНА");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📊 Response Status:", response.status);
+      console.log("📄 Response Data:", JSON.stringify(response.data, null, 2));
+      console.log("🔑 Доступные ключи:", Object.keys(response.data || {}));
+
+      console.log("\n💡 Регистрация завершена. Токен НЕ возвращается сервером.");
+      console.log("   Пользователь будет перенаправлен на вход.");
+
+      return {
+        success: true,
+        user: response.data?.user || { name: userData.name, phone: userData.phone },
+        data: response.data
+      };
+
     } catch (error: any) {
-      console.error("❌ Register error:", error.response?.data || error.message);
+      console.error("\n❌ ОШИБКА РЕГИСТРАЦИИ");
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("📊 Status:", error.response?.status);
+      console.error("📄 Status Text:", error.response?.statusText);
+
+      if (error.response?.data) {
+        console.error("🚨 Error Data:", JSON.stringify(error.response.data, null, 2));
+
+        if (typeof error.response.data === 'object') {
+          console.error("\n🔍 Ошибки по полям:");
+          Object.keys(error.response.data).forEach(key => {
+            const value = error.response.data[key];
+            console.error(`  ❌ ${key}:`, Array.isArray(value) ? value[0] : value);
+          });
+        }
+      }
+
       throw error;
     }
   },
 
-  requestOTP: async (phone: string): Promise<{ message: string }> => {
-    console.log("📱 OTP request:", { phone });
+  requestOTP: async (
+    phone: string
+  ): Promise<{ message: string; data?: { link?: string; expires_at?: string } }> => {
+    console.log("📱 Отправка OTP request для:", phone);
+
+    if (!phone) throw new Error("Phone number is required");
+
     try {
-      const response = await api.post("auth/otp/request/", { phone });
-      console.log("✅ OTP request success:", response.data);
+      const response = await api.post("auth/otp/request/", { phone }, { timeout: 10000 });
+
+      if (!response.data?.message) {
+        throw new Error("Invalid server response");
+      }
+
       return response.data;
     } catch (error: any) {
-      console.error("❌ OTP request error:", error.response?.data || error.message);
+      console.error("❌ OTP request ошибка:", error?.response?.data || error);
+
+      if (error.code === "ECONNABORTED" || !error.response) {
+        return {
+          message: "Сервер не отвечает. Откройте бота вручную",
+          data: { link: "https://t.me/myprofy_bot" },
+        };
+      }
+
       throw error;
     }
   },
 
-  verifyOTP: async (data: { phone: string; code: string }): Promise<{ message: string; token?: string }> => {
-    console.log("🔢 OTP verify request:", data);
+
+  verifyOTP: async (data: { phone: string; code: string }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      link?: string;
+      expires_at?: string;
+    };
+  }> => {
+    console.log("🔐 Отправка OTP verify:", { phone: data.phone, code: data.code });
+
+    if (!data.phone || !data.code) {
+      console.error("❌ Некорректные данные для верификации:", data);
+      throw new Error("Phone and code are required");
+    }
+
     try {
-      const response = await api.post("auth/otp/verify/", data);
-      console.log("✅ OTP verify success:", response.data);
+      // ✅ Отправляем phone и code в теле запроса
+      const response = await api.post("auth/otp/verify/", {
+        phone: data.phone,
+        code: data.code
+      });
+
+      console.log("✅ OTP verify успешен:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ OTP verify error:", error.response?.data || error.message);
+      console.error("❌ OTP verify ошибка:");
+      console.error("  Status:", error.response?.status);
+      console.error("  Data:", error.response?.data);
+
       throw error;
     }
   },
@@ -169,19 +295,21 @@ export const apiClient = {
     (await api.post("/orders/", data)).data,
 
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
-    const response = await withRetry(() => api.get("/executor-reviews/"));
+    try {
+      const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
 
-    if (response.data && Array.isArray(response.data.results)) {
-      return response.data.results;
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
+      return [];
+    } catch (error) {
+      console.error("❌ Ошибка загрузки отзывов:", error);
+      throw error;
     }
-
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-
-    console.warn("⚠️ Неожиданный формат данных при загрузке отзывов:", response.data);
-    return [];
   },
+
 
   getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
     (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,
