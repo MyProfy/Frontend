@@ -42,7 +42,6 @@ interface ReviewsBlockProps {
   customStyles?: CustomStyles;
 }
 
-// Мемоизированный компонент звезд
 const StarRating = memo(({ rating }: { rating: number }) => (
   <div className="flex items-center gap-1">
     {Array.from({ length: 5 }).map((_, index) => (

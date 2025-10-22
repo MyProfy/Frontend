@@ -16,11 +16,11 @@ const SOCIAL_LINKS = [
 ] as const;
 
 const USEFUL_LINKS = [
-  { key: "footer.useful.newTask", href: "#" },
-  { key: "footer.useful.allServices", href: "#" },
-  { key: "footer.useful.allReviews", href: "#" },
-  { key: "footer.useful.termsOfUse", href: "#" },
-  { key: "footer.useful.linkCatalog", href: "#" },
+  { key: "footer.useful.newTask", href: "#", isModal: false },
+  { key: "footer.useful.allServices", href: "#", isModal: false },
+  { key: "footer.useful.allReviews", href: "#", isModal: false },
+  { key: "footer.useful.termsOfUse", href: "#", isModal: false },
+  { key: "footer.useful.linkCatalog", href: "#", isModal: false },
   { key: "footer.useful.privacyPolicy", href: "#", isModal: true },
 ] as const;
 
@@ -80,7 +80,6 @@ const UsefulLink = memo(({
 ));
 UsefulLink.displayName = "UsefulLink";
 
-// Мемоизированный компонент модального окна
 const PrivacyModal = memo(({
   isOpen,
   onClose,
@@ -208,11 +207,11 @@ const Footer = () => {
             </h4>
             <div className="flex flex-col gap-2">
               <PhoneButton
-                phone="+998555115544"
+                phone="+998956272727"
                 label={t("footer.contacts.phone1")}
               />
               <PhoneButton
-                phone="+998555115588"
+                phone="+998956272727"
                 label={t("footer.contacts.phone2")}
               />
               <p className="text-xs text-gray-600 whitespace-pre-line mt-2">

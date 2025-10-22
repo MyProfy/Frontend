@@ -36,7 +36,6 @@ import {
   setModalStep,
   resetModal,
 } from "../../store/slices/uiSlice";
-// import { log } from "console";
 
 interface RootState {
   auth: {
@@ -256,7 +255,6 @@ export default function RegisterModal({
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
-    // console.log("ASD", value);
     setPhoneDigits(value.slice(0, 14 - countryCode.length));
     setHasLoginError(false);
     dispatch(clearError());

@@ -63,18 +63,18 @@ const ProfileButton = memo(({ isAuthenticated, userName, onProfileClick, onLogin
 ));
 ProfileButton.displayName = "ProfileButton";
 
-const MobileMenu = memo(({ 
-  onClose, 
-  region, 
-  flag, 
-  lang, 
-  isAuthenticated, 
+const MobileMenu = memo(({
+  onClose,
+  region,
+  flag,
+  lang,
+  isAuthenticated,
   userName,
   onRegionClick,
   onLanguageClick,
   onProfileClick,
   onLoginClick,
-  t 
+  t
 }: any) => (
   <>
     <motion.div
@@ -85,7 +85,7 @@ const MobileMenu = memo(({
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 sm:hidden"
       onClick={onClose}
     />
-    
+
     <motion.div
       initial={{ x: '100%' }}
       animate={{ x: 0 }}
@@ -170,7 +170,7 @@ export default function Navbar() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
-  
+
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   const [lang, setLang] = useState(t('navbar.uzbek', "Uzbek tilida"));
@@ -188,17 +188,17 @@ export default function Navbar() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     const checkMobile = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         setIsMobile(window.innerWidth < 640);
       }, 150);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', checkMobile);
@@ -213,11 +213,17 @@ export default function Navbar() {
   }, [mobileOpen]);
 
   const handleLanguageSelect = useCallback((language: string) => {
-    const isRussian = language === t('navbar.russian', "Русский язык");
-    setLang(isRussian ? t('navbar.russian', "Русский язык") : t('navbar.uzbek', "Uzbek tilida"));
-    setFlag(isRussian ? RusFlag : UzFlag);
-    i18n.changeLanguage(isRussian ? 'ru' : 'uz');
-  }, [t, i18n]);
+    if (language === "ru") {
+      setLang("Русский язык");
+      setFlag(RusFlag);
+      i18n.changeLanguage("ru");
+    } else {
+      setLang("Uzbek tilida");
+      setFlag(UzFlag);
+      i18n.changeLanguage("uz");
+    }
+  }, [i18n]);
+
 
   const handleRegionSelect = useCallback((selectedRegion: string) => {
     setRegion(selectedRegion);
@@ -261,7 +267,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="flex justify-between items-center px-3 sm:px-6 py-2 bg-gray-50 text-gray-800 fixed top-0 left-0 w-full h-14 sm:h-16 z-50 shadow-sm">
-        
+
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <Image
             src={MyProfiLogo}
@@ -280,7 +286,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden sm:flex items-center gap-2 lg:gap-3">
-          <LanguageButton 
+          <LanguageButton
             onClick={() => setShowLanguageModal(true)}
             flag={flag}
             lang={lang}
@@ -334,7 +340,7 @@ export default function Navbar() {
       <React.Suspense fallback={null}>
         {showRegionModal && (
           <RegionModal
-            isOpen={showRegionModal}
+            isOpen={showRegionModal}  
             onCloseAction={() => setShowRegionModal(false)}
             onSelectAction={handleRegionSelect}
           />
