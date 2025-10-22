@@ -42,14 +42,14 @@ export default function App() {
         <Loader
           duration={3500}
           onLoadingComplete={handleLoadingComplete}
-          containerSize={{ width: "120px", height: "120px" }}
-          circleSize={{ width: "120px", height: "120px" }}
-          trailSize={{ width: "120px", height: "120px" }}
-          animationPosition={{ top: "50%", left: "10%" }}
-          textSize="2.5rem"
-          textGap="80px"
-          textPosition={{ left: "20px" }}
-          trailCount={3}
+          // containerSize={{ width: "120px", height: "120px" }}
+          // circleSize={{ width: "120px", height: "120px" }}
+          // trailSize={{ width: "120px", height: "120px" }}
+          // animationPosition={{ top: "50%", left: "10%" }}
+          // textSize="2.5rem"
+          // textGap="80px"
+          // textPosition={{ left: "20px" }}
+          // trailCount={3}
           message="WELCOME..."
         >
           {showContent && (

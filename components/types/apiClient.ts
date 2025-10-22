@@ -1,5 +1,3 @@
-// frontend/src/types/apiClient.ts - ПОЛНЫЙ ОБНОВЛЕННЫЙ КОД
-
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -28,24 +26,10 @@ import {
 } from "./apiTypes";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.myprofy.uz/api/";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.myprofy.uz/api";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
-
-console.log('🌐 API Base URL:', API_BASE_URL);
-
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  
-  if (parts.length === 2) {
-    return parts.pop()?.split(';').shift() || null;
-  }
-  return null;
-}
 
 const withRetry = async <T>(
   fn: () => Promise<AxiosResponse<T>>,
@@ -57,9 +41,9 @@ const withRetry = async <T>(
     return await fn();
   } catch (error) {
     const err = error as AxiosError;
-    if (attempt < retries && (!err.response || err.response.status >= 500)) {
+    if (attempt < retries && (!err.response || (err.response.status >= 500 && err.response.status !== 401 && err.response.status !== 403))) {
       const nextDelay = delay * Math.pow(2, attempt - 1);
-      console.warn(`⚠️ Attempt ${attempt} failed. Retrying in ${nextDelay}ms...`);
+      console.warn(`Attempt ${attempt} failed. Retrying in ${nextDelay}ms...`);
       await new Promise((res) => setTimeout(res, nextDelay));
       return withRetry(fn, retries, delay, attempt + 1);
     }
@@ -69,116 +53,130 @@ const withRetry = async <T>(
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: { 
+  headers: {
     "Content-Type": "application/json",
   },
   timeout: 15000,
-  withCredentials: true, 
+  withCredentials: false,
 });
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (token && token !== 'session') {
+      typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("Token attached to request:", config.url);
+    } else {
+      console.warn("No token found for request:", config.url);
     }
-
-    const csrfToken = getCookie('csrftoken');
-    if (csrfToken && config.method !== 'get' && config.method !== 'head' && config.method !== 'options') {
-      config.headers['X-CSRFToken'] = csrfToken;
-    }
-
-    console.log('📤 Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      hasAuth: !!token,
-      hasCsrf: !!csrfToken,
-      withCredentials: config.withCredentials
-    });
 
     return config;
   },
   (error) => {
-    console.error('❌ Request interceptor error:', error);
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
   (response) => {
-    console.log('📥 Response:', {
-      status: response.status,
-      url: response.config.url
-    });
     return response;
   },
-  (error: AxiosError) => {
-    if (error.response) {
-      // console.error("🚨 API Error Response:", {
-      //   status: error.response.status,
-      //   statusText: error.response.statusText,
-      //   data: error.response.data,
-      //   url: error.config?.url,
-      // });
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-      // Специальная обработка 403 Forbidden
+    if (error.response) {
+      if (error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          const refreshToken = typeof window !== "undefined"
+            ? localStorage.getItem("refresh_token")
+            : null;
+
+          if (refreshToken) {
+            console.log("Refreshing token...");
+            const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
+              refresh: refreshToken
+            });
+
+            const newAccessToken = response.data.access;
+
+            if (typeof window !== "undefined") {
+              localStorage.setItem("access_token", newAccessToken);
+            }
+
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+            window.location.href = "/login";
+          }
+          return Promise.reject(refreshError);
+        }
+      }
+
       if (error.response.status === 403) {
-        // console.error("⚠️ 403 Forbidden - проблема с CSRF");
-        // console.log("CSRF token:", getCookie('csrftoken'));
+        console.error(" 403 Forbidden - недостаточно прав или токен невалидный");
       }
     } else if (error.request) {
-      // console.error("🚨 API No Response:", error.request);
+      console.error(" API No Response:", error.request);
+      console.error(" Возможные причины:");
+      console.error("   - CORS не настроен на бэкенде");
+      console.error("   - Сервер не доступен");
+      console.error("   - Неправильный URL:", API_BASE_URL);
     } else {
-      // console.error("🚨 API Error:", error.message);
+      console.error(" API Error:", error.message);
     }
     return Promise.reject(error);
   }
 );
 
 export const apiClient = {
-  getCsrfToken: async (): Promise<void> => {
-    try {
-      // console.log('🔐 Getting CSRF token...');
-      await api.get('auth/csrf/');
-      const csrfToken = getCookie('csrftoken');
-      // console.log('✅ CSRF token obtained:', csrfToken ? 'YES' : 'NO');
-    } catch (error) {
-      // console.warn('⚠️ CSRF endpoint not available, continuing anyway');
-    }
-  },
-
   login: async (credentials: LoginPayload): Promise<{ token: string; user: User }> => {
-    // console.log("🔐 Login request:", { phone: credentials.phone });
-    
     try {
-      await apiClient.getCsrfToken();
-      
-      const response = await api.post("auth/login/", credentials);
+      console.log("🔐 Logging in:", credentials.phone);
+      const response = await api.post("/auth/login/", credentials);
       console.log("✅ Login response:", response.data);
+
+      const token = response.data.access;
+      const refreshToken = response.data.refresh; // Добавьте это
+
+      if (!token) {
+        throw new Error("No access token in response");
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("access_token", token);
+        if (refreshToken) {
+          localStorage.setItem("refresh_token", refreshToken);
+        }
+      }
 
       const user: User = {
         id: response.data.id || response.data.user?.id || 0,
         phone: response.data.phone || credentials.phone,
-        name: response.data.name || response.data.user?.name || credentials.phone,
-        email: response.data.email || response.data.user?.email,
-        telegram_username: response.data.telegram_username || response.data.user?.telegram_username,
-        gender: response.data.gender || response.data.user?.gender,
-        region: response.data.region || response.data.user?.region,
-        executor_rating: response.data.executor_rating || response.data.user?.executor_rating || 0,
-        client_rating: response.data.client_rating || response.data.user?.client_rating || 0,
+        name: response.data.name || credentials.phone,
+        email: response.data.email || "",
+        avatar: response.data.avatar || "",
+        role: response.data.role || "",
+        is_active: response.data.is_active || false
       };
 
-      return {
-        token: 'session',
-        user,
-      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      return { token, user };
     } catch (error: any) {
-      // console.error("❌ Login error:", {
-      //   status: error.response?.status,
-      //   data: error.response?.data,
-      //   message: error.message
-      // });
+      console.error("❌ Login error:", error.response?.data || error.message);
       throw error;
     }
   },
@@ -186,102 +184,73 @@ export const apiClient = {
   register: async (userData: RegisterPayload): Promise<any> => {
     const { confirm_password, ...dataToSend } = userData;
 
-    // console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    // console.log("📝 РЕГИСТРАЦИЯ - ПОЛНЫЙ DEBUG");
-    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    // console.log("📦 Данные:", JSON.stringify(dataToSend, null, 2));
-
     try {
-      // Получаем CSRF токен перед регистрацией
-      await apiClient.getCsrfToken();
-      
-      // console.log("\n⏳ Отправка запроса...");
-      const response = await api.post("auth/register/", dataToSend);
+      console.log("📝 Registering user:", dataToSend.phone);
+      const response = await api.post("/auth/register/", dataToSend);
 
-      // console.log("\n✅ РЕГИСТРАЦИЯ УСПЕШНА");
-      console.log("📄 Response Data:", JSON.stringify(response.data, null, 2));
+      const token = response.data.access;
+
+      if (token && typeof window !== "undefined") {
+        localStorage.setItem("access_token", token);
+      }
 
       return {
         success: true,
         user: response.data?.user || { name: userData.name, phone: userData.phone },
+        token: token,
         data: response.data
       };
 
     } catch (error: any) {
-      // console.error("\n❌ ОШИБКА РЕГИСТРАЦИИ");
-      // console.error("📊 Status:", error.response?.status);
-      // console.error("📄 Data:", JSON.stringify(error.response?.data, null, 2));
+      console.error("❌ Register error:", error.response?.data || error.message);
       throw error;
     }
   },
 
-  requestOTP: async (
-    phone: string
-  ): Promise<{ message: string; data?: { link?: string; expires_at?: string } }> => {
-    // console.log("📱 Отправка OTP request для:", phone);
-
-    if (!phone) throw new Error("Phone number is required");
-
+  getCurrentUser: async (): Promise<User> => {
+    console.log("👤 Getting current user");
     try {
-      await apiClient.getCsrfToken();
-      const response = await api.post("auth/otp/request/", { phone }, { timeout: 10000 });
+      // Получаем ID пользователя из localStorage
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
-      if (!response.data?.message) {
-        throw new Error("Invalid server response");
+      if (!userStr) {
+        throw new Error("User data not found in localStorage");
+      }
+
+      const user = JSON.parse(userStr);
+
+      if (!user.id) {
+        throw new Error("User ID not found");
+      }
+
+      // Используем backticks для интерполяции ID
+      const response = await api.get(`/users/${user.id}/`);
+      console.log("✅ Current user:", response.data);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(response.data));
       }
 
       return response.data;
     } catch (error: any) {
-      // console.error("❌ OTP request ошибка:", error?.response?.data || error);
+      console.error("❌ Get current user error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-      if (error.code === "ECONNABORTED" || !error.response) {
-        return {
-          message: "Сервер не отвечает. Откройте бота вручную",
-          data: { link: "https://t.me/myprofy_bot" },
-        };
+  updateProfile: async (userId: number, data: Partial<User>): Promise<User> => {
+    console.log("📝 Updating user profile:", userId);
+    try {
+      const response = await api.put(`/users/${userId}/`, data);
+      console.log("✅ Profile updated:", response.data);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(response.data));
       }
 
-      throw error;
-    }
-  },
-
-  verifyOTP: async (data: { phone: string; code: string }): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      link?: string;
-      expires_at?: string;
-    };
-  }> => {
-    // console.log("🔐 Отправка OTP verify:", { phone: data.phone, code: data.code });
-
-    if (!data.phone || !data.code) {
-      throw new Error("Phone and code are required");
-    }
-
-    try {
-      await apiClient.getCsrfToken();
-      const response = await api.post("auth/otp/verify/", {
-        phone: data.phone,
-        code: data.code
-      });
-
-      // console.log("✅ OTP verify успешен:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ OTP verify ошибка:", error.response?.data);
-      throw error;
-    }
-  },
-
-  logout: async (): Promise<void> => {
-    try {
-      await apiClient.getCsrfToken();
-      const response = await api.post("auth/logout/");
-      // console.log("✅ Logout success");
-      return response.data;
-    } catch (error: any) {
-      // console.error("❌ Logout error:", error.response?.data || error.message);
+      console.error("❌ Update profile error:", error.response?.data || error.message);
       throw error;
     }
   },
@@ -313,9 +282,6 @@ export const apiClient = {
   getUsers: async (): Promise<User[]> =>
     (await withRetry(() => api.get("/users/"))).data,
 
-  getUserById: async (id: string | number): Promise<User> =>
-    (await withRetry(() => api.get(`/users/${id}/`))).data,
-
   getOrders: async (): Promise<Order[]> =>
     (await withRetry(() => api.get("/orders/"))).data,
 
@@ -330,10 +296,12 @@ export const apiClient = {
       const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
-      // console.error("❌ Ошибка загрузки отзывов:", error);
       throw error;
     }
   },
+
+  getUserById: async (id: number): Promise<User> =>
+    (await withRetry(() => api.get(`/users/${id}/`))).data,
 
   getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
     (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,

@@ -6,51 +6,27 @@ export interface BaseEntity {
   updated_at?: string;
 }
 
-export interface User extends BaseEntity {
+export interface User {
+  id: number;
   name: string;
-  gender?: string | null;
+  phone: string;
+  about_user?: string;
+  role: "клиент" | "исполнитель" | string;
+  region: string;
   executor_rating?: number;
+  work_experience?: number;
+  email: string;
   client_rating?: number;
-  work_experience?: string | null;
-  region?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  telegram_username?: string | null;
-  avatar?: string | null;
+  telegram_username?: string;
+  telegram_id?: number;
+  gender?: "male" | "female" | string;
+  avatar?: string;
+  birthday?: string;
+  lang?: "ru" | "uz" | "en";
+  created_at?: string;
+  orders_count?: number;
+  is_trusted?: boolean;
 }
-
-export const normalizeUser = (entity: number | User | null | undefined, t: TFunction): User => {
-  if (!entity || typeof entity === "number") {
-    return {
-      id: typeof entity === "number" ? entity : 0,
-      name: t("order.notSpecified"),
-      region: null,
-      executor_rating: 0,
-      client_rating: 0,
-      gender: null,
-      work_experience: null,
-      phone: null,
-      email: null,
-      telegram_username: null,
-      avatar: null,
-    };
-  }
-
-  return {
-    id: entity.id ?? 0,
-    name: entity.name ?? t("order.notSpecified"),
-    gender: entity.gender ?? null,
-    executor_rating: entity.executor_rating ?? 0,
-    client_rating: entity.client_rating ?? 0,
-    work_experience: entity.work_experience ?? null,
-    created_at: entity.created_at ?? "",
-    region: entity.region ?? null,
-    phone: entity.phone ?? null,
-    email: entity.email ?? null,
-    telegram_username: entity.telegram_username ?? null,
-    avatar: entity.avatar ?? null,
-  };
-};
 
 export interface Category extends BaseEntity {
   name: string;
@@ -157,7 +133,6 @@ export interface VacancyImage {
   id?: number;
 }
 
-
 export interface Vacancy {
   id: number;
   title: string;
@@ -166,12 +141,11 @@ export interface Vacancy {
   category: number;
   sub_category: number;
   client: number;
-  images?: (VacancyImage | string)[]; 
+  images?: (VacancyImage | string)[];
   moderation: 'pending' | 'approved' | 'rejected';
   moderation_display: string;
   boost: number;
 }
-
 
 export interface PaginatedReviewsResponse {
   results: ExecutorReview[];
@@ -179,7 +153,6 @@ export interface PaginatedReviewsResponse {
   next?: string | null;
   previous?: string | null;
 }
-
 
 export interface OrderData {
   client: number;
@@ -261,4 +234,3 @@ export interface ApiError {
   code?: number;
   error?: string;
 }
-

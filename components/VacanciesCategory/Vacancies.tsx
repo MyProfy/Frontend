@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Search, MapPin, Clock, User, Folder, DollarSign, Award, Images } from "lucide-react";
+import { ChevronRight, Search, Folder, DollarSign, Award, Clock } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAPIClient } from "@/components/types/apiClient";
 import { Category, SubCategory, Vacancy, Service } from "@/components/types/apiTypes";
 import Navbar from "@/components/Header/Navbar";
 import Footer from "@/components/Footer/Footer";
-import Image from "next/image";
 import { PiTelegramLogoLight } from "react-icons/pi";
 
 type ViewMode = 'vacancies' | 'services';
@@ -27,12 +26,12 @@ const MOCK_VACANCIES: Vacancy[] = [
   {
     id: 1,
     title: "Требуется веб-дизайнер для корпоративного сайта",
-    price: 2500000,
+    price: 25000,
     description: "Ищем опытного веб-дизайнера для разработки современного корпоративного сайта. Требуется портфолио с похожими проектами.",
     category: 1,
     sub_category: 2,
     client: 101,
-    images: [{ url: "https://images.unsplash.com/photo-1581291518835-1a1c91d3f87d" }],
+    images: [],
     moderation: "approved",
     moderation_display: "Одобрено",
     boost: 0,
@@ -40,12 +39,12 @@ const MOCK_VACANCIES: Vacancy[] = [
   {
     id: 2,
     title: "Нужен электрик для ремонта квартиры",
-    price: 500000,
+    price: 50000,
     description: "Требуется опытный электрик для полной замены проводки в 3-комнатной квартире. Работа в районе Юнусабад.",
     category: 3,
     sub_category: 5,
     client: 102,
-    images: [{ url: "https://images.unsplash.com/photo-1581094651181-3592e61b7b07" }],
+    images: [],
     moderation: "approved",
     moderation_display: "Одобрено",
     boost: 0,
@@ -53,24 +52,23 @@ const MOCK_VACANCIES: Vacancy[] = [
   {
     id: 3,
     title: "Ищу репетитора английского языка для ребенка",
-    price: 150000,
+    price: 15000,
     description: "Нужен репетитор английского для подготовки ребенка 10 лет к международным экзаменам. 3 раза в неделю по 1.5 часа.",
     category: 2,
     sub_category: 4,
     client: 103,
-    images: [{ url: "https://images.unsplash.com/photo-1529070538774-1843cb3265df" }],
+    images: [],
     moderation: "approved",
     moderation_display: "Одобрено",
     boost: 0,
   },
 ];
 
-
 const MOCK_SERVICES: Service[] = [
   {
     id: 1,
     name: "Профессиональный массаж на дому",
-    price: 200000,
+    price: 20000,
     description: "Предлагаю услуги профессионального массажа с выездом на дом. Опыт работы 8 лет, сертификаты.",
     category: 4,
     sub_categories: [6],
@@ -80,7 +78,7 @@ const MOCK_SERVICES: Service[] = [
   {
     id: 2,
     name: "Ремонт бытовой техники любой сложности",
-    price: 100000,
+    price: 10000,
     description: "Ремонт холодильников, стиральных машин, кондиционеров. Гарантия на все работы 6 месяцев.",
     category: 5,
     sub_categories: [7, 8],
@@ -90,7 +88,7 @@ const MOCK_SERVICES: Service[] = [
   {
     id: 3,
     name: "Уборка квартир и офисов",
-    price: 80000,
+    price: 8000,
     description: "Профессиональная уборка помещений. Используем экологичные средства. Работаем 7 дней в неделю.",
     category: 6,
     sub_categories: [9],
@@ -113,19 +111,14 @@ const ListingCard = memo(({
   item,
   index,
   viewMode,
-  onSpecialistClick,
-  onVacancyClick
 }: {
   item: ListingItem;
   index: number;
   viewMode: ViewMode;
-  onSpecialistClick: () => void;
-  onVacancyClick: () => void;
 }) => {
   const router = useRouter();
   const isVacancy = viewMode === 'vacancies';
   const title = 'title' in item ? item.title : item.name;
-  const price = item.price;
 
   const handleCardClick = () => {
     if (isVacancy) {
@@ -143,14 +136,10 @@ const ListingCard = memo(({
       onClick={handleCardClick}
       className="border border-gray-200 rounded-2xl hover:shadow-lg transition-all cursor-pointer bg-white overflow-hidden p-6 flex gap-6"
     >
-      <div className="w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
-        {/* <Image
-          src={item.images?.[0]?.url || "/no-image.jpg"}
-          alt={item.title}
-          width={120}
-          height={120}
-          className="object-cover w-full h-full"
-        /> */}
+      <div className="w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
+        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
       </div>
 
       <div className="flex-1">
@@ -195,7 +184,6 @@ const ListingCard = memo(({
         </div>
       </div>
     </motion.div>
-
   );
 });
 ListingCard.displayName = "ListingCard";
@@ -214,16 +202,18 @@ const CategoryFilter = memo(({
       <button
         key={category.id}
         onClick={() => onCategoryClick(category.id)}
-        className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${selectedCategory === category.id
-          ? "bg-green-50 text-green-700 font-semibold"
-          : "text-gray-600 hover:bg-gray-50"
-          }`}
+        className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+          selectedCategory === category.id
+            ? "bg-green-50 text-green-700 font-semibold"
+            : "text-gray-600 hover:bg-gray-50"
+        }`}
       >
         <div
-          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedCategory === category.id
-            ? "border-green-600"
-            : "border-gray-300"
-            }`}
+          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+            selectedCategory === category.id
+              ? "border-green-600"
+              : "border-gray-300"
+          }`}
         >
           {selectedCategory === category.id && (
             <div className="w-2 h-2 rounded-full bg-green-600"></div>
@@ -248,7 +238,6 @@ export default function VacanciesPage() {
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
   const [selectedHours, setSelectedHours] = useState<string[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -302,7 +291,6 @@ export default function VacanciesPage() {
 
       } catch (err) {
         console.error("❌ Ошибка загрузки с API:", err);
-
         console.log("🔄 Переключение на MOCK данные из-за ошибки API");
         setVacancies(MOCK_VACANCIES);
         setServices(MOCK_SERVICES);
@@ -320,6 +308,7 @@ export default function VacanciesPage() {
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
     const modeParam = searchParams.get('mode');
+    const queryParam = searchParams.get('q');
 
     if (modeParam === 'services' || modeParam === 'vacancies') {
       setViewMode(modeParam);
@@ -338,12 +327,73 @@ export default function VacanciesPage() {
         .filter(id => !isNaN(id));
       setSelectedSubCategories(subcategoryIds);
     }
+
+    if (queryParam) {
+      setSearchQuery(queryParam);
+    }
   }, [searchParams]);
 
   const filteredItems = useMemo(() => {
     const sourceData = viewMode === 'vacancies' ? vacancies : services;
     let filtered = [...sourceData];
 
+    // Поиск по query (текст, категории, подкатегории)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      
+      filtered = filtered.filter(item => {
+        const title = ('title' in item ? item.title : item.name) || '';
+        const description = item.description || '';
+        
+        // Поиск по названию и описанию
+        const matchesContent = 
+          title.toLowerCase().includes(query) ||
+          description.toLowerCase().includes(query);
+        
+        // Поиск по категории
+        const itemCategoryId = typeof item.category === 'number' 
+          ? item.category 
+          : item.category?.id;
+        
+        const category = categories.find(cat => cat.id === itemCategoryId);
+        const matchesCategory = category && (
+          (getDisplayName(category) || '').toLowerCase().includes(query) ||
+          (category.name || '').toLowerCase().includes(query)
+        );
+        
+        // Поиск по подкатегории
+        const itemSubCat = 'sub_category' in item ? item.sub_category : 
+          ('sub_categories' in item ? item.sub_categories : null);
+        
+        let matchesSubCategory = false;
+        if (itemSubCat) {
+          if (Array.isArray(itemSubCat)) {
+            matchesSubCategory = itemSubCat.some(sc => {
+              const scId = typeof sc === 'number' ? sc : sc?.id;
+              if (!scId) return false;
+              const subCat = subCategories.find(sub => sub.id === scId);
+              return subCat && (
+                (getDisplayName(subCat) || '').toLowerCase().includes(query) ||
+                (subCat.name || '').toLowerCase().includes(query)
+              );
+            });
+          } else {
+            const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat?.id;
+            if (scId) {
+              const subCat = subCategories.find(sub => sub.id === scId);
+              matchesSubCategory = subCat && (
+                (getDisplayName(subCat) || '').toLowerCase().includes(query) ||
+                (subCat.name || '').toLowerCase().includes(query)
+              );
+            }
+          }
+        }
+        
+        return matchesContent || matchesCategory || matchesSubCategory;
+      });
+    }
+
+    // Фильтрация по выбранным подкатегориям
     if (selectedSubCategories.length > 0) {
       filtered = filtered.filter(item => {
         const itemSubCat = 'sub_category' in item ? item.sub_category :
@@ -362,6 +412,7 @@ export default function VacanciesPage() {
         return selectedSubCategories.includes(scId);
       });
     }
+    // Фильтрация по выбранной категории (если нет выбранных подкатегорий)
     else if (selectedCategory !== null) {
       filtered = filtered.filter(item => {
         const categoryId = typeof item.category === 'number'
@@ -371,6 +422,7 @@ export default function VacanciesPage() {
       });
     }
 
+    // Фильтрация по цене
     if (selectedPriceRanges.length > 0) {
       filtered = filtered.filter(item => {
         return selectedPriceRanges.some(range => {
@@ -381,18 +433,18 @@ export default function VacanciesPage() {
       });
     }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(item => {
-        const title = 'title' in item ? item.title : item.name;
-        const description = item.description || '';
-        return title?.toLowerCase().includes(query) ||
-          description?.toLowerCase().includes(query);
-      });
-    }
-
     return filtered;
-  }, [viewMode, vacancies, services, selectedCategory, selectedSubCategories, selectedPriceRanges, searchQuery]);
+  }, [
+    viewMode, 
+    vacancies, 
+    services, 
+    selectedCategory, 
+    selectedSubCategories, 
+    selectedPriceRanges, 
+    searchQuery,
+    categories,
+    subCategories
+  ]);
 
   const filteredSubCategories = useMemo(() => {
     if (selectedCategory === null) return [];
@@ -546,7 +598,7 @@ export default function VacanciesPage() {
                     </div>
                   </div>
 
-                  <div className="mb-4 pb-3 border-b border-dotted border-blue-300">
+                  <div className="mb-4 pb- border-b border-dotted border-blue-300">
                     <div className="flex items-center gap-2 mb-3 text-gray-700">
                       <Award size={18} />
                       <span className="text-sm font-medium">Стаж лет</span>
@@ -599,47 +651,23 @@ export default function VacanciesPage() {
               </div>
             </aside>
 
-            <main className="flex-1 bg-white rounded-xl">
-              <div className="p-6">
-                <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                  {viewMode === 'vacancies'
-                    ? 'Зарабатывайте на том, что умеете'
-                    : 'Найдите надежного специалиста'}
-                </h1>
-                <div className="flex items-center gap-3 mt-4 p">
-                  <div className="relative flex-1 max-w-md">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      size={18}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Поиск"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-220 pl-10 pr-10 py-2 px-10 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
+            <main className="flex-1  rounded-xl">
 
               {filteredItems.length === 0 ? (
-                <div className="text-center py-16 rounded-xl">
+                <div className="text-center py-8 rounded-xl">
                   <p className="text-gray-600 text-lg font-semibold mb-2">
                     {viewMode === 'vacancies' ? 'Вакансии не найдены' : 'Услуги не найдены'}
                   </p>
                   <p className="text-gray-500 text-sm">Попробуйте изменить фильтры поиска</p>
                 </div>
               ) : (
-                <div className="space-y-0">
+                <div className="space-y-4 p-6">
                   {filteredItems.map((item, index) => (
                     <ListingCard
                       key={item.id}
                       item={item}
                       index={index}
                       viewMode={viewMode}
-                      onSpecialistClick={() => handleViewModeSwitch('services')}
-                      onVacancyClick={() => handleViewModeSwitch('vacancies')}
                     />
                   ))}
                 </div>

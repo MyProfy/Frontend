@@ -75,14 +75,16 @@ export default function Hero() {
                 role="button"
               >
                 <motion.span
-                  className="inline-flex items-center justify-center w-[20px] h-[20px] md:mr-0.5"
+                  className="inline-flex items-center justify-center w-[20px] h-[20px] md:mr-0.5 bg-[#FFFFFF] text-gray-200"
                   variants={iconVariants}
                   initial="visible"
                   animate={activeLink === link.key ? "active" : "visible"}
                   whileHover="hover"
                 >
-           
+                  {link.icon}
                 </motion.span>
+                 
+               
                 <span>{link.name}</span>
               </div>
             ))}

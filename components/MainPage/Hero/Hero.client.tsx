@@ -1,25 +1,22 @@
 "use client";
 
-import React, { useContext, useEffect, useMemo, useState, useCallback, memo } from "react";
+import React, { useContext, useEffect, useMemo, useState, useCallback, memo, useRef } from "react";
 import { LanguageContext } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { getAPIClient } from "../../types/apiClient";
-import { Category, Reklama, Service, SubCategory } from "../../types/apiTypes";
-import { motion } from "framer-motion";
+import { Category, Service, SubCategory } from "../../types/apiTypes";
+import { motion, AnimatePresence } from "framer-motion";
 import MyProfiBanner from "../../../public/Banner-MyProfi.png";
 import Image from "next/image";
 import Navbar from "@/components/Header/Navbar";
-import Link from "next/link";
 
-// Lazy loading компонентов
 const ReviewsBlock = React.lazy(() => import("components/ReviewsBlock/ReviewsBlock"));
 
 interface BannerClientProps {
   initialSlide?: number;
 }
 
-// Константы
 const ALLOWED_KEYS = [
   "Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
   "Tab", "Enter", "Escape", "Home", "End", "PageUp", "PageDown"
@@ -53,7 +50,6 @@ const TOP_SPECIALTIES = [
     link: "https://myprofy.uz/search?category=14"
   },
 ] as const;
-
 
 const extractResults = (data: any) => {
   if (Array.isArray(data)) return data;
@@ -121,8 +117,11 @@ const CategoryItem = memo(({
           {getDisplayName(category)}
         </h3>
         <p className="text-sm md:text-lg text-[#858b98] ml-2 hidden md:inline-block">
-          {(category.service_count ?? 0) < 50 ? 50 : category.service_count ?? 0}
+          {category?.service_count
+            ? category.service_count
+            : Math.floor(Math.random() * (500 - 50 + 1)) + 50}
         </p>
+
       </div>
 
       <ul className="flex flex-col gap-2 text-[#303030] font-normal">
@@ -152,41 +151,107 @@ const SearchBlock = memo(({
   searchQuery,
   onSearchChange,
   onSearch,
+  searchResults,
+  onResultClick,
+  showResults,
   t
-}: any) => (
-  <div className="flex items-center gap-2.5 w-full mb-10">
-    <div className="relative flex-1 flex items-center w-full">
-      <svg
-        className="absolute left-3 md:left-3 max-md:left-2.5 w-5 h-5 max-md:w-[18px] max-md:h-[18px] fill-[#333]"
-        viewBox="0 0 22 22"
-        aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="M2.48359 10.0833C2.48359 5.88592 5.88623 2.48329 10.0836 2.48329C14.281 2.48329 17.6836 5.88592 17.6836 10.0833C17.6836 12.1741 16.8393 14.0678 15.473 15.4419C15.4676 15.4469 15.4623 15.4521 15.457 15.4573C15.4517 15.4626 15.4466 15.4679 15.4415 15.4733C14.0675 16.8392 12.1741 17.6833 10.0836 17.6833C5.88623 17.6833 2.48359 14.2807 2.48359 10.0833ZM15.9002 16.8198C14.3402 18.1679 12.3071 18.9833 10.0836 18.9833C5.16826 18.9833 1.18359 14.9986 1.18359 10.0833C1.18359 5.16795 5.16826 1.18329 10.0836 1.18329C14.9989 1.18329 18.9836 5.16795 18.9836 10.0833C18.9836 12.3072 18.1679 14.3405 16.8195 15.9006L20.0429 19.124C20.2967 19.3779 20.2967 19.7894 20.0429 20.0433C19.789 20.2971 19.3775 20.2971 19.1237 20.0433L15.9002 16.8198Z"
-          fill="#A4A8B2"
+}: any) => {
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="flex items-center gap-2.5 w-full mb-10 relative" ref={searchRef}>
+      <div className="relative flex-1 flex items-center w-full">
+        <svg
+          className="absolute left-3 md:left-3 max-md:left-2.5 w-5 h-5 max-md:w-[18px] max-md:h-[18px] fill-[#333]"
+          viewBox="0 0 22 22"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M2.48359 10.0833C2.48359 5.88592 5.88623 2.48329 10.0836 2.48329C14.281 2.48329 17.6836 5.88592 17.6836 10.0833C17.6836 12.1741 16.8393 14.0678 15.473 15.4419C15.4676 15.4469 15.4623 15.4521 15.457 15.4573C15.4517 15.4626 15.4466 15.4679 15.4415 15.4733C14.0675 16.8392 12.1741 17.6833 10.0836 17.6833C5.88623 17.6833 2.48359 14.2807 2.48359 10.0833ZM15.9002 16.8198C14.3402 18.1679 12.3071 18.9833 10.0836 18.9833C5.16826 18.9833 1.18359 14.9986 1.18359 10.0833C1.18359 5.16795 5.16826 1.18329 10.0836 1.18329C14.9989 1.18329 18.9836 5.16795 18.9836 10.0833C18.9836 12.3072 18.1679 14.3405 16.8195 15.9006L20.0429 19.124C20.2967 19.3779 20.2967 19.7894 20.0429 20.0433C19.789 20.2971 19.3775 20.2971 19.1237 20.0433L15.9002 16.8198Z"
+            fill="#A4A8B2"
+          />
+        </svg>
+        
+        <input
+          className="py-3 px-3 pl-10 max-md:pl-9 w-full border-none rounded-[13px] text-base md:text-lg bg-white"
+          aria-label={t("search.ariaLabel", "Поиск специалистов")}
+          placeholder={t("search.placeholder", "Поиск...")}
+          value={searchQuery}
+          onChange={onSearchChange}
+          onKeyPress={(e) => e.key === "Enter" && onSearch()}
         />
-      </svg>
-      <input
-        className="py-3 px-3 pl-10 max-md:pl-9 w-full border-none rounded-[13px] text-base md:text-lg bg-white"
-        aria-label={t("search.ariaLabel", "Поиск специалистов")}
-        placeholder={t("search.placeholder", "Поиск...")}
-        value={searchQuery}
-        onChange={onSearchChange}
-        onKeyPress={(e) => e.key === "Enter" && onSearch()}
-      />
+
+        <AnimatePresence>
+          {showResults && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 max-h-[400px] overflow-y-auto z-50"
+            >
+              {searchResults.length > 0 ? (
+                searchResults.map((result: any, index: number) => (
+                  <div
+                    key={`${result.type}-${result.id}`}
+                    onClick={() => onResultClick(result)}
+                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        {result.type === 'category' ? (
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{result.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {result.type === 'category' ? t("search.category", "Категория") : t("search.subcategory", "Подкатегория")}
+                        </p>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-8 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    {t("search.notFound", "Ничего не найдено")}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {t("search.tryAnother", "Попробуйте изменить поисковый запрос")}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onSearch}
+        className="bg-[#3ea23e] border-none text-base md:text-[0.98rem] font-normal text-white py-3 px-4 cursor-pointer rounded-lg transition-all hover:bg-[#2e8b57]"
+      >
+        {t("search.search", "Найти")}
+      </motion.button>
     </div>
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onSearch}
-      className="bg-[#3ea23e] border-none text-base md:text-[0.98rem] font-normal text-white py-3 px-4 cursor-pointer rounded-lg transition-all hover:bg-[#2e8b57]"
-    >
-      {t("search.search", "Найти")}
-    </motion.button>
-  </div>
-));
+  );
+});
 SearchBlock.displayName = "SearchBlock";
 
 const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
@@ -206,6 +271,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const [requestText, setRequestText] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [imageError, setImageError] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState<boolean>(false);
 
   const reviews = useMemo(
     () =>
@@ -263,39 +330,123 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       : t("request.statsSpecialist", "Из 1 233 333 заказов обязательно найдется тот, кто оценит ваши услуги"),
   }), [mode, t]);
 
+  const getDisplayName = useCallback((item: Category | SubCategory) => {
+    if (!item) return '';
+    if (language === "ru" && item.display_ru) return item.display_ru;
+    if (language === "uz" && item.display_uz) return item.display_uz;
+    return item.name || '';
+  }, [language]);
+
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.trim().length >= 2) {
+      const queryLower = query.toLowerCase();
+
+      const matchedCategories = categories
+        .filter(cat => {
+          if (!cat) return false;
+          const displayName = getDisplayName(cat)?.toLowerCase() || '';
+          const name = cat.name?.toLowerCase() || '';
+          return displayName.includes(queryLower) || name.includes(queryLower);
+        })
+        .map(cat => ({
+          id: cat.id,
+          name: getDisplayName(cat),
+          type: 'category',
+          categoryId: cat.id
+        }));
+
+      const matchedSubCategories = subCategories
+        .filter(sub => {
+          if (!sub) return false;
+          const displayName = getDisplayName(sub)?.toLowerCase() || '';
+          const name = sub.name?.toLowerCase() || '';
+          return displayName.includes(queryLower) || name.includes(queryLower);
+        })
+        .map(sub => {
+          const categoryId = typeof sub.category === 'number' ? sub.category : sub.category?.id;
+          return {
+            id: sub.id,
+            name: getDisplayName(sub),
+            type: 'subcategory',
+            categoryId: categoryId,
+            subCategoryId: sub.id
+          };
+        });
+
+      const results = [...matchedCategories, ...matchedSubCategories].slice(0, 10);
+      setSearchResults(results);
+      setShowResults(results.length > 0);
+    } else {
+      setSearchResults([]);
+      setShowResults(false);
+    }
+  }, [categories, subCategories, getDisplayName]);
+
+  const handleSearch = useCallback(() => {
+    if (searchQuery.trim()) {
+      const matchedCategory = categories.find(cat => {
+        if (!cat || !cat.name) return false;
+        const displayName = getDisplayName(cat)?.toLowerCase() || '';
+        const name = cat.name?.toLowerCase() || '';
+        const query = searchQuery.toLowerCase();
+        return displayName === query || name === query;
+      });
+
+      if (matchedCategory) {
+        router.push(`/vacancies?category=${matchedCategory.id}&mode=vacancies`);
+      } else {
+        router.push(`/vacancies?q=${encodeURIComponent(searchQuery)}&mode=vacancies`);
+      }
+      setShowResults(false);
+    }
+  }, [searchQuery, categories, getDisplayName, router]);
+
+  const handleResultClick = useCallback((result: any) => {
+    if (result.type === 'category') {
+      router.push(`/vacancies?category=${result.categoryId}&mode=vacancies`);
+    } else if (result.type === 'subcategory') {
+      router.push(`/vacancies?category=${result.categoryId}&subcategory=${result.subCategoryId}&mode=vacancies`);
+    }
+    setSearchQuery(result.name);
+    setShowResults(false);
+  }, [router]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (requestText.length >= MAX_TEXT_LENGTH && !ALLOWED_KEYS.includes(e.key)) {
       e.preventDefault();
     }
   }, [requestText.length]);
 
-  const handleSearch = useCallback(() => {
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  }, [searchQuery, router]);
-
   const handleSpecialtyClick = useCallback((link: string) => {
     router.push(link);
   }, [router]);
 
   const handleCategoryClick = useCallback((categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}`);
+    router.push(`/vacancies?category=${categoryId}&mode=vacancies`);
   }, [router]);
 
   const handleSubCategoryClick = useCallback((subCategoryId: number, categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}&subcategory=${subCategoryId}`);
+    router.push(`/vacancies?category=${categoryId}&subcategory=${subCategoryId}&mode=vacancies`);
   }, [router]);
 
   const handleShowAllClick = useCallback((categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}`);
+    router.push(`/vacancies?category=${categoryId}&mode=vacancies`);
   }, [router]);
 
-  const getDisplayName = useCallback((item: Category | SubCategory) => {
-    if (language === "ru" && item.display_ru) return item.display_ru;
-    if (language === "uz" && item.display_uz) return item.display_uz;
-    return item.name;
-  }, [language]);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.relative')) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     i18n.changeLanguage(language);
@@ -349,7 +500,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       <Navbar />
 
       <div className="px-5 py-10 md:px-7 lg:px-8 flex flex-col items-center text-center w-full box-border overflow-hidden max-w-[1440px] mx-auto">
-
         <div className="flex justify-center items-center w-full mb-8">
           <h1 className="text-2xl md:text-3xl font-normal text-black w-full max-w-[600px] text-center p-3">
             {texts.mainTitle}
@@ -358,12 +508,14 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
 
         <SearchBlock
           searchQuery={searchQuery}
-          onSearchChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+          onSearchChange={handleSearchInputChange}
           onSearch={handleSearch}
+          searchResults={searchResults}
+          onResultClick={handleResultClick}
+          showResults={showResults}
           t={t}
         />
 
-        {/* Баннер */}
         <div
           className="bg-[rgb(228,228,228)] rounded-[23px] w-full max-w-[1400px] mx-auto mb-5 md:mb-7 overflow-hidden relative aspect-[970/250]"
           role="region"
@@ -389,7 +541,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
           </div>
         </div>
 
-        {/* Блок регистрации специалиста */}
         {mode === 'specialist' && (
           <div className="bg-gradient-to-br from-[#3ea240] to-[#218838] text-white py-12 md:py-16 px-8 md:px-9 rounded-3xl my-10 max-w-[1400px] w-full text-center">
             <h2 className="text-3xl md:text-4xl mb-2.5 max-md:text-[1.8rem]">
