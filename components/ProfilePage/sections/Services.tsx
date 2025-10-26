@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { X, MapPin, DollarSign, FileText, Tag } from "lucide-react";
+import TarrifModal from "../Modals/TarrifModal";
 
 const Services = () => {
   const router = useRouter();
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [showTarrifs, setShowTarrifs] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -66,14 +68,14 @@ const Services = () => {
 
   const handleSubmit = () => {
     console.log("Данные формы:", formData);
-    
+
     handleCloseModal();
-    
+
     const searchParams = new URLSearchParams();
     if (formData.category) searchParams.set('category', formData.category);
     if (formData.title) searchParams.set('q', formData.title);
     searchParams.set('mode', 'services');
-    
+
     router.push(`/vacancies?${searchParams.toString()}`);
   };
 
@@ -91,7 +93,7 @@ const Services = () => {
             <h1 className="text-2xl font-semibold text-gray-900">
               Мои объявления
             </h1>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={handleFindSpecialist}
@@ -128,14 +130,27 @@ const Services = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-gray-700 mb-2 text-sm">{item.candidates}</p>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleGoToCandidates(item.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium"
-                    >
-                      Перейти к кандидатам
-                    </motion.button>
+                    <div className="flex gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleGoToCandidates(item.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium"
+                      >
+                        Перейти к кандидатам
+                      </motion.button>
+
+                      <div>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setShowTarrifs(true)}
+                          className="border border-gray-600 hover:bg-gray-600 hover:text-white text-gray-600 px-3 py-1 rounded-lg text-sm font-medium"
+                        >
+                          Выбирите Тариф
+                        </motion.button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -185,7 +200,7 @@ const Services = () => {
                       placeholder="Например: Сантехника"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all"
                     />
-                    
+
                     <div className="flex flex-wrap gap-1 mt-2">
                       {quickTags.map(tag => (
                         <button
@@ -320,6 +335,10 @@ const Services = () => {
           )}
         </AnimatePresence>
       </div>
+
+
+        {showTarrifs && <TarrifModal onClose={() => setShowTarrifs(false)} />}
+      
     </div>
   );
 };

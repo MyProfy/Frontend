@@ -147,7 +147,7 @@ export const apiClient = {
       console.log("✅ Login response:", response.data);
 
       const token = response.data.access;
-      const refreshToken = response.data.refresh; // Добавьте это
+      const refreshToken = response.data.refresh; 
 
       if (!token) {
         throw new Error("No access token in response");
@@ -207,10 +207,33 @@ export const apiClient = {
     }
   },
 
+  requestOTP: async (phone: string): Promise<any> => {
+    try {
+      console.log("📱 Requesting OTP for:", phone);
+      const response = await api.post("/auth/otp/request/", { phone });
+      console.log("✅ OTP requested:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Request OTP error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  verifyOTP: async (data: { phone: string; code: string }): Promise<OTPVerifyResponse> => {
+    try {
+      console.log("🔑 Verifying OTP for:", data.phone);
+      const response = await api.post("/auth/otp/verify/", data);
+      console.log("✅ OTP verified:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Verify OTP error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   getCurrentUser: async (): Promise<User> => {
     console.log("👤 Getting current user");
     try {
-      // Получаем ID пользователя из localStorage
       const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
       if (!userStr) {
@@ -223,7 +246,6 @@ export const apiClient = {
         throw new Error("User ID not found");
       }
 
-      // Используем backticks для интерполяции ID
       const response = await api.get(`/users/${user.id}/`);
       console.log("✅ Current user:", response.data);
 

@@ -1,4 +1,3 @@
-// components/ProfilePage/sections/History.tsx
 import React, { useEffect, useState } from "react";
 import styled from "@emotion/styled";
 import { motion } from "framer-motion";
@@ -254,7 +253,6 @@ const History = () => {
 
   const apiClient = getAPIClient();
 
-  // Загрузка заказов с бэкенда
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -276,7 +274,6 @@ const History = () => {
     fetchOrders();
   }, [apiClient]);
 
-  // Функция для получения названия услуги/вакансии
   const getOrderTitle = (order: Order): string => {
     if (typeof order.service === 'object' && order.service?.name) {
       return `Заказ: ${order.service.name}`;

@@ -41,7 +41,7 @@ export default function App() {
       {isLoaderEnabled ? (
         <Loader
           duration={3500}
-          onLoadingComplete={handleLoadingComplete}
+          // onLoadingComplete={handleLoadingComplete}
           // containerSize={{ width: "120px", height: "120px" }}
           // circleSize={{ width: "120px", height: "120px" }}
           // trailSize={{ width: "120px", height: "120px" }}
@@ -50,7 +50,7 @@ export default function App() {
           // textGap="80px"
           // textPosition={{ left: "20px" }}
           // trailCount={3}
-          message="WELCOME..."
+          // message="WELCOME..."
         >
           {showContent && (
             <>

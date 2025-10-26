@@ -6,30 +6,47 @@ import { motion, AnimatePresence } from "framer-motion";
 interface LoaderProps {
   children: React.ReactNode;
   duration?: number;
-  message?: string;
   onLoadingComplete?: () => void;
 }
 
 export default function Loader({
   children,
-  duration = 3000,
-  message = "Welcome...",
+  duration = 6000,
   onLoadingComplete,
 }: LoaderProps) {
-  const [mounted, setMounted] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
   const [localLoading, setLocalLoading] = useState(true);
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  const messages = [
+    "Найди проверенного специалиста за минуты!",
+
+    "Реши любую задачу — от дизайна до ремонта.",
+
+    "Сотни исполнителей готовы начать уже сегодня!",
+
+    "Заявка бесплатно — результат быстро.",
+
+    "Найми лучших — просто опиши, что тебе нужно."
+  ];
 
   useEffect(() => {
     setMounted(true);
 
+    const msgInterval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 2000);
+
     const timer = setTimeout(() => {
       setLocalLoading(false);
-      if (onLoadingComplete) {
-        onLoadingComplete();
-      }
+      clearInterval(msgInterval);
+      if (onLoadingComplete) onLoadingComplete();
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(msgInterval);
+    };
   }, [duration, onLoadingComplete]);
 
   if (!mounted) return null;
@@ -49,7 +66,6 @@ export default function Loader({
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                 <motion.div
                   className="w-[120px] h-[120px] md:w-[140px] md:h-[140px] bg-gradient-to-br from-green-500 to-green-600 rounded-full shadow-[0_0_15px_rgba(144,238,144,0.5)] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                  initial={{ scale: 1, opacity: 1 }}
                   animate={{
                     scale: [1, 1.45, 1],
                     opacity: [1, 0.8, 1],
@@ -79,18 +95,24 @@ export default function Loader({
                 ))}
               </div>
             </div>
-            <motion.div
-              className="text-3xl md:text-4xl font-normal text-green-700 px-8 md:px-24 text-center tracking-wide mt-6 md:mt-8"
-              style={{ textShadow: '0 0 12px rgba(144, 238, 144, 0.6)' }}
-              initial={{ y: 24, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            >
-              {message}
-            </motion.div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={messageIndex}
+                className="text-2xl md:text-4xl font-medium text-green-700 px-6 md:px-24 text-center tracking-wide mt-6 md:mt-8"
+                style={{ textShadow: "0 0 12px rgba(144, 238, 144, 0.6)" }}
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -30, opacity: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {messages[messageIndex]}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
+
       {!localLoading && children}
     </>
   );
