@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Search, Folder, DollarSign, Award, Clock } from "lucide-react";
+import { ChevronRight, Search, Folder, DollarSign, Award, Clock, MapPin } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAPIClient } from "@/components/types/apiClient";
 import { Category, SubCategory, Vacancy, Service } from "@/components/types/apiTypes";
 import Navbar from "@/components/Header/Navbar";
 import Footer from "@/components/Footer/Footer";
-import { PiTelegramLogoLight } from "react-icons/pi";
 
 type ViewMode = 'vacancies' | 'services';
 type ListingItem = Vacancy | Service;
@@ -134,54 +133,59 @@ const ListingCard = memo(({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className="border border-gray-200 rounded-2xl hover:shadow-lg transition-all cursor-pointer bg-white overflow-hidden p-6 flex gap-6"
+      className="bg-white rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer"
     >
-      <div className="w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
-        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+      <div className="flex items-start justify-between mb-3">
+        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <span className="text-lg font-semibold text-gray-900 whitespace-nowrap ml-4">
+          {item.price.toLocaleString('ru-RU')} руб
+        </span>
       </div>
 
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-2xl font-semibold text-gray-900">{title}</h2>
-          <ChevronRight className="text-gray-400" size={22} />
+      <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+          <span className="font-medium text-gray-700">Олег Фёдоров</span>
         </div>
 
-        <div className="flex items-center gap-3 mb-4">
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm flex items-center gap-2">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
-            </svg>
-            Паспорт проверен
-          </span>
-
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm flex items-center gap-1.5">
-            ⭐ <span className="font-semibold">4.98</span> · <span>1775 отзывов</span>
-          </span>
+        <div className="flex items-center gap-1.5">
+          <Clock size={14} />
+          <span>Часы работы: 11 - 20</span>
         </div>
 
-        <p className="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-2">
-          {item.description}
-        </p>
-
-        <div className="flex items-center justify-between">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm"
-          >
-            <PiTelegramLogoLight size={18} />
-            Написать специалисту
-          </button>
-
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Выезд к клиенту</p>
-            <p className="text-sm font-medium">Ташкент, Ташкент область</p>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <MapPin size={14} />
+          <span>Мирзо Улугбек туман, Аранчи куча</span>
         </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCardClick();
+          }}
+          className="px-5 py-2.5 bg-white border border-gray-800 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z" />
+          </svg>
+          Найти специалиста
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCardClick();
+          }}
+          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+          </svg>
+          Найти заказа
+        </button>
       </div>
     </motion.div>
   );
@@ -197,29 +201,29 @@ const CategoryFilter = memo(({
   selectedCategory: number | null;
   onCategoryClick: (id: number) => void;
 }) => (
-  <div className="space-y-1 mb-4">
+  <div className="space-y-0.5">
     {categories.map((category) => (
       <button
         key={category.id}
         onClick={() => onCategoryClick(category.id)}
-        className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
           selectedCategory === category.id
-            ? "bg-green-50 text-green-700 font-semibold"
+            ? "bg-gray-50 text-gray-900 font-medium"
             : "text-gray-600 hover:bg-gray-50"
         }`}
       >
         <div
-          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
             selectedCategory === category.id
-              ? "border-green-600"
+              ? "border-gray-800"
               : "border-gray-300"
           }`}
         >
           {selectedCategory === category.id && (
-            <div className="w-2 h-2 rounded-full bg-green-600"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-gray-800"></div>
           )}
         </div>
-        {getDisplayName(category)}
+        <span>{getDisplayName(category)}</span>
       </button>
     ))}
   </div>
@@ -337,7 +341,6 @@ export default function VacanciesPage() {
     const sourceData = viewMode === 'vacancies' ? vacancies : services;
     let filtered = [...sourceData];
 
-    // Поиск по query (текст, категории, подкатегории)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       
@@ -345,12 +348,10 @@ export default function VacanciesPage() {
         const title = ('title' in item ? item.title : item.name) || '';
         const description = item.description || '';
         
-        // Поиск по названию и описанию
         const matchesContent = 
           title.toLowerCase().includes(query) ||
           description.toLowerCase().includes(query);
         
-        // Поиск по категории
         const itemCategoryId = typeof item.category === 'number' 
           ? item.category 
           : item.category?.id;
@@ -361,7 +362,6 @@ export default function VacanciesPage() {
           (category.name || '').toLowerCase().includes(query)
         );
         
-        // Поиск по подкатегории
         const itemSubCat = 'sub_category' in item ? item.sub_category : 
           ('sub_categories' in item ? item.sub_categories : null);
         
@@ -393,7 +393,6 @@ export default function VacanciesPage() {
       });
     }
 
-    // Фильтрация по выбранным подкатегориям
     if (selectedSubCategories.length > 0) {
       filtered = filtered.filter(item => {
         const itemSubCat = 'sub_category' in item ? item.sub_category :
@@ -412,7 +411,6 @@ export default function VacanciesPage() {
         return selectedSubCategories.includes(scId);
       });
     }
-    // Фильтрация по выбранной категории (если нет выбранных подкатегорий)
     else if (selectedCategory !== null) {
       filtered = filtered.filter(item => {
         const categoryId = typeof item.category === 'number'
@@ -422,7 +420,6 @@ export default function VacanciesPage() {
       });
     }
 
-    // Фильтрация по цене
     if (selectedPriceRanges.length > 0) {
       filtered = filtered.filter(item => {
         return selectedPriceRanges.some(range => {
@@ -522,8 +519,8 @@ export default function VacanciesPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-100 mt-[60px]">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="min-h-screen bg-gray-50 mt-[60px]">
+        <div className="max-w-7xl mx-auto px-6 py-8">
           {usingMockData && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
@@ -532,17 +529,17 @@ export default function VacanciesPage() {
             </div>
           )}
 
-          <div className="flex gap-6">
-            <aside className="w-64 flex-shrink-0">
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm sticky top-6">
-                <div className="p-4">
-                  <div className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-3 pb-3 border-b border-dotted border-blue-300">
-                    <span>Все категории</span>
-                    <ChevronRight size={18} className="text-blue-500" />
+          <div className="flex gap-8">
+            <aside className="w-56 flex-shrink-0">
+              <div className="bg-white rounded-lg shadow-sm sticky top-6">
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="font-semibold text-gray-800">Все категории</span>
+                    <ChevronRight size={20} className="text-gray-400" />
                   </div>
 
-                  <div className="mb-4 pb-3 border-b border-dotted border-blue-300">
-                    <div className="flex items-center gap-2 mb-3 text-gray-700">
+                  <div className="mb-5 pb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <Folder size={18} />
                       <span className="text-sm font-medium">Под категории</span>
                     </div>
@@ -554,16 +551,16 @@ export default function VacanciesPage() {
                     />
 
                     {selectedCategory !== null && filteredSubCategories.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="mt-3 space-y-0.5">
                         {filteredSubCategories.map((subCategory) => (
                           <label
                             key={subCategory.id}
                             onClick={() => handleSubCategoryToggle(subCategory.id)}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                           >
-                            <div className="w-4 h-4 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                               {selectedSubCategories.includes(subCategory.id) && (
-                                <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                                <div className="w-2.5 h-2.5 bg-gray-800 rounded-full"></div>
                               )}
                             </div>
                             <span className="text-gray-700">{getDisplayName(subCategory)}</span>
@@ -573,8 +570,8 @@ export default function VacanciesPage() {
                     )}
                   </div>
 
-                  <div className="mb-4 pb-3 border-b border-dotted border-blue-300">
-                    <div className="flex items-center gap-2 mb-3 text-gray-700">
+                  <div className="mb-5 pb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <DollarSign size={18} />
                       <span className="text-sm font-medium">Стоимость</span>
                     </div>
@@ -582,7 +579,7 @@ export default function VacanciesPage() {
                       {PRICE_RANGES.map((range) => (
                         <label
                           key={range.label}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
@@ -590,7 +587,7 @@ export default function VacanciesPage() {
                             onChange={() =>
                               toggleSelection(selectedPriceRanges, setSelectedPriceRanges, range.label)
                             }
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            className="w-4 h-4 text-gray-800 border-gray-300 rounded focus:ring-gray-500"
                           />
                           <span className="text-gray-700">{range.label}</span>
                         </label>
@@ -598,8 +595,8 @@ export default function VacanciesPage() {
                     </div>
                   </div>
 
-                  <div className="mb-4 pb- border-b border-dotted border-blue-300">
-                    <div className="flex items-center gap-2 mb-3 text-gray-700">
+                  <div className="mb-5 pb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <Award size={18} />
                       <span className="text-sm font-medium">Стаж лет</span>
                     </div>
@@ -607,7 +604,7 @@ export default function VacanciesPage() {
                       {EXPERIENCE_YEARS.map((range) => (
                         <label
                           key={range}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
@@ -615,7 +612,7 @@ export default function VacanciesPage() {
                             onChange={() =>
                               toggleSelection(selectedExperience, setSelectedExperience, range)
                             }
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            className="w-4 h-4 text-gray-800 border-gray-300 rounded focus:ring-gray-500"
                           />
                           <span className="text-gray-700">{range}</span>
                         </label>
@@ -623,8 +620,8 @@ export default function VacanciesPage() {
                     </div>
                   </div>
 
-                  <div className="mb-0">
-                    <div className="flex items-center gap-2 mb-3 text-gray-700">
+                  <div>
+                    <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <Clock size={18} />
                       <span className="text-sm font-medium">Часы работы</span>
                     </div>
@@ -632,7 +629,7 @@ export default function VacanciesPage() {
                       {WORKING_HOURS.map((hours) => (
                         <label
                           key={hours}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
@@ -640,7 +637,7 @@ export default function VacanciesPage() {
                             onChange={() =>
                               toggleSelection(selectedHours, setSelectedHours, hours)
                             }
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            className="w-4 h-4 text-gray-800 border-gray-300 rounded focus:ring-gray-500"
                           />
                           <span className="text-gray-700">{hours}</span>
                         </label>
@@ -651,17 +648,22 @@ export default function VacanciesPage() {
               </div>
             </aside>
 
-            <main className="flex-1  rounded-xl">
+            <main className="flex-1">
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  Зарабатывайте на том, что умеете
+                </h1>
+              </div>
 
               {filteredItems.length === 0 ? (
-                <div className="text-center py-8 rounded-xl">
+                <div className="text-center py-12 bg-white rounded-lg">
                   <p className="text-gray-600 text-lg font-semibold mb-2">
                     {viewMode === 'vacancies' ? 'Вакансии не найдены' : 'Услуги не найдены'}
                   </p>
                   <p className="text-gray-500 text-sm">Попробуйте изменить фильтры поиска</p>
                 </div>
               ) : (
-                <div className="space-y-4 p-6">
+                <div className="space-y-3">
                   {filteredItems.map((item, index) => (
                     <ListingCard
                       key={item.id}

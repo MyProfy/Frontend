@@ -154,6 +154,7 @@ const SearchBlock = memo(({
   searchResults,
   onResultClick,
   showResults,
+  onInputFocus,
   t
 }: any) => {
   const searchRef = useRef<HTMLDivElement>(null);
@@ -180,7 +181,8 @@ const SearchBlock = memo(({
           placeholder={t("search.placeholder", "Поиск...")}
           value={searchQuery}
           onChange={onSearchChange}
-          onKeyPress={(e) => e.key === "Enter" && onSearch()}
+          onFocus={onInputFocus}
+          onKeyDown={(e) => e.key === "Enter" && onSearch()}
         />
 
         <AnimatePresence>
@@ -271,7 +273,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const [requestText, setRequestText] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [imageError, setImageError] = useState<boolean>(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState<boolean>(false);
 
   const reviews = useMemo(
@@ -337,53 +338,56 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     return item.name || '';
   }, [language]);
 
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return [];
+
+    const queryLower = q.toLowerCase();
+
+    const matchedCategories = categories
+      .filter(cat => {
+        if (!cat) return false;
+        const displayName = getDisplayName(cat)?.toLowerCase() || '';
+        const name = cat.name?.toLowerCase() || '';
+        return displayName.includes(queryLower) || name.includes(queryLower);
+      })
+      .map(cat => ({
+        id: cat.id,
+        name: getDisplayName(cat),
+        type: 'category',
+        categoryId: cat.id
+      }));
+
+    const matchedSubCategories = subCategories
+      .filter(sub => {
+        if (!sub) return false;
+        const displayName = getDisplayName(sub)?.toLowerCase() || '';
+        const name = sub.name?.toLowerCase() || '';
+        return displayName.includes(queryLower) || name.includes(queryLower);
+      })
+      .map(sub => {
+        const categoryId = typeof sub.category === 'number' ? sub.category : sub.category?.id;
+        return {
+          id: sub.id,
+          name: getDisplayName(sub),
+          type: 'subcategory',
+          categoryId: categoryId,
+          subCategoryId: sub.id
+        };
+      });
+
+    return [...matchedCategories, ...matchedSubCategories].slice(0, 10);
+  }, [searchQuery, categories, subCategories, getDisplayName]);
+
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
+    setShowResults(query.trim().length >= 2);
+  }, []);
 
-    if (query.trim().length >= 2) {
-      const queryLower = query.toLowerCase();
-
-      const matchedCategories = categories
-        .filter(cat => {
-          if (!cat) return false;
-          const displayName = getDisplayName(cat)?.toLowerCase() || '';
-          const name = cat.name?.toLowerCase() || '';
-          return displayName.includes(queryLower) || name.includes(queryLower);
-        })
-        .map(cat => ({
-          id: cat.id,
-          name: getDisplayName(cat),
-          type: 'category',
-          categoryId: cat.id
-        }));
-
-      const matchedSubCategories = subCategories
-        .filter(sub => {
-          if (!sub) return false;
-          const displayName = getDisplayName(sub)?.toLowerCase() || '';
-          const name = sub.name?.toLowerCase() || '';
-          return displayName.includes(queryLower) || name.includes(queryLower);
-        })
-        .map(sub => {
-          const categoryId = typeof sub.category === 'number' ? sub.category : sub.category?.id;
-          return {
-            id: sub.id,
-            name: getDisplayName(sub),
-            type: 'subcategory',
-            categoryId: categoryId,
-            subCategoryId: sub.id
-          };
-        });
-
-      const results = [...matchedCategories, ...matchedSubCategories].slice(0, 10);
-      setSearchResults(results);
-      setShowResults(results.length > 0);
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
-  }, [categories, subCategories, getDisplayName]);
+  const handleInputFocus = useCallback(() => {
+    setShowResults(searchQuery.trim().length >= 2);
+  }, [searchQuery]);
 
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
@@ -439,7 +443,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.relative')) {
+      if (searchRef.current && !searchRef.current.contains(target)) {
         setShowResults(false);
       }
     };
@@ -513,6 +517,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
           searchResults={searchResults}
           onResultClick={handleResultClick}
           showResults={showResults}
+          onInputFocus={handleInputFocus}
           t={t}
         />
 
