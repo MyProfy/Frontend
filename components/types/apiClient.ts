@@ -186,27 +186,19 @@ export const apiClient = {
   },
 
   register: async (userData: RegisterPayload): Promise<any> => {
-    console.log("📤 РЕГИСТРАЦИЯ:");
+    console.log("📤 РЕГИСТРАЦИЯ - отправляемые данные:");
     console.log("URL:", `${API_BASE_URL}/auth/register/`);
     console.log("Данные:", JSON.stringify(userData, null, 2));
 
     try {
       const response = await api.post("/auth/register/", userData);
-
-      console.log("✅ Успешная регистрация:", response.data);
-
-      return {
-        success: true,
-        user: response.data.user,
-        token: response.data.access,
-        refresh: response.data.refresh
-      };
-
+      console.log("✅ Успешная регистрация - ответ сервера:", response.data);
+      return response.data;
     } catch (error: any) {
       console.error("❌ ОШИБКА РЕГИСТРАЦИИ:");
-      console.error("Ошибка backend:", JSON.stringify(error.response?.data, null, 2));
       console.error("Status:", error.response?.status);
-      console.error("Данные:", error.response?.data);
+      console.error("Data:", error.response?.data);
+      console.error("Headers:", error.response?.headers);
       throw error;
     }
   },
