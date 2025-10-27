@@ -21,7 +21,7 @@ interface VacancyFormData {
 
 const Services = () => {
   const t = useTranslations('vacancies');
-  const commonT = useTranslations('common'); // Assuming common translations for shared strings
+  const commonT = useTranslations('common'); 
   const errorsT = useTranslations('errors');
   const router = useRouter();
   const apiClient = getAPIClient();
@@ -49,19 +49,19 @@ const Services = () => {
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  // Поддерживаемые форматы изображений
+  
   const SUPPORTED_IMAGE_FORMATS = [
     'image/jpeg',
     'image/jpg',
     'image/png',
     'image/gif',
     'image/webp',
-    'image/avif',  // AVIF поддержка
+    'image/avif',  
     'image/svg+xml',
     'image/bmp'
   ];
 
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (увеличили лимит)
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; 
 
   useEffect(() => {
     loadInitialData();
@@ -76,7 +76,7 @@ const Services = () => {
 
       const [categoriesData, vacanciesData] = await Promise.all([
         apiClient.getCategories(),
-        apiClient.getVacancies({ client: user.id }) // Фильтр по текущему пользователю
+        apiClient.getVacancies({ client: user.id }) 
       ]);
       
       const extractedCategories = Array.isArray(categoriesData) 
@@ -109,17 +109,17 @@ const Services = () => {
   }, [formData.category]);
 
   const loadSubCategories = async (categoryId: number) => {
-    try {
-      const subCategoriesData = await apiClient.getSubcategories({ category: categoryId });
-      const extractedSubCategories = Array.isArray(subCategoriesData)
-        ? subCategoriesData
-        : subCategoriesData?.results || [];
-      setSubCategories(extractedSubCategories);
-      console.log("Loaded subcategories:", extractedSubCategories.length);
-    } catch (error) {
-      console.error("Ошибка загрузки подкатегорий:", error);
-      setSubCategories([]); // Очистка в случае ошибки
-    }
+    // try {
+    //   const subCategoriesData = await apiClient.getSubcategories({ category: categoryId });
+    //   const extractedSubCategories = Array.isArray(subCategoriesData)
+    //     ? subCategoriesData
+    //     : subCategoriesData?.results || [];
+    //   setSubCategories(extractedSubCategories);
+    //   console.log("Loaded subcategories:", extractedSubCategories.length);
+    // } catch (error) {
+    //   console.error("Ошибка загрузки подкатегорий:", error);
+    //   setSubCategories([]); 
+    // }
   };
 
   const handleFindSpecialist = () => {

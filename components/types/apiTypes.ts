@@ -1,5 +1,21 @@
 import { TFunction } from "i18next";
 
+export type Region =
+  | "Город Ташкент"
+  | "Ташкентская область"
+  | "Андижанская область"
+  | "Бухарская область"
+  | "Ферганская область"
+  | "Джизакская область"
+  | "Наманганская область"
+  | "Навоийская область"
+  | "Кашкадарьинская область"
+  | "Самаркандская область"
+  | "Сырдарьинская область"
+  | "Сурхандарьинская область"
+  | "Хорезмская область"
+  | "Республика Каракалпакстан";
+
 export interface BaseEntity {
   id: number;
   created_at?: string;
@@ -199,13 +215,13 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   name: string;
-  role: "client" | "executor";
-  region: string;
+  role: "клиент"; 
+  region: Region;
   gender: "male" | "female";
-  telegram_id?: number;
+  telegram_id: number | null; 
   telegram_username?: string;
-  confirm_password?: string;
 }
+
 
 export interface OTPRequestPayload {
   phone: string;
