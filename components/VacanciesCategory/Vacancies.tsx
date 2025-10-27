@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Search, Folder, DollarSign, Award, Clock, MapPin } from "lucide-react";
+import { ChevronRight, Folder, DollarSign, Award, Clock, MapPin } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAPIClient } from "@/components/types/apiClient";
 import { Category, SubCategory, Vacancy, Service } from "@/components/types/apiTypes";
@@ -21,6 +21,27 @@ const PRICE_RANGES = [
 const EXPERIENCE_YEARS = ["1 - 2 года", "3 - 4 года", "5 - 6+ лет"] as const;
 const WORKING_HOURS = ["0 - 10 часов", "11 - 20 часов", "21 - 40 часов"] as const;
 
+const MOCK_CATEGORIES: Category[] = [
+  { id: 1, name: "Веб-разработка", display_ru: "Веб-разработка", service_count: 5 },
+  { id: 2, name: "Образование", display_ru: "Образование", service_count: 3 },
+  { id: 3, name: "Ремонт", display_ru: "Ремонт", service_count: 4 },
+  { id: 4, name: "Здоровье", display_ru: "Здоровье", service_count: 2 },
+  { id: 5, name: "Бытовая техника", display_ru: "Бытовая техника", service_count: 6 },
+  { id: 6, name: "Уборка", display_ru: "Уборка", service_count: 1 },
+];
+
+const MOCK_SUBCATEGORIES: SubCategory[] = [
+  { id: 1, name: "Дизайн", display_ru: "Дизайн", category: 1 },
+  { id: 2, name: "Frontend", display_ru: "Frontend", category: 1 },
+  { id: 3, name: "Английский", display_ru: "Английский", category: 2 },
+  { id: 4, name: "Репетитор", display_ru: "Репетитор", category: 2 },
+  { id: 5, name: "Электрика", display_ru: "Электрика", category: 3 },
+  { id: 6, name: "Массаж", display_ru: "Массаж", category: 4 },
+  { id: 7, name: "Холодильники", display_ru: "Холодильники", category: 5 },
+  { id: 8, name: "Стиралки", display_ru: "Стиралки", category: 5 },
+  { id: 9, name: "Квартиры", display_ru: "Квартиры", category: 6 },
+];
+
 const MOCK_VACANCIES: Vacancy[] = [
   {
     id: 1,
@@ -28,7 +49,7 @@ const MOCK_VACANCIES: Vacancy[] = [
     price: 25000,
     description: "Ищем опытного веб-дизайнера для разработки современного корпоративного сайта. Требуется портфолио с похожими проектами.",
     category: 1,
-    sub_category: 2,
+    sub_category: 1,
     client: 101,
     images: [],
     moderation: "approved",
@@ -54,7 +75,7 @@ const MOCK_VACANCIES: Vacancy[] = [
     price: 15000,
     description: "Нужен репетитор английского для подготовки ребенка 10 лет к международным экзаменам. 3 раза в неделю по 1.5 часа.",
     category: 2,
-    sub_category: 4,
+    sub_category: 3,
     client: 103,
     images: [],
     moderation: "approved",
@@ -73,6 +94,8 @@ const MOCK_SERVICES: Service[] = [
     sub_categories: [6],
     executor: 201,
     images: [],
+    boosts: [],
+    reviews: [],
   },
   {
     id: 2,
@@ -83,6 +106,8 @@ const MOCK_SERVICES: Service[] = [
     sub_categories: [7, 8],
     executor: 202,
     images: [],
+    boosts: [],
+    reviews: [],
   },
   {
     id: 3,
@@ -93,6 +118,8 @@ const MOCK_SERVICES: Service[] = [
     sub_categories: [9],
     executor: 203,
     images: [],
+    boosts: [],
+    reviews: [],
   },
 ];
 
@@ -138,7 +165,7 @@ const ListingCard = memo(({
       <div className="flex items-start justify-between mb-3">
         <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
         <span className="text-lg font-semibold text-gray-900 whitespace-nowrap ml-4">
-          {item.price.toLocaleString('ru-RU')} руб
+          {item.price.toLocaleString('ru-RU')} сум
         </span>
       </div>
 
@@ -170,7 +197,7 @@ const ListingCard = memo(({
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z" />
           </svg>
-          Найти специалиста
+          {isVacancy ? "Найти специалиста" : "Заказать услугу"}
         </button>
 
         <button
@@ -184,7 +211,7 @@ const ListingCard = memo(({
             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
             <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
           </svg>
-          Найти заказа
+          {isVacancy ? "Подробнее о вакансии" : "Подробнее об услуге"}
         </button>
       </div>
     </motion.div>
@@ -236,7 +263,6 @@ export default function VacanciesPage() {
   const router = useRouter();
 
   const [viewMode, setViewMode] = useState<ViewMode>('vacancies');
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedSubCategories, setSelectedSubCategories] = useState<number[]>([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
@@ -258,12 +284,10 @@ export default function VacanciesPage() {
       setUsingMockData(false);
 
       try {
-        console.log("🔄 Загрузка данных с API...");
-
         const [categoriesData, subCategoriesData, vacanciesData, servicesData] = await Promise.all([
           apiClient.getCategories(),
           apiClient.getSubcategories(),
-          apiClient.getVacancies(1, 50),
+          apiClient.getVacancies({ page: 1, limit: 50 }),
           apiClient.getServices(1, 50),
         ]);
 
@@ -272,11 +296,10 @@ export default function VacanciesPage() {
         const extractedVacancies = extractResults(vacanciesData);
         const extractedServices = extractResults(servicesData);
 
-        setCategories(extractedCategories);
-        setSubCategories(extractedSubCategories);
+        setCategories(extractedCategories.length > 0 ? extractedCategories : MOCK_CATEGORIES);
+        setSubCategories(extractedSubCategories.length > 0 ? extractedSubCategories : MOCK_SUBCATEGORIES);
 
-        if (!extractedVacancies || extractedVacancies.length === 0) {
-          console.log("⚠️ API вернул пустой список вакансий, используем MOCK_VACANCIES");
+        if (extractedVacancies.length === 0) {
           setVacancies(MOCK_VACANCIES);
           setUsingMockData(true);
         } else {
@@ -284,7 +307,7 @@ export default function VacanciesPage() {
           setVacancies(extractedVacancies);
         }
 
-        if (!extractedServices || extractedServices.length === 0) {
+        if (extractedServices.length === 0) {
           console.log("⚠️ API вернул пустой список услуг, используем MOCK_SERVICES");
           setServices(MOCK_SERVICES);
           setUsingMockData(true);
@@ -296,6 +319,8 @@ export default function VacanciesPage() {
       } catch (err) {
         console.error("❌ Ошибка загрузки с API:", err);
         console.log("🔄 Переключение на MOCK данные из-за ошибки API");
+        setCategories(MOCK_CATEGORIES);
+        setSubCategories(MOCK_SUBCATEGORIES);
         setVacancies(MOCK_VACANCIES);
         setServices(MOCK_SERVICES);
         setUsingMockData(true);
@@ -312,10 +337,9 @@ export default function VacanciesPage() {
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
     const modeParam = searchParams.get('mode');
-    const queryParam = searchParams.get('q');
 
     if (modeParam === 'services' || modeParam === 'vacancies') {
-      setViewMode(modeParam);
+      setViewMode(modeParam as ViewMode);
     }
 
     if (categoryParam) {
@@ -331,67 +355,11 @@ export default function VacanciesPage() {
         .filter(id => !isNaN(id));
       setSelectedSubCategories(subcategoryIds);
     }
-
-    if (queryParam) {
-      setSearchQuery(queryParam);
-    }
   }, [searchParams]);
 
   const filteredItems = useMemo(() => {
     const sourceData = viewMode === 'vacancies' ? vacancies : services;
     let filtered = [...sourceData];
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      
-      filtered = filtered.filter(item => {
-        const title = ('title' in item ? item.title : item.name) || '';
-        const description = item.description || '';
-        
-        const matchesContent = 
-          title.toLowerCase().includes(query) ||
-          description.toLowerCase().includes(query);
-        
-        const itemCategoryId = typeof item.category === 'number' 
-          ? item.category 
-          : item.category?.id;
-        
-        const category = categories.find(cat => cat.id === itemCategoryId);
-        const matchesCategory = category && (
-          (getDisplayName(category) || '').toLowerCase().includes(query) ||
-          (category.name || '').toLowerCase().includes(query)
-        );
-        
-        const itemSubCat = 'sub_category' in item ? item.sub_category : 
-          ('sub_categories' in item ? item.sub_categories : null);
-        
-        let matchesSubCategory = false;
-        if (itemSubCat) {
-          if (Array.isArray(itemSubCat)) {
-            matchesSubCategory = itemSubCat.some(sc => {
-              const scId = typeof sc === 'number' ? sc : sc?.id;
-              if (!scId) return false;
-              const subCat = subCategories.find(sub => sub.id === scId);
-              return subCat && (
-                (getDisplayName(subCat) || '').toLowerCase().includes(query) ||
-                (subCat.name || '').toLowerCase().includes(query)
-              );
-            });
-          } else {
-            const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat?.id;
-            if (scId) {
-              const subCat = subCategories.find(sub => sub.id === scId);
-              matchesSubCategory = subCat && (
-                (getDisplayName(subCat) || '').toLowerCase().includes(query) ||
-                (subCat.name || '').toLowerCase().includes(query)
-              );
-            }
-          }
-        }
-        
-        return matchesContent || matchesCategory || matchesSubCategory;
-      });
-    }
 
     if (selectedSubCategories.length > 0) {
       filtered = filtered.filter(item => {
@@ -402,12 +370,12 @@ export default function VacanciesPage() {
 
         if (Array.isArray(itemSubCat)) {
           return itemSubCat.some(sc => {
-            const scId = typeof sc === 'number' ? sc : sc.id;
+            const scId = typeof sc === 'number' ? sc : sc?.id;
             return selectedSubCategories.includes(scId);
           });
         }
 
-        const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat.id;
+        const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat?.id;
         return selectedSubCategories.includes(scId);
       });
     }
@@ -438,7 +406,6 @@ export default function VacanciesPage() {
     selectedCategory, 
     selectedSubCategories, 
     selectedPriceRanges, 
-    searchQuery,
     categories,
     subCategories
   ]);
@@ -541,7 +508,7 @@ export default function VacanciesPage() {
                   <div className="mb-5 pb-5 border-b border-gray-100">
                     <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <Folder size={18} />
-                      <span className="text-sm font-medium">Под категории</span>
+                      <span className="text-sm font-medium">Подкатегории</span>
                     </div>
 
                     <CategoryFilter
@@ -552,11 +519,12 @@ export default function VacanciesPage() {
 
                     {selectedCategory !== null && filteredSubCategories.length > 0 && (
                       <div className="mt-3 space-y-0.5">
+                        <span className="text-xs text-gray-500 block mb-2 pl-3">Подкатегории:</span>
                         {filteredSubCategories.map((subCategory) => (
                           <label
                             key={subCategory.id}
-                            onClick={() => handleSubCategoryToggle(subCategory.id)}
                             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
+                            onClick={() => handleSubCategoryToggle(subCategory.id)}
                           >
                             <div className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                               {selectedSubCategories.includes(subCategory.id) && (
@@ -650,9 +618,13 @@ export default function VacanciesPage() {
 
             <main className="flex-1">
               <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Зарабатывайте на том, что умеете
+
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {viewMode === 'vacancies' ? 'Вакансии' : 'Услуги'}
                 </h1>
+                <p className="text-gray-600 mt-2">
+                  Найдите {viewMode === 'vacancies' ? 'работу своей мечты' : 'идеального исполнителя'}
+                </p>
               </div>
 
               {filteredItems.length === 0 ? (

@@ -440,17 +440,17 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     router.push(`/vacancies?category=${categoryId}&mode=vacancies`);
   }, [router]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (searchRef.current && !searchRef.current.contains(target)) {
-        setShowResults(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     const target = event.target as HTMLElement;
+  //     if (searchRef.current && !searchRef.current.contains(target)) {
+  //       setShowResults(false);
+  //     }
+  //   };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => document.removeEventListener('mousedown', handleClickOutside);
+  // }, []);
 
   useEffect(() => {
     i18n.changeLanguage(language);
