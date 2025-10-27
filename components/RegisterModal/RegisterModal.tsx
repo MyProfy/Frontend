@@ -36,7 +36,8 @@ import {
   setModalStep,
   resetModal,
 } from "../../store/slices/uiSlice";
-import { RegisterPayload } from "../types/apiTypes";
+import { Region, RegisterPayload } from "../types/apiTypes";
+import { verify } from "crypto";
 
 interface RootState {
   auth: {
@@ -279,6 +280,7 @@ export default function RegisterModal({
       // console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
       const result = await apiClient.verifyOTP({ phone: phoneNumber, code: otpCode });
       // console.log("✅ OTP verified successfully!", result);
+      localStorage.setItem("verification_code", otpCode);
 
       if (result.data?.link) {
         setTelegramLink(result.data.link);
@@ -313,7 +315,6 @@ export default function RegisterModal({
     }
 
     if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
-      // console.log("🔢 All 4 digits entered, auto-submitting OTP:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
       }, 300);
@@ -455,7 +456,7 @@ export default function RegisterModal({
   const handleRegisterPhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearError());
-    // console.log("ASD")
+
     const phoneError = validatePhone();
     if (phoneError) {
       dispatch(registerFailure(phoneError));
@@ -467,14 +468,13 @@ export default function RegisterModal({
 
     dispatch(registerStart());
     try {
-      // console.log("📱 Отправка запроса OTP для номера:", phoneNumber);
+      console.log("📱 Отправка запроса OTP для номера:", fullPhoneNumber);
 
-      const response = await apiClient.requestOTP(phoneNumber);
-      // console.log("✅ OTP request response:", response);
+      const response = await apiClient.requestOTP(fullPhoneNumber);
+      console.log("✅ OTP request response:", response);
 
       const botLink = response.data?.link || "https://t.me/myprofy_bot";
       setTelegramLink(botLink);
-      // console.log("🔗 Telegram link:", botLink);
 
       setTimeout(() => {
         window.open(botLink, '_blank', 'noopener,noreferrer');
@@ -498,7 +498,7 @@ export default function RegisterModal({
 
         setTimeout(() => {
           window.open(fallbackLink, '_blank', 'noopener,noreferrer');
-        }, 100);
+        }, 3000);
       } else if (err.response?.data) {
         const data = err.response.data;
 
@@ -523,20 +523,8 @@ export default function RegisterModal({
 
           setTimeout(() => {
             window.open(fallbackLink, '_blank', 'noopener,noreferrer');
-          }, 100);
+          }, 3000);
         }
-      };
-
-      if (errorMessage.includes("User exists") || errorMessage.includes("already registered")) {
-        errorMessage = t("register.errors.phoneAlreadyRegistered") || "Номер уже зарегистрирован";
-      } else if (errorMessage.includes("chat_id") || errorMessage.includes("telegram")) {
-        errorMessage = t("register.errors.noTelegramChat") || "Сначала напишите боту @myprofy_bot";
-        shouldProceed = true;
-        setTelegramLink(fallbackLink);
-
-        setTimeout(() => {
-          window.open(fallbackLink, '_blank', 'noopener,noreferrer');
-        }, 100);
       }
 
       if (!errorMessage) {
@@ -593,16 +581,16 @@ export default function RegisterModal({
       dispatch(registerFailure(errors[0]));
       return;
     }
-
     const registrationData: RegisterPayload = {
-      phone: String(savedPhoneNumber || phoneNumber),
+      phone: String(savedPhoneNumber || phoneNumber), 
       password: String(password),
       name: String(name).trim(),
       telegram_id: null,
       telegram_username: "",
       gender: gender === "male" ? "male" : "female",
-      region,
+      region: region as Region,
       role: "клиент",
+      code: localStorage.getItem("verification_code") || "" 
     };
 
     dispatch(registerStart());
@@ -700,20 +688,20 @@ export default function RegisterModal({
   ];
 
   const regions = [
-    "Город Ташкент",
-    "Ташкентская область",
+    "Республика Каракалпакстан",
     "Андижанская область",
     "Бухарская область",
-    "Ферганская область",
     "Джизакская область",
-    "Наманганская область",
-    "Навоийская область",
     "Кашкадарьинская область",
+    "Навоийская область",
+    "Наманганская область",
     "Самаркандская область",
     "Сырдарьинская область",
     "Сурхандарьинская область",
+    "Ташкентская область",
+    "Ферганская область",
     "Хорезмская область",
-    "Республика Каракалпакстан",
+    "Город Ташкент"
   ];
 
 

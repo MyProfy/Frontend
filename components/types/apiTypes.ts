@@ -220,6 +220,7 @@ export interface RegisterPayload {
   gender: "male" | "female";
   telegram_id: number | null; 
   telegram_username?: string;
+  code: string; 
 }
 
 
