@@ -1,4 +1,4 @@
-  "use client";
+"use client";
 
   import React, { ChangeEvent, useEffect, useRef, useState } from "react";
   import {
@@ -177,7 +177,6 @@
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [otp, setOtp] = useState("");
     const [otpValues, setOtpValues] = useState(["", "", "", ""]);
-    const [telegram, setTelegram] = useState("");
     const [name, setName] = useState("");
     const [gender, setGender] = useState("");
     const [region, setRegion] = useState("");
@@ -188,7 +187,6 @@
     const [telegramLink, setTelegramLink] = useState<string | null>(null);
 
     const phoneInputRef = useRef<HTMLInputElement>(null);
-    const telegramInputRef = useRef<HTMLInputElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
     const otpRefs = useRef<React.RefObject<HTMLInputElement>[]>(
       Array(6)
@@ -222,7 +220,6 @@
       if (isOpen) {
         if (step === 1 || step === 2) phoneInputRef.current?.focus();
         if (step === 3) otpRefs.current[0].current?.focus();
-        if (step === 4) telegramInputRef.current?.focus();
       } else {
         resetForm();
       }
@@ -241,14 +238,12 @@
     const phoneRegex = /^\+\d{7,14}$/;
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d!@#$%^&*-]{6,}$/;
     const otpRegex = /^\d{4}$/;
-    const telegramRegex = /^@[\w]{3,}$/;
     const nameRegex = /^[a-zA-Zа-яА-Я\s]{2,}$/;
 
     const validatePhone = () => phoneRegex.test(phoneNumber) ? "" : t("register.errors.invalidPhone");
     const validatePassword = () => passwordRegex.test(password) ? "" : t("register.errors.invalidPassword");
     const validateConfirmPassword = () => password === confirmPassword ? "" : t("register.errors.passwordMismatch");
     const validateOtp = () => otpRegex.test(otp) ? "" : t("register.errors.invalidOtp");
-    const validateTelegram = () => telegramRegex.test(telegram) ? "" : t("register.errors.invalidTelegram");
     const validateName = () => nameRegex.test(name) ? "" : t("register.errors.invalidName");
     const validateGender = () => gender ? "" : t("register.errors.emptyGender");
     const validateRegion = () => region ? "" : t("register.errors.emptyRegion");
@@ -266,12 +261,6 @@
       dispatch(clearError());
     };
 
-    const handleTelegramChange = (e: ChangeEvent<HTMLInputElement>) => {
-      let value = e.target.value;
-      if (!value.startsWith("@")) value = "@" + value.replace(/^@/, "");
-      setTelegram(value);
-      dispatch(clearError());
-    };
 
     const handleOtpAutoSubmit = async (otpCode: string) => {
       // console.log("🚀 Auto-submitting OTP:", otpCode);
@@ -296,7 +285,7 @@
         }
 
         dispatch(registerStepComplete());
-        handleSetStep(4);
+        handleSetStep(5);
       } catch (err: any) {
         console.error("❌ OTP verification failed:", err.response?.data || err.message);
         const errorMessage = err.response?.data?.error ||
@@ -378,7 +367,6 @@
       setShowConfirmPassword(false);
       setOtp("");
       setOtpValues(["", "", "", ""]);
-      setTelegram("");
       setName("");
       setGender("");
       setSavedPhoneNumber("");
@@ -582,7 +570,7 @@
       try {
         await apiClient.verifyOTP({ phone: phoneNumber, code: otp });
         dispatch(registerStepComplete());
-        handleSetStep(4);
+        handleSetStep(5);
       } catch (err: any) {
         dispatch(registerFailure(err.response?.data?.error || t("register.errors.invalidOtp") || "Неверный код"));
       }
@@ -630,41 +618,9 @@
       }
     };
 
-    const handleTelegramSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      dispatch(clearError());
-
-      const telegramError = validateTelegram();
-      if (telegramError) {
-        dispatch(registerFailure(telegramError));
-        return;
-      }
-
-      dispatch(registerStart());
-      try {
-        // const result = await apiClient.getTelegramId(telegram);
-        // setTelegramId(result.telegram_id);
-
-        // setTelegramId(0);
-
-        dispatch(registerStepComplete());
-        // Move to the next step
-        handleSetStep(5);
-      } catch (err: any) {
-        // Handle error from API
-        dispatch(registerFailure(
-          err.response?.data?.error ||
-          t("register.errors.telegramNotFound") ||
-          "Telegram не найден"
-        ));
-      }
-    };
-
     const handleProfileSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       dispatch(clearError());
-
-      // console.log("📞 Phone Number:", phoneNumber);
 
       const errors = [
         validateName(),
@@ -673,9 +629,6 @@
         validateGender(),
         validateRegion(),
       ].filter(Boolean);
-
-
-
 
       if (errors.length > 0) {
         dispatch(registerFailure(errors[0]));
@@ -687,7 +640,7 @@
         password: password,
         name: name.trim(),
         telegram_id: 0,
-        telegram_username: telegram.trim(),
+        telegram_username: "",
         gender: gender as "male" | "female",
         region: region,
         role: "client" as const,
@@ -1251,89 +1204,6 @@
                 </motion.form>
               )}
 
-              {step === 4 && (
-                <motion.form
-                  key="step4"
-                  className="flex flex-col gap-5"
-                  variants={formVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  onSubmit={handleTelegramSubmit}
-                >
-                  <div className="text-center py-6">{logosvg}</div>
-                  <motion.h2
-                    className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
-                    variants={itemVariants}
-                  >
-                    {t("register.telegram.title") || "Telegram"}
-                  </motion.h2>
-                  <motion.p
-                    className="text-sm text-gray-500 text-center m-0 mb-4"
-                    variants={itemVariants}
-                  >
-                    {t("register.telegram.description") || "Введите ваш Telegram username"}
-                  </motion.p>
-
-                  <motion.div
-                    className="relative w-full min-h-[58px] border-2 border-gray-200 hover:border-green-600 focus-within:border-green-600 rounded-2xl transition-all duration-200"
-                    variants={itemVariants}
-                  >
-                    <input
-                      className="px-4 border-none text-base outline-none bg-transparent w-full h-full placeholder:text-gray-400 font-medium"
-                      type="text"
-                      ref={telegramInputRef}
-                      value={telegram}
-                      onChange={handleTelegramChange}
-                      placeholder={t("register.telegram.placeholder") || "@username"}
-                      required
-                    />
-                  </motion.div>
-
-                  {error && (
-                    <motion.span
-                      className="text-red-600 text-sm mt-1 text-center font-medium bg-red-50 py-2.5 px-4 rounded-xl"
-                      variants={itemVariants}
-                    >
-                      {error}
-                    </motion.span>
-                  )}
-
-                  <motion.button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-4 py-3.5 w-full border-none rounded-2xl text-base font-semibold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 text-white flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-                    variants={buttonVariants}
-                    initial="initial"
-                    whileHover="hover"
-                    whileTap="tap"
-                  >
-                    {isLoading ? (
-                      <>
-                        <FaSpinner className="animate-spin" />
-                        <span>Загрузка...</span>
-                      </>
-                    ) : (
-                      t("register.telegram.submit") || "Продолжить"
-                    )}
-                  </motion.button>
-
-                  <motion.div
-                    className="flex items-center justify-center mt-2"
-                    variants={itemVariants}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleSetStep(3)}
-                      className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-semibold text-sm transition-colors duration-200"
-                    >
-                      <FaArrowLeft />
-                      <span>{t("register.register.backToLogin") || "Назад"}</span>
-                    </button>
-                  </motion.div>
-                </motion.form>
-              )}
-
               {step === 5 && (
                 <motion.form
                   key="step5"
@@ -1542,7 +1412,7 @@
                   >
                     <button
                       type="button"
-                      onClick={() => handleSetStep(4)}
+                      onClick={() => handleSetStep(3)}
                       className="flex items-center gap-2 bg-transparent border-none text-green-600 hover:text-green-700 cursor-pointer font-semibold text-sm transition-colors duration-200"
                     >
                       <FaArrowLeft className="text-xs" />

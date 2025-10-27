@@ -56,20 +56,24 @@ const api: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 15000,
+  timeout: 4000,
   withCredentials: false,
 });
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const publicEndpoints = ['/auth/register/', '/auth/login/', '/auth/otp/request/', '/auth/otp/verify/'];
+    const isPublic = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log("Token attached to request:", config.url);
-    } else {
-      console.warn("No token found for request:", config.url);
+    if (!isPublic) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log("Token attached to request:", config.url);
+      } else {
+        console.warn("No token found for request:", config.url);
+      }
     }
 
     return config;
@@ -124,16 +128,16 @@ api.interceptors.response.use(
       }
 
       if (error.response.status === 403) {
-        console.error(" 403 Forbidden - недостаточно прав или токен невалидный");
+        console.error("403 Forbidden - недостаточно прав или токен невалидный");
       }
     } else if (error.request) {
-      console.error(" API No Response:", error.request);
-      console.error(" Возможные причины:");
-      console.error("   - CORS не настроен на бэкенде");
-      console.error("   - Сервер не доступен");
-      console.error("   - Неправильный URL:", API_BASE_URL);
+      console.error("API No Response:", error.request);
+      console.error("Возможные причины:");
+      console.error("  - CORS не настроен на бэкенде");
+      console.error("  - Сервер не доступен");
+      console.error("  - Неправильный URL:", API_BASE_URL);
     } else {
-      console.error(" API Error:", error.message);
+      console.error("API Error:", error.message);
     }
     return Promise.reject(error);
   }
@@ -147,7 +151,7 @@ export const apiClient = {
       console.log("✅ Login response:", response.data);
 
       const token = response.data.access;
-      const refreshToken = response.data.refresh; 
+      const refreshToken = response.data.refresh;
 
       if (!token) {
         throw new Error("No access token in response");
@@ -167,7 +171,7 @@ export const apiClient = {
         email: response.data.email || "",
         avatar: response.data.avatar || "",
         role: response.data.role || "",
-        is_active: response.data.is_active || false
+        region: response.data.region || "",
       };
 
       if (typeof window !== "undefined") {
@@ -182,27 +186,55 @@ export const apiClient = {
   },
 
   register: async (userData: RegisterPayload): Promise<any> => {
-    const { confirm_password, ...dataToSend } = userData;
+    const { confirm_password, code, ...dataToSend } = userData as any;
+
+    console.log("📤 РЕГИСТРАЦИЯ:");
+    console.log("URL:", `${API_BASE_URL}/auth/register/`);
+    console.log("Данные:", JSON.stringify(dataToSend, null, 2));
 
     try {
-      console.log("📝 Registering user:", dataToSend.phone);
       const response = await api.post("/auth/register/", dataToSend);
 
+      console.log("✅ Успешная регистрация:", response.data);
+
       const token = response.data.access;
+      const refreshToken = response.data.refresh;
 
       if (token && typeof window !== "undefined") {
         localStorage.setItem("access_token", token);
+        if (refreshToken) {
+          localStorage.setItem("refresh_token", refreshToken);
+        }
+      }
+
+      const user = {
+        id: response.data.id || 0,
+        phone: response.data.phone || userData.phone,
+        name: response.data.name || userData.name,
+        email: response.data.email || "",
+        role: response.data.role || userData.role || "client",
+        region: response.data.region || userData.region || "",
+        avatar: response.data.avatar,
+        telegram_username: response.data.telegram_username || userData.telegram_username,
+        telegram_id: response.data.telegram_id || userData.telegram_id,
+        gender: response.data.gender || userData.gender,
+      } as User;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(user));
       }
 
       return {
         success: true,
-        user: response.data?.user || { name: userData.name, phone: userData.phone },
+        user: user,
         token: token,
         data: response.data
       };
 
     } catch (error: any) {
-      console.error("❌ Register error:", error.response?.data || error.message);
+      console.error("❌ ОШИБКА РЕГИСТРАЦИИ:");
+      console.error("Status:", error.response?.status);
+      console.error("Данные:", error.response?.data);
       throw error;
     }
   },
@@ -295,11 +327,73 @@ export const apiClient = {
   getServiceById: async (id: number): Promise<Service> =>
     (await withRetry(() => api.get(`/services/${id}/`))).data,
 
-  getVacancies: async (page = 1, limit = 50, params?: Record<string, any>): Promise<any> =>
-    (await withRetry(() => api.get("/vacancies/", { params: { page, limit, ...params } }))).data,
+  getVacancies: async (params?: Record<string, any>): Promise<Vacancy[] | { results: Vacancy[]; count: number }> => {
+    try {
+      const response = await withRetry(() => api.get("/vacancies/", { params }));
+      console.log("✅ Vacancies loaded:", response.data);
+      return response.data;
+    } catch (error: any) {  
+      console.error("❌ Get vacancies error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
-  getVacancyById: async (id: number): Promise<Vacancy> =>
-    (await withRetry(() => api.get(`/vacancies/${id}/`))).data,
+  getVacancyById: async (id: number): Promise<Vacancy> => {
+    try {
+      const response = await withRetry(() => api.get(`/vacancies/${id}/`));
+      console.log("✅ Vacancy loaded:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Get vacancy error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  createVacancy: async (data: Omit<Vacancy, "id" | "moderation" | "moderation_display" | "boost">): Promise<Vacancy> => {
+    try {
+      console.log("📝 Creating vacancy:", data);
+      
+      const vacancyData = {
+        ...data,
+        moderation: data?.moderation || 'pending'
+      };
+      
+      const response = await api.post("/vacancies/", vacancyData);
+      console.log("✅ Vacancy created:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Create vacancy error:", error.response?.data || error.message);
+      
+      if (error.response?.data) {
+        console.error("Validation errors:", JSON.stringify(error.response.data, null, 2));
+      }
+      
+      throw error;
+    }
+  },
+
+  updateVacancy: async (id: number, data: Partial<Vacancy>): Promise<Vacancy> => {
+    try {
+      console.log("📝 Updating vacancy:", id, data);
+      const response = await api.patch(`/vacancies/${id}/`, data);
+      console.log("✅ Vacancy updated:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Update vacancy error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  deleteVacancy: async (id: number): Promise<void> => {
+    try {
+      console.log("🗑️ Deleting vacancy:", id);
+      await api.delete(`/vacancies/${id}/`);
+      console.log("✅ Vacancy deleted");
+    } catch (error: any) {
+      console.error("❌ Delete vacancy error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
   getUsers: async (): Promise<User[]> =>
     (await withRetry(() => api.get("/users/"))).data,

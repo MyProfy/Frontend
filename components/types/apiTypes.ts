@@ -10,12 +10,12 @@ export interface User {
   id: number;
   name: string;
   phone: string;
-  about_user?: string;
-  role: "клиент" | "исполнитель" | string;
+  role: string;
   region: string;
+  email: string;
+  about_user?: string;
   executor_rating?: number;
   work_experience?: number;
-  email: string;
   client_rating?: number;
   telegram_username?: string;
   telegram_id?: number;
@@ -26,6 +26,7 @@ export interface User {
   created_at?: string;
   orders_count?: number;
   is_trusted?: boolean;
+  is_active?: boolean;
 }
 
 export interface Category extends BaseEntity {
@@ -202,7 +203,7 @@ export interface RegisterPayload {
   region: string;
   gender: "male" | "female";
   telegram_id?: number;
-  telegram_username: string;
+  telegram_username?: string;
   confirm_password?: string;
 }
 
