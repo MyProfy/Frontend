@@ -375,7 +375,7 @@ export default function VacanciesPage() {
           });
         }
 
-        const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat?.id;
+        const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat;
         return selectedSubCategories.includes(scId);
       });
     }

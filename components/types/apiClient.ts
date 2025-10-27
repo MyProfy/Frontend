@@ -186,58 +186,31 @@ export const apiClient = {
   },
 
   register: async (userData: RegisterPayload): Promise<any> => {
-    const { confirm_password, code, ...dataToSend } = userData as any;
-
     console.log("📤 РЕГИСТРАЦИЯ:");
     console.log("URL:", `${API_BASE_URL}/auth/register/`);
-    console.log("Данные:", JSON.stringify(dataToSend, null, 2));
+    console.log("Данные:", JSON.stringify(userData, null, 2));
 
     try {
-      const response = await api.post("/auth/register/", dataToSend);
+      const response = await api.post("/auth/register/", userData);
 
       console.log("✅ Успешная регистрация:", response.data);
 
-      const token = response.data.access;
-      const refreshToken = response.data.refresh;
-
-      if (token && typeof window !== "undefined") {
-        localStorage.setItem("access_token", token);
-        if (refreshToken) {
-          localStorage.setItem("refresh_token", refreshToken);
-        }
-      }
-
-      const user = {
-        id: response.data.id || 0,
-        phone: response.data.phone || userData.phone,
-        name: response.data.name || userData.name,
-        email: response.data.email || "",
-        role: response.data.role || userData.role || "client",
-        region: response.data.region || userData.region || "",
-        avatar: response.data.avatar,
-        telegram_username: response.data.telegram_username || userData.telegram_username,
-        telegram_id: response.data.telegram_id || userData.telegram_id,
-        gender: response.data.gender || userData.gender,
-      } as User;
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(user));
-      }
-
       return {
         success: true,
-        user: user,
-        token: token,
-        data: response.data
+        user: response.data.user,
+        token: response.data.access,
+        refresh: response.data.refresh
       };
 
     } catch (error: any) {
       console.error("❌ ОШИБКА РЕГИСТРАЦИИ:");
+      console.error("Ошибка backend:", JSON.stringify(error.response?.data, null, 2));
       console.error("Status:", error.response?.status);
       console.error("Данные:", error.response?.data);
       throw error;
     }
   },
+
 
   requestOTP: async (phone: string): Promise<any> => {
     try {
@@ -332,7 +305,7 @@ export const apiClient = {
       const response = await withRetry(() => api.get("/vacancies/", { params }));
       console.log("✅ Vacancies loaded:", response.data);
       return response.data;
-    } catch (error: any) {  
+    } catch (error: any) {
       console.error("❌ Get vacancies error:", error.response?.data || error.message);
       throw error;
     }
@@ -352,22 +325,22 @@ export const apiClient = {
   createVacancy: async (data: Omit<Vacancy, "id" | "moderation" | "moderation_display" | "boost">): Promise<Vacancy> => {
     try {
       console.log("📝 Creating vacancy:", data);
-      
+
       const vacancyData = {
         ...data,
-        moderation: data?.moderation || 'pending'
+        // moderation: data?.moderation || 'pending'
       };
-      
+
       const response = await api.post("/vacancies/", vacancyData);
       console.log("✅ Vacancy created:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("❌ Create vacancy error:", error.response?.data || error.message);
-      
+
       if (error.response?.data) {
         console.error("Validation errors:", JSON.stringify(error.response.data, null, 2));
       }
-      
+
       throw error;
     }
   },
