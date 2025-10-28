@@ -93,6 +93,7 @@
     "plumber": "Plumber",
     "tire": "Tire Services"
   },
+
   "profile": {
     "gender": "Gender",
     "about": "About me",
@@ -178,7 +179,8 @@
       "categoryNotFound": "Category not found",
       "subCategoryNotFound": "Subcategory not found"
     }
-  },
+  },    
+
   "regionPlaceholder": "Specify region",
   "submit": "Confirm",
   "avatarAlt": "Specialist's photo",

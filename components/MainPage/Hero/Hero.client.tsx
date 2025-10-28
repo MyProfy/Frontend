@@ -5,7 +5,7 @@ import { LanguageContext } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { getAPIClient } from "../../types/apiClient";
-import { Category, Service, SubCategory } from "../../types/apiTypes";
+import { Category, Service, SubCategory, Vacancy } from "../../types/apiTypes";
 import { motion, AnimatePresence } from "framer-motion";
 import MyProfiBanner from "../../../public/Banner-MyProfi.png";
 import Image from "next/image";
@@ -206,16 +206,30 @@ const SearchBlock = memo(({
                           <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                           </svg>
-                        ) : (
+                        ) : result.type === 'subcategory' ? (
                           <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        ) : result.type === 'service' ? (
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{result.name}</p>
                         <p className="text-xs text-gray-500">
-                          {result.type === 'category' ? t("search.category", "Категория") : t("search.subcategory", "Подкатегория")}
+                          {result.type === 'category' 
+                            ? t("search.category", "Категория") 
+                            : result.type === 'subcategory'
+                            ? t("search.subcategory", "Подкатегория")
+                            : result.type === 'service'
+                            ? t("search.service", "Услуга")
+                            : t("search.vacancy", "Вакансия")}
                         </p>
                       </div>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,6 +280,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const [mode, setMode] = useState<'client' | 'specialist'>('client');
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [totalServices, setTotalServices] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -331,11 +347,17 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       : t("request.statsSpecialist", "Из 1 233 333 заказов обязательно найдется тот, кто оценит ваши услуги"),
   }), [mode, t]);
 
-  const getDisplayName = useCallback((item: Category | SubCategory) => {
+  const getDisplayName = useCallback((item: Category | SubCategory | Service | Vacancy) => {
     if (!item) return '';
-    if (language === "ru" && item.display_ru) return item.display_ru;
-    if (language === "uz" && item.display_uz) return item.display_uz;
-    return item.name || '';
+    
+    if ('display_ru' in item || 'display_uz' in item) {
+      if (language === "ru" && (item as Category | SubCategory).display_ru) 
+        return (item as Category | SubCategory).display_ru!;
+      if (language === "uz" && (item as Category | SubCategory).display_uz) 
+        return (item as Category | SubCategory).display_uz!;
+    }
+    
+    return item.name || item.title || '';
   }, [language]);
 
   const searchResults = useMemo(() => {
@@ -358,6 +380,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         categoryId: cat.id
       }));
 
+    // Поиск по подкатегориям
     const matchedSubCategories = subCategories
       .filter(sub => {
         if (!sub) return false;
@@ -376,8 +399,43 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         };
       });
 
-    return [...matchedCategories, ...matchedSubCategories].slice(0, 10);
-  }, [searchQuery, categories, subCategories, getDisplayName]);
+    // Поиск по услугам
+    const matchedServices = services
+      .filter(service => {
+        if (!service) return false;
+        const name = service.name?.toLowerCase() || '';
+        const description = service.description?.toLowerCase() || '';
+        return name.includes(queryLower) || description.includes(queryLower);
+      })
+      .map(service => ({
+        id: service.id,
+        name: getDisplayName(service),
+        type: 'service',
+        serviceId: service.id
+      }));
+
+    // Поиск по вакансиям
+    const matchedVacancies = vacancies
+      .filter(vacancy => {
+        if (!vacancy) return false;
+        const title = vacancy.title?.toLowerCase() || '';
+        const description = vacancy.description?.toLowerCase() || '';
+        return title.includes(queryLower) || description.includes(queryLower);
+      })
+      .map(vacancy => ({
+        id: vacancy.id,
+        name: getDisplayName(vacancy),
+        type: 'vacancy',
+        vacancyId: vacancy.id
+      }));
+
+    return [
+      ...matchedCategories, 
+      ...matchedSubCategories, 
+      ...matchedServices, 
+      ...matchedVacancies
+    ].slice(0, 15);
+  }, [searchQuery, categories, subCategories, services, vacancies, getDisplayName]);
 
   const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -391,6 +449,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
 
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
+      // Проверяем, есть ли точное совпадение с категорией
       const matchedCategory = categories.find(cat => {
         if (!cat || !cat.name) return false;
         const displayName = getDisplayName(cat)?.toLowerCase() || '';
@@ -400,19 +459,32 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       });
 
       if (matchedCategory) {
-        router.push(`/vacancies?category=${matchedCategory.id}&mode=vacancies`);
+        router.push(`/search?category=${matchedCategory.id}`);
       } else {
-        router.push(`/vacancies?q=${encodeURIComponent(searchQuery)}&mode=vacancies`);
+        // Общий поиск
+        router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
       }
+      
       setShowResults(false);
     }
   }, [searchQuery, categories, getDisplayName, router]);
 
   const handleResultClick = useCallback((result: any) => {
-    if (result.type === 'category') {
-      router.push(`/vacancies?category=${result.categoryId}&mode=vacancies`);
-    } else if (result.type === 'subcategory') {
-      router.push(`/vacancies?category=${result.categoryId}&subcategory=${result.subCategoryId}&mode=vacancies`);
+    switch (result.type) {
+      case 'category':
+        router.push(`/search?category=${result.categoryId}`);
+        break;
+      case 'subcategory':
+        router.push(`/search?category=${result.categoryId}&subcategory=${result.subCategoryId}`);
+        break;
+      case 'service':
+        router.push(`/services/${result.serviceId}`);
+        break;
+      case 'vacancy':
+        router.push(`/vacancies/${result.vacancyId}`);
+        break;
+      default:
+        router.push(`/search?q=${encodeURIComponent(result.name)}`);
     }
     setSearchQuery(result.name);
     setShowResults(false);
@@ -429,28 +501,16 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   }, [router]);
 
   const handleCategoryClick = useCallback((categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}&mode=vacancies`);
+    router.push(`/search?category=${categoryId}`);
   }, [router]);
 
   const handleSubCategoryClick = useCallback((subCategoryId: number, categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}&subcategory=${subCategoryId}&mode=vacancies`);
+    router.push(`/search?category=${categoryId}&subcategory=${subCategoryId}`);
   }, [router]);
 
   const handleShowAllClick = useCallback((categoryId: number) => {
-    router.push(`/vacancies?category=${categoryId}&mode=vacancies`);
+    router.push(`/search?category=${categoryId}`);
   }, [router]);
-
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     const target = event.target as HTMLElement;
-  //     if (searchRef.current && !searchRef.current.contains(target)) {
-  //       setShowResults(false);
-  //     }
-  //   };
-
-  //   document.addEventListener('mousedown', handleClickOutside);
-  //   return () => document.removeEventListener('mousedown', handleClickOutside);
-  // }, []);
 
   useEffect(() => {
     i18n.changeLanguage(language);
@@ -461,14 +521,18 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       setLoading(true);
       setError(null);
       try {
-        const [categoriesData, subCategoriesData, totalServicesData] = await Promise.all([
+        const [categoriesData, subCategoriesData, servicesData, vacanciesData, totalServicesData] = await Promise.all([
           apiClient.getCategories(),
           apiClient.getSubcategories(),
+          apiClient.getServices(1, 50), // Загружаем первые 50 услуг для поиска
+          apiClient.getVacancies({ limit: 50 }), // Загружаем первые 50 вакансий для поиска
           apiClient.getServices(1, 1),
         ]);
 
         setCategories(extractResults(categoriesData));
         setSubCategories(extractResults(subCategoriesData));
+        setServices(extractResults(servicesData));
+        setVacancies(extractResults(vacanciesData));
 
         if (totalServicesData && typeof totalServicesData === 'object' && 'count' in totalServicesData) {
           setTotalServices(totalServicesData.count || 0);

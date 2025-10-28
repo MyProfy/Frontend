@@ -182,6 +182,30 @@ export default function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Функция для получения текущего языка и флага
+  const getCurrentLanguageData = useCallback(() => {
+    const currentLanguage = i18n.language || 'uz';
+    
+    if (currentLanguage === 'ru') {
+      return {
+        lang: "Русский язык",
+        flag: RusFlag
+      };
+    } else {
+      return {
+        lang: "Uzbek tilida", 
+        flag: UzFlag
+      };
+    }
+  }, [i18n.language]);
+
+  // Обновляем язык и флаг при изменении i18n.language
+  useEffect(() => {
+    const languageData = getCurrentLanguageData();
+    setLang(languageData.lang);
+    setFlag(languageData.flag);
+  }, [i18n.language, getCurrentLanguageData]);
+
   useEffect(() => {
     dispatch(initializeAuth());
   }, [dispatch]);
@@ -214,16 +238,12 @@ export default function Navbar() {
 
   const handleLanguageSelect = useCallback((language: string) => {
     if (language === "ru") {
-      setLang("Русский язык");
-      setFlag(RusFlag);
       i18n.changeLanguage("ru");
     } else {
-      setLang("Uzbek tilida");
-      setFlag(UzFlag);
       i18n.changeLanguage("uz");
     }
+    setShowLanguageModal(false);
   }, [i18n]);
-
 
   const handleRegionSelect = useCallback((selectedRegion: string) => {
     setRegion(selectedRegion);

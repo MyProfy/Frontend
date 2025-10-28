@@ -19,7 +19,6 @@ export default function Profile() {
     <ClientRoot>
       <Loader 
         duration={3500}
-        message="Load Profile..."
         onLoadingComplete={handleLoadingComplete} 
       >
         {showContent && (

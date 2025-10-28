@@ -162,19 +162,17 @@
     "construction": "Ta'mirlash va Qurilish",
     "makeup": "Sartarosh / Vizajistlar"
   },
+
   "profile": {
     "gender": "Jins",
-    "about": "O'zim haqimda",
-    "aboutPlaceholder": "Tajribangiz va ko'nikmalaringiz haqida so'zlab bering",
-    "reviewsCount": "{count} ta sharh",
+    "about": "Men haqimda",
+    "aboutPlaceholder": "Tajribangiz va ko'nikmalaringiz haqida gapirib bering",
+    "reviewsCount": "{count} sharh",
     "years": "yil",
     "workExperience": "Ish tajribasi",
-    "vacancy_limit": "Xizmatlar limiti",
+    "vacancy_limit": "Xizmat chegarasi",
     "avatarAlt": "Profil rasmi",
     "vacancies": "Xizmatlar",
-    "location": "Mintaqa",
-    "cancel": "Bekor qilish",
-    "na": "Ko'rsatilmagan",
     "genderOptions": {
       "male": "Erkak",
       "female": "Ayol",
@@ -184,20 +182,20 @@
       "intro": "Yordam va qo'llab-quvvatlash",
       "title": "Qo'llab-quvvatlash",
       "telegram": "Telegram",
-      "telegramNotice": "Bizning qo'llab-quvvatlash xizmatimiz yuklangan, iloji boricha tezroq javob berishga harakat qilamiz.",
+      "telegramNotice": "Qo'llab-quvvatlash xizmatimiz yuklangan, tezda javob berishga harakat qilamiz.",
       "email": "Elektron pochta",
-      "emailNotice": "Biz 7 ish kuni ichida albatta javob beramiz.",
-      "liveChat": "Jonli suhbat",
-      "liveChatPlaceholder": "Jonli suhbat vaqtincha mavjud emas."
+      "emailNotice": "7 ish kuni ichida albatta javob beramiz.",
+      "liveChat": "Jonli chat",
+      "liveChatPlaceholder": "Jonli chat vaqtincha mavjud emas."
     },
     "save": "O'zgarishlarni saqlash",
-    "service_limit": "Sizda {limit} ta xizmatdan {count} tasi mavjud",
+    "service_limit": "Sizda {limit}dan {count}ta xizmat bor",
     "sidebar": {
       "profile": "Mening profilim",
-      "services": "Mening reklamalarim",
+      "services": "Mening e'lonlarim",
       "vacancies": "Qo'llab-quvvatlash",
       "orderHistory": "Sozlamalar",
-      "security": "Mening obunam",
+      "security": "Mening obuna",
       "order": "Mening buyurtmalarim",
       "logout": "Chiqish",
       "support": "Qo'llab-quvvatlash"
@@ -209,7 +207,7 @@
       },
       "about": {
         "title": "Tavsifni tahrirlash",
-        "placeholder": "Tajribangiz va ko'nikmalaringizni tasvirlang"
+        "placeholder": "Tajriba va ko'nikmalaringizni tasvirlang"
       },
       "name": {
         "title": "Ismni o'zgartirish",
@@ -217,10 +215,10 @@
       },
       "specialty": {
         "title": "Mutaxassislikni o'zgartirish",
-        "placeholder": "Mutaxassisligingizni ko'rsating"
+        "placeholder": "Mutaxassisligingizni kiriting"
       },
       "workingHours": {
-        "title": "Ish soatlarini o'zgartirish"
+        "title": "Ish vaqtini o'zgartirish"
       },
       "cost": {
         "title": "Narxni o'zgartirish",
@@ -228,7 +226,7 @@
       },
       "workExperience": {
         "title": "Ish tajribasini o'zgartirish",
-        "placeholder": "Yillarda ish tajribasini ko'rsating"
+        "placeholder": "Ish tajribasini yillarda kiriting"
       },
       "cancel": "Bekor qilish",
       "save": "Saqlash"
@@ -237,20 +235,95 @@
       "emptyName": "Ism bo'sh bo'lishi mumkin emas",
       "emptySpecialty": "Mutaxassislik bo'sh bo'lishi mumkin emas",
       "invalidWorkingHours": "Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak",
-      "invalidCost": "Narx musbat son bo'lishi kerak",
+      "invalidCost": "Narx musbat bo'lishi kerak",
       "emptyCategory": "Kategoriya bo'sh bo'lishi mumkin emas",
-      "emptyDescription": "Xizmat tavsifi bo'sh bo'lishi mumkin emas",
+      "emptyDescription": "Tavsif bo'sh bo'lishi mumkin emas",
       "descriptionTooLong": "Tavsif {max} so'zdan oshmasligi kerak",
-      "emptyGender": "Jinsni tanlash kerak",
+      "emptyGender": "Jins bo'sh bo'lishi mumkin emas",
       "invalidWorkExperience": "Ish tajribasi manfiy bo'lmagan son bo'lishi kerak",
       "fetchError": "Profilni yuklashda xatolik",
       "saveError": "Profil o'zgarishlarini saqlashda xatolik",
-      "csrfError": "CSRF token xatosi. Iltimos, qayta kiring",
+      "csrfError": "CSRF token xatosi. Iltimos, qaytadan kiring",
       "internalServerError": "Ichki server xatosi",
       "categoryNotFound": "Kategoriya topilmadi",
       "subCategoryNotFound": "Subkategoriya topilmadi"
     }
   },
+  "vacancies": {
+    "title": "E'lonlar ({count})",
+    "findSpecialist": "Mutaxassis topish",
+    "createVacancy": "E'lon yaratish",
+    "view": "Ko'rish",
+    "selectBoost": "Ko'tarish",
+    "price": "{price} so'm",
+    "approved": "Tasdiqlangan",
+    "pending": "Ko'rib chiqilmoqda",
+    "rejected": "Rad etilgan",
+    "status": {
+      "approved": "Tasdiqlangan",
+      "pending": "Ko'rib chiqilmoqda",
+      "rejected": "Rad etilgan",
+      "draft": "Qoralama"
+    },
+    "empty": {
+      "title": "Sizda hali e'lonlar yo'q",
+      "description": "Buyurtmalar olishni boshlash uchun birinchi e'loningizni yarating",
+      "button": "E'lon yaratish"
+    },
+    "card": {
+      "viewCount": "{count} ta ko'rish",
+      "applicationCount": "{count} ta murojaat",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "activate": "Faollashtirish",
+      "deactivate": "O'chirish"
+    },
+    "filters": {
+      "all": "Barchasi",
+      "active": "Faol",
+      "inactive": "Nofaol",
+      "search": "Nomi bo'yicha qidirish..."
+    },
+    "form": {
+      "title": "E'lon nomi",
+      "titlePlaceholder": "Masalan: Backend ishlab chiqish uchun dasturchi kerak",
+      "description": "Tavsif",
+      "descriptionPlaceholder": "Mutaxassisga qo'yiladigan talablarni tasvirlang",
+      "category": "Kategoriya",
+      "categoryPlaceholder": "Kategoriyani tanlang",
+      "subcategory": "Subkategoriya",
+      "subcategoryPlaceholder": "Subkategoriyani tanlang",
+      "price": "Narx",
+      "pricePlaceholder": "Narxni ko'rsating",
+      "location": "Joylashuv",
+      "locationPlaceholder": "Mintaqani tanlang",
+      "workType": "Ish turi",
+      "workTypeOptions": {
+        "remote": "Masofaviy",
+        "office": "Ofisda",
+        "hybrid": "Gibrid"
+      },
+      "experience": "Talab qilinadigan tajriba",
+      "experienceOptions": {
+        "no_experience": "Tajribasiz",
+        "1_3_years": "1-3 yil",
+        "3_5_years": "3-5 yil",
+        "5_plus_years": "5 yildan ortiq"
+      },
+      "deadline": "Bajarish muddati",
+      "deadlinePlaceholder": "Muddatni ko'rsating",
+      "submit": "E'lon qilish",
+      "saveDraft": "Qoralama sifatida saqlash",
+      "update": "Yangilash"
+    },
+    "delete": {
+      "title": "E'lonni o'chirish?",
+      "description": "Haqiqatan ham bu e'lonni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.",
+      "confirm": "O'chirish",
+      "cancel": "Bekor qilish"
+    }
+  },
+
   "regionPlaceholder": "Mintaqani ko'rsating",
   "submit": "Tasdiqlash",
   "avatarAlt": "Mutaxassis rasmi",
