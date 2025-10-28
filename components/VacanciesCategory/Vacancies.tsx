@@ -205,13 +205,17 @@ const ListingCard = memo(({
             e.stopPropagation();
             handleCardClick();
           }}
-          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+          className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-800 transition-colors flex items-center gap-2"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+          <svg
+            className="w-4 h-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M9.04 16.958l-.264 3.722c.377 0 .54-.162.736-.356l1.766-1.684 3.662 2.687c.672.372 1.147.176 1.324-.622l2.398-11.234c.245-1.12-.405-1.555-1.14-1.282L2.81 10.71c-1.092.425-1.076 1.032-.186 1.304l4.917 1.534 11.418-7.198c.537-.362 1.026-.162.624.2" />
           </svg>
-          {isVacancy ? "Подробнее о вакансии" : "Подробнее об услуге"}
+
+          {isVacancy ? "Написать специалисту" : "Написать специалисту"}
         </button>
       </div>
     </motion.div>
@@ -233,18 +237,16 @@ const CategoryFilter = memo(({
       <button
         key={category.id}
         onClick={() => onCategoryClick(category.id)}
-        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-          selectedCategory === category.id
+        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${selectedCategory === category.id
             ? "bg-gray-50 text-gray-900 font-medium"
             : "text-gray-600 hover:bg-gray-50"
-        }`}
+          }`}
       >
         <div
-          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-            selectedCategory === category.id
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedCategory === category.id
               ? "border-gray-800"
               : "border-gray-300"
-          }`}
+            }`}
         >
           {selectedCategory === category.id && (
             <div className="w-2.5 h-2.5 rounded-full bg-gray-800"></div>
@@ -400,12 +402,12 @@ export default function VacanciesPage() {
 
     return filtered;
   }, [
-    viewMode, 
-    vacancies, 
-    services, 
-    selectedCategory, 
-    selectedSubCategories, 
-    selectedPriceRanges, 
+    viewMode,
+    vacancies,
+    services,
+    selectedCategory,
+    selectedSubCategories,
+    selectedPriceRanges,
     categories,
     subCategories
   ]);
@@ -488,14 +490,7 @@ export default function VacanciesPage() {
       <Navbar />
       <div className="min-h-screen bg-gray-50 mt-[60px]">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {usingMockData && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                ⚠️ Отображаются тестовые данные (API недоступен или вернул пустой список)
-              </p>
-            </div>
-          )}
-
+        
           <div className="flex gap-8">
             <aside className="w-56 flex-shrink-0">
               <div className="bg-white rounded-lg shadow-sm sticky top-6">

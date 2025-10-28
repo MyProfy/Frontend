@@ -29,31 +29,44 @@ const TOP_SPECIALTIES = [
     name: "topSpecialties.tutors",
     image: "/avatar/logologo.png",
     categoryId: "1",
-    link: "https://myprofy.uz/search?category=1"
+    link: "/vacancies?category=1"
   },
   {
     name: "topSpecialties.repair",
     image: "/avatar/logologo.png",
     categoryId: "67",
-    link: "https://myprofy.uz/search?category=67"
+    link: "/vacancies?category=67"
   },
   {
     name: "topSpecialties.construction",
     image: "/avatar/logologo.png",
     categoryId: "2",
-    link: "https://myprofy.uz/search?category=2"
+    link: "/vacancies?category=2"
   },
   {
     name: "topSpecialties.makeup",
     image: "/avatar/logologo.png",
     categoryId: "14",
-    link: "https://myprofy.uz/search?category=14"
+    link: "/vacancies?category=14"
   },
 ] as const;
 
 const extractResults = (data: any) => {
-  if (Array.isArray(data)) return data;
-  if (data && 'results' in data) return data.results || [];
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data && typeof data === 'object') {
+    if ('results' in data && Array.isArray(data.results)) {
+      return data.results;
+    }
+    if ('data' in data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    if ('items' in data && Array.isArray(data.items)) {
+      return data.items;
+    }
+    return [];
+  }
   return [];
 };
 
@@ -74,6 +87,9 @@ const SpecialtyCard = memo(({
         alt={specialty.name}
         className="w-full h-full object-cover rounded-[10px]"
         loading="lazy"
+        onError={(e) => {
+          e.currentTarget.src = "/avatar/logologo.png";
+        }}
       />
     </div>
     <h3 className="text-lg md:text-xl max-md:text-base font-normal text-black mt-2.5 mb-0 text-center break-words p-3 md:p-4">
@@ -92,56 +108,71 @@ const CategoryItem = memo(({
   onShowAllClick,
   t
 }: any) => {
+  if (!category || !category.id) {
+    return null;
+  }
+
   const subCategoryCount = subCategories.filter((sub: any) => {
-    const categoryId = typeof sub.category === "number" ? sub.category : sub.category.id;
+    if (!sub) return false;
+    const categoryId = typeof sub.category === "number" ? sub.category : sub.category?.id;
     return categoryId === category.id;
   }).length;
 
   const filteredSubCategories = useMemo(() =>
     subCategories
       .filter((sub: any) => {
-        const categoryId = typeof sub.category === "number" ? sub.category : sub.category.id;
+        if (!sub) return false;
+        const categoryId = typeof sub.category === "number" ? sub.category : sub.category?.id;
         return categoryId === category.id;
       })
       .slice(0, 5),
     [subCategories, category.id]
   );
 
+  const displayName = getDisplayName(category);
+
   return (
-    <div className="flex flex-col gap-3 text-left break-words">
+    <div className="flex flex-col gap-3 text-left break-words min-h-[120px]">
       <div className="flex items-center">
         <h3
           onClick={() => onCategoryClick(category.id)}
           className="text-base md:text-lg font-semibold text-[#292c32] cursor-pointer hover:text-[#87e087] transition-colors truncate"
+          title={displayName}
         >
-          {getDisplayName(category)}
+          {displayName || `Category ${category.id}`}
         </h3>
         <p className="text-sm md:text-lg text-[#858b98] ml-2 hidden md:inline-block">
-          {category?.service_count
-            ? category.service_count
-            : Math.floor(Math.random() * (500 - 50 + 1)) + 50}
+          {category?.service_count || Math.floor(Math.random() * (500 - 50 + 1)) + 50}
         </p>
-
       </div>
 
-      <ul className="flex flex-col gap-2 text-[#303030] font-normal">
-        {filteredSubCategories.map((subCategory: any) => (
-          <li
-            key={subCategory.id}
-            onClick={() => onSubCategoryClick(subCategory.id, category.id)}
-            className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
-          >
-            {getDisplayName(subCategory)}
-          </li>
-        ))}
-      </ul>
+      {filteredSubCategories.length > 0 ? (
+        <>
+          <ul className="flex flex-col gap-2 text-[#303030] font-normal">
+            {filteredSubCategories.map((subCategory: any) => (
+              <li
+                key={subCategory.id}
+                onClick={() => onSubCategoryClick(subCategory.id, category.id)}
+                className="text-sm md:text-base text-[#303030] cursor-pointer hover:text-[#87e087] transition-colors truncate"
+                title={getDisplayName(subCategory)}
+              >
+                {getDisplayName(subCategory) || `Subcategory ${subCategory.id}`}
+              </li>
+            ))}
+          </ul>
 
-      <button
-        onClick={() => onShowAllClick(category.id)}
-        className="text-xs md:text-sm text-black underline cursor-pointer hover:text-[#87e087] transition-colors mt-2 w-fit"
-      >
-        {t("specialists.showAll", "Показать все")} ({subCategoryCount})
-      </button>
+          <button
+            onClick={() => onShowAllClick(category.id)}
+            className="text-xs md:text-sm text-black underline cursor-pointer hover:text-[#87e087] transition-colors mt-2 w-fit"
+          >
+            {t("specialists.showAll", "Показать все")} ({subCategoryCount})
+          </button>
+        </>
+      ) : (
+        <p className="text-sm text-gray-500">
+          {t("specialists.noSubcategories", "Нет подкатегорий")}
+        </p>
+      )}
     </div>
   );
 });
@@ -158,6 +189,21 @@ const SearchBlock = memo(({
   t
 }: any) => {
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setTimeout(() => {
+          if (searchRef.current) {
+            // State will be handled by parent
+          }
+        }, 100);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="flex items-center gap-2.5 w-full mb-10 relative" ref={searchRef}>
@@ -176,7 +222,7 @@ const SearchBlock = memo(({
         </svg>
         
         <input
-          className="py-3 px-3 pl-10 max-md:pl-9 w-full border-none rounded-[13px] text-base md:text-lg bg-white"
+          className="py-3 px-3 pl-10 max-md:pl-9 w-full border-none rounded-[13px] text-base md:text-lg bg-white shadow-sm"
           aria-label={t("search.ariaLabel", "Поиск специалистов")}
           placeholder={t("search.placeholder", "Поиск...")}
           value={searchQuery}
@@ -196,7 +242,7 @@ const SearchBlock = memo(({
               {searchResults.length > 0 ? (
                 searchResults.map((result: any, index: number) => (
                   <div
-                    key={`${result.type}-${result.id}`}
+                    key={`${result.type}-${result.id}-${index}`}
                     onClick={() => onResultClick(result)}
                     className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                   >
@@ -229,7 +275,7 @@ const SearchBlock = memo(({
                             ? t("search.subcategory", "Подкатегория")
                             : result.type === 'service'
                             ? t("search.service", "Услуга")
-                            : t("search.vacancy", "Вакансия")}
+                            : t("search.vacancies", "Вакансия")}
                         </p>
                       </div>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +307,7 @@ const SearchBlock = memo(({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onSearch}
-        className="bg-[#3ea23e] border-none text-base md:text-[0.98rem] font-normal text-white py-3 px-4 cursor-pointer rounded-lg transition-all hover:bg-[#2e8b57]"
+        className="bg-[#3ea23e] border-none text-base md:text-[0.98rem] font-normal text-white py-3 px-4 cursor-pointer rounded-lg transition-all hover:bg-[#2e8b57] shadow-sm"
       >
         {t("search.search", "Найти")}
       </motion.button>
@@ -311,10 +357,10 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
 
   const topSpecialtiesLinks = useMemo(() =>
     TOP_SPECIALTIES.map(s => ({
-      name: t(s.name, ""),
+      name: t(s.name, s.name.split('.')[1]),
       image: s.image,
       link: mode === 'client'
-        ? `/search?category=${s.categoryId}`
+        ? `/vacancies?category=${s.categoryId}`
         : `/register-specialist?category=${s.categoryId}`
     })),
     [t, mode]
@@ -348,16 +394,19 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   }), [mode, t]);
 
   const getDisplayName = useCallback((item: Category | SubCategory | Service | Vacancy) => {
-    if (!item) return '';
+    if (!item) return 'Unknown';
     
     if ('display_ru' in item || 'display_uz' in item) {
-      if (language === "ru" && (item as Category | SubCategory).display_ru) 
-        return (item as Category | SubCategory).display_ru!;
-      if (language === "uz" && (item as Category | SubCategory).display_uz) 
-        return (item as Category | SubCategory).display_uz!;
+      const categoryItem = item as Category | SubCategory;
+      if (language === "ru" && categoryItem.display_ru) {
+        return categoryItem.display_ru;
+      }
+      if (language === "uz" && categoryItem.display_uz) {
+        return categoryItem.display_uz;
+      }
     }
     
-    return item.name || item.title || '';
+    return item.name || item.title || 'Unnamed';
   }, [language]);
 
   const searchResults = useMemo(() => {
@@ -380,7 +429,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         categoryId: cat.id
       }));
 
-    // Поиск по подкатегориям
     const matchedSubCategories = subCategories
       .filter(sub => {
         if (!sub) return false;
@@ -399,7 +447,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         };
       });
 
-    // Поиск по услугам
     const matchedServices = services
       .filter(service => {
         if (!service) return false;
@@ -414,19 +461,18 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         serviceId: service.id
       }));
 
-    // Поиск по вакансиям
     const matchedVacancies = vacancies
-      .filter(vacancy => {
-        if (!vacancy) return false;
-        const title = vacancy.title?.toLowerCase() || '';
-        const description = vacancy.description?.toLowerCase() || '';
+      .filter(vacancies => {
+        if (!vacancies) return false;
+        const title = vacancies.title?.toLowerCase() || '';
+        const description = vacancies.description?.toLowerCase() || '';
         return title.includes(queryLower) || description.includes(queryLower);
       })
-      .map(vacancy => ({
-        id: vacancy.id,
-        name: getDisplayName(vacancy),
-        type: 'vacancy',
-        vacancyId: vacancy.id
+      .map(vacancies => ({
+        id: vacancies.id,
+        name: getDisplayName(vacancies),
+        type: 'vacancies',
+        vacanciesId: vacancies.id
       }));
 
     return [
@@ -449,7 +495,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
 
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
-      // Проверяем, есть ли точное совпадение с категорией
       const matchedCategory = categories.find(cat => {
         if (!cat || !cat.name) return false;
         const displayName = getDisplayName(cat)?.toLowerCase() || '';
@@ -459,10 +504,10 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       });
 
       if (matchedCategory) {
-        router.push(`/search?category=${matchedCategory.id}`);
+        router.push(`/vacancies?category=${matchedCategory.id}`);
       } else {
         // Общий поиск
-        router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+        router.push(`/vacancies?q=${encodeURIComponent(searchQuery)}`);
       }
       
       setShowResults(false);
@@ -472,19 +517,19 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const handleResultClick = useCallback((result: any) => {
     switch (result.type) {
       case 'category':
-        router.push(`/search?category=${result.categoryId}`);
+        router.push(`/vacancies?category=${result.categoryId}`);
         break;
       case 'subcategory':
-        router.push(`/search?category=${result.categoryId}&subcategory=${result.subCategoryId}`);
+        router.push(`/vacancies?category=${result.categoryId}&subcategory=${result.subCategoryId}`);
         break;
       case 'service':
         router.push(`/services/${result.serviceId}`);
         break;
-      case 'vacancy':
-        router.push(`/vacancies/${result.vacancyId}`);
+      case 'vacancies':
+        router.push(`/vacancies/${result.vacanciesId}`);
         break;
       default:
-        router.push(`/search?q=${encodeURIComponent(result.name)}`);
+        router.push(`/vacancies?q=${encodeURIComponent(result.name)}`);
     }
     setSearchQuery(result.name);
     setShowResults(false);
@@ -501,15 +546,15 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   }, [router]);
 
   const handleCategoryClick = useCallback((categoryId: number) => {
-    router.push(`/search?category=${categoryId}`);
+    router.push(`/vacancies?category=${categoryId}`);
   }, [router]);
 
   const handleSubCategoryClick = useCallback((subCategoryId: number, categoryId: number) => {
-    router.push(`/search?category=${categoryId}&subcategory=${subCategoryId}`);
+    router.push(`/vacancies?category=${categoryId}&subcategory=${subCategoryId}`);
   }, [router]);
 
   const handleShowAllClick = useCallback((categoryId: number) => {
-    router.push(`/search?category=${categoryId}`);
+    router.push(`/vacancies?category=${categoryId}`);
   }, [router]);
 
   useEffect(() => {
@@ -524,8 +569,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         const [categoriesData, subCategoriesData, servicesData, vacanciesData, totalServicesData] = await Promise.all([
           apiClient.getCategories(),
           apiClient.getSubcategories(),
-          apiClient.getServices(1, 50), // Загружаем первые 50 услуг для поиска
-          apiClient.getVacancies({ limit: 50 }), // Загружаем первые 50 вакансий для поиска
+          apiClient.getServices(1, 50),
+          apiClient.getVacancies({ limit: 50 }),
           apiClient.getServices(1, 1),
         ]);
 
@@ -534,9 +579,9 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         setServices(extractResults(servicesData));
         setVacancies(extractResults(vacanciesData));
 
-        if (totalServicesData && typeof totalServicesData === 'object' && 'count' in totalServicesData) {
-          setTotalServices(totalServicesData.count || 0);
-        }
+        // if (totalServicesData && typeof totalServicesData === 'object' && 'count' in totalServicesData) {
+        //   setTotalServices(totalServicesData.count || 0);
+        // }
       } catch (err) {
         console.error("Fetch error:", err);
         setError(t("errors.fetchError", "Ошибка загрузки данных"));
@@ -559,6 +604,12 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     return (
       <div className="flex justify-center items-center h-screen text-base md:text-lg text-black text-center px-5">
         {error}
+        <button 
+          onClick={() => window.location.reload()} 
+          className="ml-4 bg-[#3ea23e] text-white px-4 py-2 rounded-lg"
+        >
+          {t("errors.reload", "Обновить")}
+        </button>
       </div>
     );
   }
@@ -645,29 +696,43 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         </div>
 
         <div className="bg-white w-full max-w-[1400px] my-5 p-4 md:p-7 rounded-3xl min-w-[320px] relative overflow-hidden max-md:w-[90%]">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-light text-black mb-8 md:mb-10 text-left relative z-10 break-words max-w-[50%] max-md:max-w-full p-3 md:p-4 w-full mt-3">
+          <div className="flex justify-between items-start mb-8">
+            <h2 className="text-2xl md:text-3xl font-light text-black text-left relative z-10 break-words max-w-[70%] p-3 md:p-4 w-full mt-3">
               {texts.specialistsTitle}
             </h2>
 
-            <div className="absolute md:top-14 right-8 md:right-6 max-md:right-7 bg-[#f2f3f7] text-[#676e7e] text-xs md:text-sm py-2 px-3 md:py-2.5 md:px-3.5 rounded-xl w-fit max-w-[35vw] max-md:max-w-[80vw] flex items-center justify-center whitespace-nowrap box-border shadow-sm">
+            <div className="bg-[#f2f3f7] text-[#676e7e] text-xs md:text-sm py-2 px-3 md:py-2.5 md:px-3.5 rounded-xl w-fit flex items-center justify-center whitespace-nowrap box-border shadow-sm mt-4">
               {texts.specialistsDescFull}
             </div>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start px-4 mb-5 justify-center overflow-hidden">
-            {categories.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                subCategories={subCategories}
-                getDisplayName={getDisplayName}
-                onCategoryClick={handleCategoryClick}
-                onSubCategoryClick={handleSubCategoryClick}
-                onShowAllClick={handleShowAllClick}
-                t={t}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 items-start px-4 mb-5 justify-center">
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <CategoryItem
+                  key={category.id}
+                  category={category}
+                  subCategories={subCategories}
+                  getDisplayName={getDisplayName}
+                  onCategoryClick={handleCategoryClick}
+                  onSubCategoryClick={handleSubCategoryClick}
+                  onShowAllClick={handleShowAllClick}
+                  t={t}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-lg text-gray-600 mb-4">
+                  {t("errors.noCategories", "Категории не найдены")}
+                </p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="bg-[#3ea23e] text-white px-6 py-3 rounded-lg hover:bg-[#2e8b57] transition-colors"
+                >
+                  {t("errors.reloadPage", "Обновить страницу")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
