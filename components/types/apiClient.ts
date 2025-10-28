@@ -23,6 +23,7 @@ import {
   RegisterPayload,
   OTPVerifyResponse,
   LoginPayload,
+  PaginatedResponse,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -143,6 +144,17 @@ api.interceptors.response.use(
   }
 );
 
+// Вспомогательная функция для извлечения данных из пагинированного ответа
+const extractData = <T>(data: T | PaginatedResponse<T>): T[] => {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data && typeof data === 'object' && 'results' in data) {
+    return (data as PaginatedResponse<T>).results;
+  }
+  return [] as T[];
+};
+
 export const apiClient = {
   login: async (credentials: LoginPayload): Promise<{ token: string; user: User }> => {
     try {
@@ -186,23 +198,35 @@ export const apiClient = {
   },
 
   register: async (userData: RegisterPayload): Promise<any> => {
-    console.log("📤 РЕГИСТРАЦИЯ - отправляемые данные:");
+    console.log("РЕГИСТРАЦИЯ - отправляемые данные:");
     console.log("URL:", `${API_BASE_URL}/auth/register/`);
     console.log("Данные:", JSON.stringify(userData, null, 2));
 
     try {
       const response = await api.post("/auth/register/", userData);
-      console.log("✅ Успешная регистрация - ответ сервера:", response.data);
+      console.log("Успешная регистрация - ответ сервера:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("❌ ОШИБКА РЕГИСТРАЦИИ:");
       console.error("Status:", error.response?.status);
+      console.error("Status Text:", error.response?.statusText);
       console.error("Data:", error.response?.data);
       console.error("Headers:", error.response?.headers);
+      console.error("Request URL:", error.config?.url);
+      console.error("Request Method:", error.config?.method);
+      console.error("Request Data:", error.config?.data);
+
+      if (error.response?.data && Object.keys(error.response.data).length === 0) {
+        console.error("Backend returned empty 400 response. Possible causes:");
+        console.error("  - Backend validation failed but didn't return error details");
+        console.error("  - CORS issue preventing error response");
+        console.error("  - Backend expects different payload format");
+        console.error("  - Missing or invalid authentication header");
+      }
+
       throw error;
     }
   },
-
 
   requestOTP: async (phone: string): Promise<any> => {
     try {
@@ -274,29 +298,50 @@ export const apiClient = {
     }
   },
 
-  getCategories: async (): Promise<Category[] | { results: Category[]; count: number }> =>
-    (await withRetry(() => api.get("/categories/"))).data,
+  getCategories: async (): Promise<Category[]> => {
+    try {
+      const response = await withRetry(() => api.get("/categories/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get categories error:", error);
+      throw error;
+    }
+  },
 
   getCategoryById: async (id: number): Promise<Category> =>
     (await withRetry(() => api.get(`/categories/${id}/`))).data,
 
-  getSubcategories: async (params?: Record<string, any>): Promise<SubCategory[]> =>
-    (await withRetry(() => api.get("/subcategories/", { params }))).data,
+  getSubcategories: async (params?: Record<string, any>): Promise<SubCategory[]> => {
+    try {
+      const response = await withRetry(() => api.get("/subcategories/", { params }));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get subcategories error:", error);
+      throw error;
+    }
+  },
 
   getSubcategoryById: async (id: number): Promise<SubCategory> =>
     (await withRetry(() => api.get(`/subcategories/${id}/`))).data,
 
-  getServices: async (page = 1, limit = 50, params?: Record<string, any>): Promise<any> =>
-    (await withRetry(() => api.get("/services/", { params: { page, limit, ...params } }))).data,
+  getServices: async (page = 1, limit = 50, params?: Record<string, any>): Promise<Service[]> => {
+    try {
+      const response = await withRetry(() => api.get("/services/", { params: { page, limit, ...params } }));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get services error:", error);
+      throw error;
+    }
+  },
 
   getServiceById: async (id: number): Promise<Service> =>
     (await withRetry(() => api.get(`/services/${id}/`))).data,
 
-  getVacancies: async (params?: Record<string, any>): Promise<Vacancy[] | { results: Vacancy[]; count: number }> => {
+  getVacancies: async (params?: Record<string, any>): Promise<Vacancy[]> => {
     try {
       const response = await withRetry(() => api.get("/vacancies/", { params }));
       console.log("✅ Vacancies loaded:", response.data);
-      return response.data;
+      return extractData(response.data);
     } catch (error: any) {
       console.error("❌ Get vacancies error:", error.response?.data || error.message);
       throw error;
@@ -314,28 +359,65 @@ export const apiClient = {
     }
   },
 
-  createVacancy: async (data: Omit<Vacancy, "id" | "moderation" | "moderation_display" | "boost">): Promise<Vacancy> => {
+  createVacancy: async (
+    data: Omit<Vacancy, "id" | "moderation" | "moderation_display" | "boost"> & {
+      images?: File | string | (File | string)[];
+    }
+  ): Promise<Vacancy> => {
     try {
       console.log("📝 Creating vacancy:", data);
 
-      const vacancyData = {
-        ...data,
-        // moderation: data?.moderation || 'pending'
-      };
+      let payload: any;
+      let headers: Record<string, string>;
 
-      const response = await api.post("/vacancies/", vacancyData);
+      if (
+        data.images instanceof File ||
+        (Array.isArray(data.images) && data.images.some(img => img instanceof File))
+      ) {
+        const formData = new FormData();
+        formData.append("title", data.title);
+        formData.append("description", data.description);
+        formData.append("price", String(data.price));
+        formData.append("category", String(data.category));
+        formData.append("client", String(data.client));
+        if (data.sub_category)
+          formData.append("sub_category", String(data.sub_category));
+
+        if (Array.isArray(data.images)) {
+          data.images.forEach(img => {
+            if (img instanceof File) formData.append("images", img);
+          });
+        } else if (data.images instanceof File) {
+          formData.append("images", data.images);
+        }
+
+        payload = formData;
+        headers = { "Content-Type": "multipart/form-data" };
+      } else {
+        payload = {
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          category: data.category,
+          client: data.client,
+          ...(data.sub_category && { sub_category: data.sub_category }),
+          ...(data.images && { images: Array.isArray(data.images) ? data.images : [data.images] }),
+        };
+        headers = { "Content-Type": "application/json" };
+      }
+
+      const response = await api.post("/vacancies/", payload, { headers });
       console.log("✅ Vacancy created:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("❌ Create vacancy error:", error.response?.data || error.message);
-
       if (error.response?.data) {
         console.error("Validation errors:", JSON.stringify(error.response.data, null, 2));
       }
-
       throw error;
     }
   },
+
 
   updateVacancy: async (id: number, data: Partial<Vacancy>): Promise<Vacancy> => {
     try {
@@ -360,11 +442,25 @@ export const apiClient = {
     }
   },
 
-  getUsers: async (): Promise<User[]> =>
-    (await withRetry(() => api.get("/users/"))).data,
+  getUsers: async (): Promise<User[]> => {
+    try {
+      const response = await withRetry(() => api.get("/users/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get users error:", error);
+      throw error;
+    }
+  },
 
-  getOrders: async (): Promise<Order[]> =>
-    (await withRetry(() => api.get("/orders/"))).data,
+  getOrders: async (): Promise<Order[]> => {
+    try {
+      const response = await withRetry(() => api.get("/orders/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get orders error:", error);
+      throw error;
+    }
+  },
 
   getOrderById: async (id: number): Promise<Order> =>
     (await withRetry(() => api.get(`/orders/${id}/`))).data,
@@ -375,8 +471,9 @@ export const apiClient = {
   getExecutorReviews: async (): Promise<ExecutorReview[]> => {
     try {
       const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
-      return Array.isArray(response.data) ? response.data : [];
+      return extractData(response.data);
     } catch (error) {
+      console.error("❌ Get executor reviews error:", error);
       throw error;
     }
   },
@@ -390,8 +487,15 @@ export const apiClient = {
   createExecutorReview: async (data: Omit<ExecutorReview, "id">): Promise<ExecutorReview> =>
     (await api.post("/executor-reviews/", data)).data,
 
-  getClientReviews: async (): Promise<ClientReview[]> =>
-    (await withRetry(() => api.get("/client-reviews/"))).data,
+  getClientReviews: async (): Promise<ClientReview[]> => {
+    try {
+      const response = await withRetry(() => api.get("/client-reviews/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get client reviews error:", error);
+      throw error;
+    }
+  },
 
   getClientReviewById: async (id: number): Promise<ClientReview> =>
     (await withRetry(() => api.get(`/client-reviews/${id}/`))).data,
@@ -399,8 +503,15 @@ export const apiClient = {
   createClientReview: async (data: Omit<ClientReview, "id">): Promise<ClientReview> =>
     (await api.post("/client-reviews/", data)).data,
 
-  getOrderReviews: async (): Promise<OrderReview[]> =>
-    (await withRetry(() => api.get("/order-reviews/"))).data,
+  getOrderReviews: async (): Promise<OrderReview[]> => {
+    try {
+      const response = await withRetry(() => api.get("/order-reviews/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get order reviews error:", error);
+      throw error;
+    }
+  },
 
   getOrderReviewById: async (id: number): Promise<OrderReview> =>
     (await withRetry(() => api.get(`/order-reviews/${id}/`))).data,
@@ -408,8 +519,15 @@ export const apiClient = {
   createOrderReview: async (data: Omit<OrderReview, "id">): Promise<OrderReview> =>
     (await api.post("/order-reviews/", data)).data,
 
-  getPayments: async (): Promise<Payment[]> =>
-    (await withRetry(() => api.get("/payments/"))).data,
+  getPayments: async (): Promise<Payment[]> => {
+    try {
+      const response = await withRetry(() => api.get("/payments/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get payments error:", error);
+      throw error;
+    }
+  },
 
   getPaymentById: async (id: number): Promise<Payment> =>
     (await withRetry(() => api.get(`/payments/${id}/`))).data,
@@ -417,8 +535,15 @@ export const apiClient = {
   createPayment: async (data: Omit<Payment, "id">): Promise<Payment> =>
     (await api.post("/payments/", data)).data,
 
-  getBoosts: async (): Promise<Boost[]> =>
-    (await withRetry(() => api.get("/boosts/"))).data,
+  getBoosts: async (): Promise<Boost[]> => {
+    try {
+      const response = await withRetry(() => api.get("/boosts/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get boosts error:", error);
+      throw error;
+    }
+  },
 
   getBoostById: async (id: number): Promise<Boost> =>
     (await withRetry(() => api.get(`/boosts/${id}/`))).data,
@@ -426,8 +551,15 @@ export const apiClient = {
   createBoost: async (data: Omit<Boost, "id">): Promise<Boost> =>
     (await api.post("/boosts/", data)).data,
 
-  getServiceBoosts: async (): Promise<ServiceBoost[]> =>
-    (await withRetry(() => api.get("/service-boosts/"))).data,
+  getServiceBoosts: async (): Promise<ServiceBoost[]> => {
+    try {
+      const response = await withRetry(() => api.get("/service-boosts/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get service boosts error:", error);
+      throw error;
+    }
+  },
 
   getServiceBoostById: async (id: number): Promise<ServiceBoost> =>
     (await withRetry(() => api.get(`/service-boosts/${id}/`))).data,
@@ -435,8 +567,15 @@ export const apiClient = {
   createServiceBoost: async (data: Omit<ServiceBoost, "id">): Promise<ServiceBoost> =>
     (await api.post("/service-boosts/", data)).data,
 
-  getVacancyBoosts: async (): Promise<VacancyBoost[]> =>
-    (await withRetry(() => api.get("/vacancy-boosts/"))).data,
+  getVacancyBoosts: async (): Promise<VacancyBoost[]> => {
+    try {
+      const response = await withRetry(() => api.get("/vacancy-boosts/"));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get vacancy boosts error:", error);
+      throw error;
+    }
+  },
 
   getVacancyBoostById: async (id: number): Promise<VacancyBoost> =>
     (await withRetry(() => api.get(`/vacancy-boosts/${id}/`))).data,
@@ -444,8 +583,15 @@ export const apiClient = {
   createVacancyBoost: async (data: Omit<VacancyBoost, "id">): Promise<VacancyBoost> =>
     (await api.post("/vacancy-boosts/", data)).data,
 
-  getReklamas: async (params?: Record<string, any>): Promise<Reklama[]> =>
-    (await withRetry(() => api.get("/reklamas/", { params }))).data,
+  getReklamas: async (params?: Record<string, any>): Promise<Reklama[]> => {
+    try {
+      const response = await withRetry(() => api.get("/reklamas/", { params }));
+      return extractData(response.data);
+    } catch (error) {
+      console.error("❌ Get reklamas error:", error);
+      throw error;
+    }
+  },
 
   getReklamaById: async (id: number): Promise<Reklama> =>
     (await withRetry(() => api.get(`/reklamas/${id}/`))).data,

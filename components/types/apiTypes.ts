@@ -22,7 +22,7 @@ export interface BaseEntity {
   updated_at?: string;
 }
 
-export interface User {
+  export interface User {
   id: number;
   name: string;
   phone: string;
@@ -95,6 +95,7 @@ export interface OTPVerifyResponse {
   data?: {
     link?: string;
     expires_at?: string;
+    telegram_id?: number;  
   };
 }
 
@@ -217,11 +218,9 @@ export interface RegisterPayload {
   name: string;
   role: "клиент"; 
   region: Region;
-  gender: "male" | "female";
-  telegram_id: number | null; 
-  telegram_username?: string;
-  code: string; 
+  gender: string;  
 }
+
 
 
 export interface OTPRequestPayload {

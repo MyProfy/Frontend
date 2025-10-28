@@ -37,7 +37,6 @@ import {
   resetModal,
 } from "../../store/slices/uiSlice";
 import { Region, RegisterPayload } from "../types/apiTypes";
-import { verify } from "crypto";
 
 interface RootState {
   auth: {
@@ -227,7 +226,6 @@ export default function RegisterModal({
     }
   }, [isOpen, step]);
 
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -250,12 +248,41 @@ export default function RegisterModal({
   const validateGender = () => gender ? "" : t("register.errors.emptyGender");
   const validateRegion = () => region ? "" : t("register.errors.emptyRegion");
 
+  const validateRegistrationPayload = (data: RegisterPayload): string | null => {
+    if (!data.phone || data.phone.length < 10) {
+      return "Неверный номер телефона";
+    }
+
+    if (!data.password || data.password.length < 6) {
+      return "Пароль должен быть минимум 6 символов";
+    }
+
+    if (!data.name || data.name.trim().length < 2) {
+      return "Имя должно быть минимум 2 символа";
+    }
+
+    if (!data.gender || !["мужской", "женский"].includes(data.gender)) {
+      return "Выберите пол";
+    }
+
+    if (!data.region) {
+      return "Выберите регион";
+    }
+
+    if (data.role !== "клиент") {
+      return "Неверная роль пользователя";
+    }
+
+    return null;
+  };
+
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
     setPhoneDigits(value.slice(0, 14 - countryCode.length));
     setHasLoginError(false);
     dispatch(clearError());
   };
+
   const handleCountryCodeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setCountryCode(e.target.value);
     setPhoneDigits(phoneDigits.slice(0, 14 - e.target.value.length));
@@ -263,35 +290,36 @@ export default function RegisterModal({
     dispatch(clearError());
   };
 
-
   const handleOtpAutoSubmit = async (otpCode: string) => {
-    // console.log("🚀 Auto-submitting OTP:", otpCode);
     dispatch(clearError());
 
     const otpError = otpRegex.test(otpCode) ? "" : t("register.errors.invalidOtp");
     if (otpError) {
-      console.error("❌ OTP validation failed:", otpError);
       dispatch(registerFailure(otpError));
       return;
     }
 
     dispatch(registerStart());
     try {
-      // console.log("📤 Verifying OTP with phone:", phoneNumber, "code:", otpCode);
       const result = await apiClient.verifyOTP({ phone: phoneNumber, code: otpCode });
-      // console.log("✅ OTP verified successfully!", result);
+      console.log("✅ OTP verified successfully!", result);
+
       localStorage.setItem("verification_code", otpCode);
+
+      if (result.data?.telegram_id) {
+        localStorage.setItem("telegram_id", String(result.data.telegram_id));
+        console.log("📱 Telegram ID stored:", result.data.telegram_id);
+      }
 
       if (result.data?.link) {
         setTelegramLink(result.data.link);
-        // console.log("🔗 Telegram link received:", result.data.link);
       }
 
       dispatch(registerStepComplete());
       handleSetStep(5);
     } catch (err: any) {
-      console.error("❌ OTP verification failed:", err.response?.data || err.message);
       const errorMessage = err.response?.data?.error ||
+        err.response?.data?.message ||
         err.response?.data?.detail ||
         (Array.isArray(err.response?.data) ? err.response.data[0] : null) ||
         t("register.errors.invalidOtp") ||
@@ -345,13 +373,11 @@ export default function RegisterModal({
     otpRefs.current[nextFocus]?.current?.focus();
 
     if (newOtp.length === 4 && newOtpValues.every(v => v !== "")) {
-      // console.log("🔢 Full OTP pasted, auto-submitting:", newOtp);
       setTimeout(() => {
         handleOtpAutoSubmit(newOtp);
       }, 300);
     }
   };
-
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otpValues[index] && index > 0) {
@@ -399,18 +425,13 @@ export default function RegisterModal({
     const phoneError = validatePhone();
     const passwordError = validatePassword();
 
-    // console.log("📞 Login - Phone:", phoneNumber);
-    // console.log("🔐 Login - Password length:", password.length);
-
     if (phoneError) {
-      console.error("❌ Phone validation failed:", phoneError);
       dispatch(loginFailure(phoneError));
       setHasLoginError(true);
       return;
     }
 
     if (!password || password.length < 1) {
-      console.error("❌ Password is empty");
       dispatch(loginFailure(t("register.errors.emptyPassword") || "Введите пароль"));
       setHasLoginError(true);
       return;
@@ -418,16 +439,12 @@ export default function RegisterModal({
 
     dispatch(loginStart());
     try {
-      // console.log("🔄 Attempting login with:", { phone: phoneNumber, password: "***" });
       const response = await apiClient.login({ phone: phoneNumber, password: password });
-      // console.log("✅ Login successful:", response);
 
       localStorage.setItem("token", response.token);
       dispatch(loginSuccess({ token: response.token, user: response.user }));
       handleClose();
     } catch (err: any) {
-      console.error("❌ Login failed:", err.response?.data || err.message);
-
       let errorMessage = t("register.errors.loginFailed") || "Ошибка входа";
 
       if (err.response?.data) {
@@ -468,17 +485,14 @@ export default function RegisterModal({
 
     dispatch(registerStart());
     try {
-      console.log("📱 Отправка запроса OTP для номера:", fullPhoneNumber);
-
       const response = await apiClient.requestOTP(fullPhoneNumber);
-      console.log("✅ OTP request response:", response);
 
       const botLink = response.data?.link || "https://t.me/myprofy_bot";
       setTelegramLink(botLink);
 
       setTimeout(() => {
         window.open(botLink, '_blank', 'noopener,noreferrer');
-      }, 100);
+      }, 3000);
 
       dispatch(registerStepComplete());
       handleSetStep(3);
@@ -581,27 +595,27 @@ export default function RegisterModal({
       dispatch(registerFailure(errors[0]));
       return;
     }
+
+    const telegramIdStr = localStorage.getItem("telegram_id");
+    const telegramId = telegramIdStr ? parseInt(telegramIdStr, 10) : 0;
+
     const registrationData: RegisterPayload = {
-      phone: String(savedPhoneNumber || phoneNumber), 
+      phone: String(savedPhoneNumber || phoneNumber),
       password: String(password),
       name: String(name).trim(),
-      telegram_id: null,
-      telegram_username: "",
-      gender: gender === "male" ? "male" : "female",
+      gender: gender, 
       region: region as Region,
-      role: "клиент",
-      code: localStorage.getItem("verification_code") || "" 
+      role: "клиент"
     };
 
     dispatch(registerStart());
 
     try {
-      console.log("📝 Начинаем регистрацию...");
+
       const registerResponse = await apiClient.register(registrationData);
 
-      console.log("✅ Регистрация успешна!", registerResponse);
-
-      console.log("🔐 Выполняем автоматический вход...");
+      localStorage.removeItem("verification_code");
+      localStorage.removeItem("telegram_id");
 
       try {
         const loginResponse = await apiClient.login({
@@ -609,8 +623,7 @@ export default function RegisterModal({
           password: password
         });
 
-        console.log("✅ Автоматический вход успешен!");
-
+        
         localStorage.setItem("token", loginResponse.token);
         dispatch(loginSuccess({
           token: loginResponse.token,
@@ -620,7 +633,6 @@ export default function RegisterModal({
         handleSetStep(9);
 
       } catch (loginErr: any) {
-        console.error("❌ Автоматический вход не удался:", loginErr);
 
         dispatch(registerSuccess({
           token: null,
@@ -637,36 +649,46 @@ export default function RegisterModal({
       }
 
     } catch (err: any) {
-      console.error("❌ Ошибка регистрации:", err);
-
       let errorMessage = t("register.errors.registrationFailed") || "Ошибка регистрации";
 
       if (err.response?.data) {
         const data = err.response.data;
 
-        const fieldErrors: Record<string, string> = {
-          phone: t("register.errors.phoneAlreadyRegistered") || "Этот номер уже зарегистрирован",
-          password: t("register.errors.invalidPassword") || "Неверный формат пароля",
-          name: t("register.errors.invalidName") || "Неверный формат имени",
-          telegram_username: t("register.errors.invalidTelegram") || "Неверный формат Telegram",
-          gender: t("register.errors.emptyGender") || "Выберите пол",
-          region: t("register.errors.emptyRegion") || "Выберите регион",
-        };
+        if (data.gender) {
+          const genderError = Array.isArray(data.gender) ? data.gender[0] : data.gender;
+          console.error("💡 Gender error message:", genderError);
+          errorMessage = `Ошибка поля "Пол": ${genderError}`;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else {
+          const fieldErrors: Record<string, string> = {
+            phone: "Этот номер уже зарегистрирован",
+            password: "Неверный формат пароля",
+            name: "Неверный формат имени",
+            telegram_username: "Неверный формат Telegram",
+            telegram_id: "Ошибка Telegram ID",
+            region: "Выберите регион",
+          };
 
-        for (const [field, defaultMsg] of Object.entries(fieldErrors)) {
-          if (data[field]) {
-            errorMessage = Array.isArray(data[field]) ? data[field][0] : data[field] || defaultMsg;
-            break;
+          for (const [field, defaultMsg] of Object.entries(fieldErrors)) {
+            if (data[field]) {
+              errorMessage = Array.isArray(data[field])
+                ? data[field][0]
+                : data[field] || defaultMsg;
+              break;
+            }
           }
-        }
 
-        if (!errorMessage || errorMessage === t("register.errors.registrationFailed")) {
-          errorMessage = data.detail ||
-            data.error ||
-            data.message ||
-            (Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors) ||
-            (Array.isArray(data) && data[0]) ||
-            (typeof data === 'string' ? data : errorMessage);
+          if (errorMessage === t("register.errors.registrationFailed")) {
+            errorMessage =
+              (Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors) ||
+              (Array.isArray(data) && data[0]) ||
+              (typeof data === 'string' ? data : errorMessage);
+          }
         }
       }
 
@@ -703,7 +725,6 @@ export default function RegisterModal({
     "Хорезмская область",
     "Город Ташкент"
   ];
-
 
   if (!isOpen) return null;
 
@@ -1123,21 +1144,6 @@ export default function RegisterModal({
                   )}
                 </motion.button>
 
-                {/* <motion.button
-                    type="button"
-                    className={`text-sm text-center cursor-pointer bg-transparent border-none p-0 font-medium transition-colors duration-200 ${resendTimer > 0
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-green-600 hover:text-green-700 hover:underline"
-                      }`}
-                    variants={itemVariants}
-                    onClick={handleResendOtp}
-                    disabled={resendTimer > 0}
-                  >
-                    {resendTimer > 0
-                      ? `Повторная отправка через ${resendTimer} сек`
-                      : "Отправить код повторно"}
-                  </motion.button> */}
-
                 <motion.div
                   className="flex items-center justify-center mt-2"
                   variants={itemVariants}
@@ -1295,10 +1301,10 @@ export default function RegisterModal({
                     <option value="">
                       {t("register.profile.genderPlaceholder")}
                     </option>
-                    <option value="male">
+                    <option value="мужской">
                       {t("register.profile.gender.male")}
                     </option>
-                    <option value="female">
+                    <option value="женский">
                       {t("register.profile.gender.female")}
                     </option>
                   </select>
@@ -1322,7 +1328,7 @@ export default function RegisterModal({
                     </option>
                     {regions.map((reg) => (
                       <option key={reg} value={reg}>
-                        {t(`register.regions.${reg}`)}
+                        {reg}
                       </option>
                     ))}
                   </select>
@@ -1450,6 +1456,6 @@ export default function RegisterModal({
           </AnimatePresence>
         </motion.div>
       </motion.div>
-    </FocusTrap >
+    </FocusTrap>
   );
 }

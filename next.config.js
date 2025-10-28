@@ -66,7 +66,7 @@ const nextConfig = {
             priority: 30,
             reuseExistingChunk: true,
           },
-          // Общий vendor chunk
+
           lib: {
             test(module) {
               return (
@@ -83,7 +83,7 @@ const nextConfig = {
             minChunks: 1,
             reuseExistingChunk: true,
           },
-          // Shared chunks
+
           commons: {
             name: 'commons',
             minChunks: 2,
@@ -133,7 +133,6 @@ const nextConfig = {
     ];
   },
 
-  // Переписывание URL для SEO
   async rewrites() {
     return [
       {
@@ -143,18 +142,15 @@ const nextConfig = {
     ];
   },
 
-  // Настройки компилятора
   compiler: {
-    // Удаление console.log в production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
+      removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
   },
 
-  // Настройки output
-  output: 'standalone', // Для Docker и оптимизации размера
+  output: 'standalone', 
 
-  // Игнорировать TypeScript ошибки при сборке (опционально)
+  
   typescript: {
     ignoreBuildErrors: false,
   },
