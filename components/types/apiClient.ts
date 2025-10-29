@@ -32,6 +32,47 @@ const API_BASE_URL =
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 
+// Функция для работы с cookies
+const cookieManager = {
+  setCookie(name: string, value: string, days: number = 7): void {
+    if (typeof window === "undefined") return;
+
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+  },
+
+  getCookie(name: string): string | null {
+    if (typeof window === "undefined") return null;
+
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  },
+
+  removeCookie(name: string): void {
+    if (typeof window === "undefined") return;
+    document.cookie = name + '=; Max-Age=-99999999; path=/;';
+  },
+
+  setUser(user: User): void {
+    if (typeof window === "undefined") return;
+    this.setCookie('user', JSON.stringify(user));
+  },
+
+  getUser(): User | null {
+    if (typeof window === "undefined") return null;
+    const userStr = this.getCookie('user');
+    return userStr ? JSON.parse(userStr) : null;
+  }
+};
+
 const withRetry = async <T>(
   fn: () => Promise<AxiosResponse<T>>,
   retries = MAX_RETRIES,
@@ -57,8 +98,8 @@ const api: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 4000,
-  withCredentials: false,
+  timeout: 15000, // Увеличено до 15 секунд
+  withCredentials: true, // Включена отправка cookies
 });
 
 api.interceptors.request.use(
@@ -67,7 +108,7 @@ api.interceptors.request.use(
     const isPublic = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
 
     if (!isPublic) {
-      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      const token = cookieManager.getCookie("access_token");
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -97,31 +138,32 @@ api.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
-          const refreshToken = typeof window !== "undefined"
-            ? localStorage.getItem("refresh_token")
-            : null;
+          const refreshToken = cookieManager.getCookie("refresh_token");
 
           if (refreshToken) {
             console.log("Refreshing token...");
             const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
               refresh: refreshToken
+            }, {
+              withCredentials: true // Важно для cookies
             });
 
             const newAccessToken = response.data.access;
 
-            if (typeof window !== "undefined") {
-              localStorage.setItem("access_token", newAccessToken);
-            }
+            // Сохраняем новый токен в cookies
+            cookieManager.setCookie("access_token", newAccessToken);
 
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return api(originalRequest);
           }
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError);
+          // Очищаем cookies при ошибке
+          cookieManager.removeCookie("access_token");
+          cookieManager.removeCookie("refresh_token");
+          cookieManager.removeCookie("user");
+
           if (typeof window !== "undefined") {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("refresh_token");
-            localStorage.removeItem("user");
             window.location.href = "/login";
           }
           return Promise.reject(refreshError);
@@ -144,7 +186,6 @@ api.interceptors.response.use(
   }
 );
 
-// Вспомогательная функция для извлечения данных из пагинированного ответа
 const extractData = <T>(data: T | PaginatedResponse<T>): T[] => {
   if (Array.isArray(data)) {
     return data;
@@ -159,7 +200,9 @@ export const apiClient = {
   login: async (credentials: LoginPayload): Promise<{ token: string; user: User }> => {
     try {
       console.log("🔐 Logging in:", credentials.phone);
-      const response = await api.post("/auth/login/", credentials);
+      const response = await api.post("/auth/login/", credentials, {
+        withCredentials: true
+      });
       console.log("✅ Login response:", response.data);
 
       const token = response.data.access;
@@ -169,11 +212,9 @@ export const apiClient = {
         throw new Error("No access token in response");
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("access_token", token);
-        if (refreshToken) {
-          localStorage.setItem("refresh_token", refreshToken);
-        }
+      cookieManager.setCookie("access_token", token);
+      if (refreshToken) {
+        cookieManager.setCookie("refresh_token", refreshToken);
       }
 
       const user: User = {
@@ -186,9 +227,7 @@ export const apiClient = {
         region: response.data.region || "",
       };
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(user));
-      }
+      cookieManager.setUser(user);
 
       return { token, user };
     } catch (error: any) {
@@ -203,7 +242,9 @@ export const apiClient = {
     console.log("Данные:", JSON.stringify(userData, null, 2));
 
     try {
-      const response = await api.post("/auth/register/", userData);
+      const response = await api.post("/auth/register/", userData, {
+        withCredentials: true
+      });
       console.log("Успешная регистрация - ответ сервера:", response.data);
       return response.data;
     } catch (error: any) {
@@ -231,7 +272,9 @@ export const apiClient = {
   requestOTP: async (phone: string): Promise<any> => {
     try {
       console.log("📱 Requesting OTP for:", phone);
-      const response = await api.post("/auth/otp/request/", { phone });
+      const response = await api.post("/auth/otp/request/", { phone }, {
+        withCredentials: true
+      });
       console.log("✅ OTP requested:", response.data);
       return response.data;
     } catch (error: any) {
@@ -243,7 +286,9 @@ export const apiClient = {
   verifyOTP: async (data: { phone: string; code: string }): Promise<OTPVerifyResponse> => {
     try {
       console.log("🔑 Verifying OTP for:", data.phone);
-      const response = await api.post("/auth/otp/verify/", data);
+      const response = await api.post("/auth/otp/verify/", data, {
+        withCredentials: true
+      });
       console.log("✅ OTP verified:", response.data);
       return response.data;
     } catch (error: any) {
@@ -255,13 +300,11 @@ export const apiClient = {
   getCurrentUser: async (): Promise<User> => {
     console.log("👤 Getting current user");
     try {
-      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      const user = cookieManager.getUser();
 
-      if (!userStr) {
-        throw new Error("User data not found in localStorage");
+      if (!user) {
+        throw new Error("User data not found in cookies");
       }
-
-      const user = JSON.parse(userStr);
 
       if (!user.id) {
         throw new Error("User ID not found");
@@ -270,9 +313,7 @@ export const apiClient = {
       const response = await api.get(`/users/${user.id}/`);
       console.log("✅ Current user:", response.data);
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(response.data));
-      }
+      cookieManager.setUser(response.data);
 
       return response.data;
     } catch (error: any) {
@@ -287,13 +328,24 @@ export const apiClient = {
       const response = await api.put(`/users/${userId}/`, data);
       console.log("✅ Profile updated:", response.data);
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(response.data));
-      }
+      cookieManager.setUser(response.data);
 
       return response.data;
     } catch (error: any) {
       console.error("❌ Update profile error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      cookieManager.removeCookie("access_token");
+      cookieManager.removeCookie("refresh_token");
+      cookieManager.removeCookie("user");
+
+      console.log("✅ Logout successful");
+    } catch (error: any) {
+      console.error("❌ Logout error:", error);
       throw error;
     }
   },
@@ -418,183 +470,90 @@ export const apiClient = {
     }
   },
 
-
-  updateVacancy: async (id: number, data: Partial<Vacancy>): Promise<Vacancy> => {
+  // Добавьте этот метод в apiClient объект
+  checkServicesEndpoint: async (): Promise<any> => {
     try {
-      console.log("📝 Updating vacancy:", id, data);
-      const response = await api.patch(`/vacancies/${id}/`, data);
-      console.log("✅ Vacancy updated:", response.data);
+      console.log("🔍 Checking services endpoint...");
+      const response = await api.get("/services/");
+      console.log("✅ Services endpoint available:", response.status);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Update vacancy error:", error.response?.data || error.message);
+      console.error("❌ Services endpoint check failed:", error);
+
+      if (error.response?.status === 500) {
+        console.error("💥 Services endpoint returns 500 error");
+        throw new Error("SERVICE_ENDPOINT_500_ERROR");
+      } else if (error.response?.status === 404) {
+        console.error("💥 Services endpoint not found (404)");
+        throw new Error("SERVICE_ENDPOINT_NOT_FOUND");
+      } else if (error.request) {
+        console.error("💥 No response from services endpoint");
+        throw new Error("SERVICE_ENDPOINT_NO_RESPONSE");
+      }
+
       throw error;
     }
   },
 
-  deleteVacancy: async (id: number): Promise<void> => {
+  createService: async (
+    data: {
+      executor: number;
+      category: number;
+      sub_categories?: number[];
+      title: string;
+      description: string;
+      price?: number;
+      moderation?: string;
+      boost?: number;
+    }
+  ): Promise<Service> => {
     try {
-      console.log("🗑️ Deleting vacancy:", id);
-      await api.delete(`/vacancies/${id}/`);
-      console.log("✅ Vacancy deleted");
+      console.log("📝 Creating service:", data);
+
+      const payload = {
+        executor: data.executor,
+        category: data.category,
+        sub_categories: data.sub_categories || [],
+        title: data.title,
+        description: data.description,
+        price: data.price || 0,
+        moderation: data.moderation || "Pending",
+        boost: data.boost || 1,
+      };
+
+      console.log("📤 Sending payload:", JSON.stringify(payload, null, 2));
+
+      const response = await api.post("/services/", payload);
+      console.log("✅ Service created:", response.data);
+      return response.data;
     } catch (error: any) {
-      console.error("❌ Delete vacancy error:", error.response?.data || error.message);
+      console.error("❌ Create service error:", error);
+
+      // Детальная диагностика
+      if (error.response) {
+        console.error("📊 Error details:");
+        console.error("Status:", error.response.status);
+        console.error("Status Text:", error.response.statusText);
+        console.error("Headers:", error.response.headers);
+        console.error("Data:", error.response.data);
+
+        if (error.response.status === 500) {
+          console.error("🔧 Server 500 Error - Possible causes:");
+          console.error("  - Database connection issue");
+          console.error("  - Backend code error");
+          console.error("  - Missing required fields on server");
+          console.error("  - Serializer validation failed");
+        }
+      } else if (error.request) {
+        console.error("🌐 Network error - No response received");
+      } else {
+        console.error("⚡ Request setup error:", error.message);
+      }
+
       throw error;
     }
   },
 
-  getUsers: async (): Promise<User[]> => {
-    try {
-      const response = await withRetry(() => api.get("/users/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get users error:", error);
-      throw error;
-    }
-  },
-
-  getOrders: async (): Promise<Order[]> => {
-    try {
-      const response = await withRetry(() => api.get("/orders/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get orders error:", error);
-      throw error;
-    }
-  },
-
-  getOrderById: async (id: number): Promise<Order> =>
-    (await withRetry(() => api.get(`/orders/${id}/`))).data,
-
-  createOrder: async (data: OrderData): Promise<Order> =>
-    (await api.post("/orders/", data)).data,
-
-  getExecutorReviews: async (): Promise<ExecutorReview[]> => {
-    try {
-      const response = await withRetry(() => api.get<ExecutorReview[]>("/executor-reviews/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get executor reviews error:", error);
-      throw error;
-    }
-  },
-
-  getUserById: async (id: number): Promise<User> =>
-    (await withRetry(() => api.get(`/users/${id}/`))).data,
-
-  getExecutorReviewById: async (id: number): Promise<ExecutorReview> =>
-    (await withRetry(() => api.get(`/executor-reviews/${id}/`))).data,
-
-  createExecutorReview: async (data: Omit<ExecutorReview, "id">): Promise<ExecutorReview> =>
-    (await api.post("/executor-reviews/", data)).data,
-
-  getClientReviews: async (): Promise<ClientReview[]> => {
-    try {
-      const response = await withRetry(() => api.get("/client-reviews/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get client reviews error:", error);
-      throw error;
-    }
-  },
-
-  getClientReviewById: async (id: number): Promise<ClientReview> =>
-    (await withRetry(() => api.get(`/client-reviews/${id}/`))).data,
-
-  createClientReview: async (data: Omit<ClientReview, "id">): Promise<ClientReview> =>
-    (await api.post("/client-reviews/", data)).data,
-
-  getOrderReviews: async (): Promise<OrderReview[]> => {
-    try {
-      const response = await withRetry(() => api.get("/order-reviews/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get order reviews error:", error);
-      throw error;
-    }
-  },
-
-  getOrderReviewById: async (id: number): Promise<OrderReview> =>
-    (await withRetry(() => api.get(`/order-reviews/${id}/`))).data,
-
-  createOrderReview: async (data: Omit<OrderReview, "id">): Promise<OrderReview> =>
-    (await api.post("/order-reviews/", data)).data,
-
-  getPayments: async (): Promise<Payment[]> => {
-    try {
-      const response = await withRetry(() => api.get("/payments/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get payments error:", error);
-      throw error;
-    }
-  },
-
-  getPaymentById: async (id: number): Promise<Payment> =>
-    (await withRetry(() => api.get(`/payments/${id}/`))).data,
-
-  createPayment: async (data: Omit<Payment, "id">): Promise<Payment> =>
-    (await api.post("/payments/", data)).data,
-
-  getBoosts: async (): Promise<Boost[]> => {
-    try {
-      const response = await withRetry(() => api.get("/boosts/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get boosts error:", error);
-      throw error;
-    }
-  },
-
-  getBoostById: async (id: number): Promise<Boost> =>
-    (await withRetry(() => api.get(`/boosts/${id}/`))).data,
-
-  createBoost: async (data: Omit<Boost, "id">): Promise<Boost> =>
-    (await api.post("/boosts/", data)).data,
-
-  getServiceBoosts: async (): Promise<ServiceBoost[]> => {
-    try {
-      const response = await withRetry(() => api.get("/service-boosts/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get service boosts error:", error);
-      throw error;
-    }
-  },
-
-  getServiceBoostById: async (id: number): Promise<ServiceBoost> =>
-    (await withRetry(() => api.get(`/service-boosts/${id}/`))).data,
-
-  createServiceBoost: async (data: Omit<ServiceBoost, "id">): Promise<ServiceBoost> =>
-    (await api.post("/service-boosts/", data)).data,
-
-  getVacancyBoosts: async (): Promise<VacancyBoost[]> => {
-    try {
-      const response = await withRetry(() => api.get("/vacancy-boosts/"));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get vacancy boosts error:", error);
-      throw error;
-    }
-  },
-
-  getVacancyBoostById: async (id: number): Promise<VacancyBoost> =>
-    (await withRetry(() => api.get(`/vacancy-boosts/${id}/`))).data,
-
-  createVacancyBoost: async (data: Omit<VacancyBoost, "id">): Promise<VacancyBoost> =>
-    (await api.post("/vacancy-boosts/", data)).data,
-
-  getReklamas: async (params?: Record<string, any>): Promise<Reklama[]> => {
-    try {
-      const response = await withRetry(() => api.get("/reklamas/", { params }));
-      return extractData(response.data);
-    } catch (error) {
-      console.error("❌ Get reklamas error:", error);
-      throw error;
-    }
-  },
-
-  getReklamaById: async (id: number): Promise<Reklama> =>
-    (await withRetry(() => api.get(`/reklamas/${id}/`))).data,
 };
 
 export function getAPIClient() {
