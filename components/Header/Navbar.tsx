@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useSelector, useDispatch } from "react-redux";
 import { initializeAuth } from "../../store/slices/authSlice";
+import { FaUser } from "react-icons/fa";
+
 
 import MyProfiLogo from "../../public/avatar/logo.svg";
 import UzFlag from "../../public/🇺🇿.png";
@@ -44,13 +46,14 @@ const LanguageButton = memo(({ onClick, flag, lang }: any) => (
 ));
 LanguageButton.displayName = "LanguageButton";
 
-const ProfileButton = memo(({ isAuthenticated, userName, onProfileClick, onLoginClick, t }: any) => (
+const ProfileButton = memo(({ isAuthenticated, name, onProfileClick, onLoginClick, t }: any) => (
   isAuthenticated ? (
     <button
       onClick={onProfileClick}
-      className="bg-gray-800 text-white px-3 lg:px-5 py-1.5 lg:py-2 border-none rounded-lg font-semibold cursor-pointer text-xs lg:text-sm transition-colors duration-200 hover:bg-gray-900 whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis"
+      className="bg-green-600 text-white px-3  py-2 lg:py-2 border-none rounded-lg font-semibold cursor-pointer text-xs lg:text-sm transition-colors duration-200 hover:bg-green-700 whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis"
     >
-      {userName || t('navbar.profile', "Профиль")}
+      <FaUser className="size-5" />
+
     </button>
   ) : (
     <button
@@ -182,10 +185,9 @@ export default function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Функция для получения текущего языка и флага
   const getCurrentLanguageData = useCallback(() => {
     const currentLanguage = i18n.language || 'uz';
-    
+
     if (currentLanguage === 'ru') {
       return {
         lang: "Русский язык",
@@ -193,13 +195,12 @@ export default function Navbar() {
       };
     } else {
       return {
-        lang: "Uzbek tilida", 
+        lang: "Uzbek tilida",
         flag: UzFlag
       };
     }
   }, [i18n.language]);
 
-  // Обновляем язык и флаг при изменении i18n.language
   useEffect(() => {
     const languageData = getCurrentLanguageData();
     setLang(languageData.lang);
@@ -360,7 +361,7 @@ export default function Navbar() {
       <React.Suspense fallback={null}>
         {showRegionModal && (
           <RegionModal
-            isOpen={showRegionModal}  
+            isOpen={showRegionModal}
             onCloseAction={() => setShowRegionModal(false)}
             onSelectAction={handleRegionSelect}
           />

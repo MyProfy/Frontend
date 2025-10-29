@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Folder, DollarSign, Award, Clock, MapPin, Star, ChevronDown, MessageCircle, User as UserIcon } from "lucide-react";
+import { ChevronRight, Folder, DollarSign, Award, Clock, MapPin, Star, ChevronDown, MessageCircle, User as UserIcon, Info } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAPIClient } from "@/components/types/apiClient";
 import { Category, SubCategory, Vacancy, Service, User } from "@/components/types/apiTypes";
@@ -30,7 +30,6 @@ const WORKING_HOURS = [
   { label: "21 - 40 часов", min: 21, max: 40 }
 ] as const;
 
-// Вспомогательные функции
 const extractResults = (data: any) => {
   if (Array.isArray(data)) return data;
   if (data && 'results' in data) return data.results || [];
@@ -48,9 +47,7 @@ const getInitials = (name: string) => {
   return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
 };
 
-// Исправленная функция получения рейтинга
 const getRatingAndReviews = (item: ListingItem, user: User | null) => {
-  // Проверяем, что user соответствует item
   const userId = 'client' in item ? item.client : item.executor;
 
   if (user && user.id === userId) {
@@ -69,7 +66,6 @@ const getRatingAndReviews = (item: ListingItem, user: User | null) => {
     }
   }
 
-  // Если пользователь не загружен или не соответствует
   return {
     rating: "0.00",
     reviewCount: 0,
@@ -95,13 +91,14 @@ const ListingCard = memo(({
   const title = 'title' in item ? item.title : item.name;
   const description = item.description;
 
-  // Проверяем, что userData соответствует item
   const userId = 'client' in item ? item.client : item.executor;
   const isCorrectUser = userData && userData.id === userId;
-  
+
   const { rating, reviewCount, isTrusted } = getRatingAndReviews(item, isCorrectUser ? userData : null);
   const userName = isCorrectUser ? (userData?.name || 'Неизвестный пользователь') : 'Неизвестный пользователь';
   const userRegion = isCorrectUser ? (userData?.region || 'Местоположение не указано') : 'Местоположение не указано';
+  const userAbout = isCorrectUser ? (userData?.about_user || null) : null;
+  const userExperience = isCorrectUser ? (userData?.work_experience || null) : null;
 
   const handleCardClick = () => {
     setIsExpanded(!isExpanded);
@@ -160,6 +157,16 @@ const ListingCard = memo(({
             <MapPin size={14} />
             <span>{userRegion}</span>
           </div>
+
+          {userExperience && userExperience > 0 && (
+            <>
+              <span className="text-gray-400">•</span>
+              <div className="flex items-center gap-1.5">
+                <Award size={14} />
+                <span>Опыт: {userExperience} лет</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex gap-3">
@@ -190,16 +197,47 @@ const ListingCard = memo(({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="mt-6 pt-6 border-t border-gray-200"
+            className="mt-6 pt-6 border-t border-gray-200 space-y-6"
           >
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            {/* Описание вакансии/услуги */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Info size={18} />
                 {isVacancy ? "О вакансии" : "Об услуге"}
               </h3>
-              <div className="space-y-2 text-sm text-gray-700">
-                <p>{description}</p>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-700 leading-relaxed">{description}</p>
               </div>
             </div>
+
+            {/* О пользователе */}
+            {userAbout && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <UserIcon size={18} />
+                  {isVacancy ? "О клиенте" : "О специалисте"}
+                </h3>
+                <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
+                  <p className="text-sm text-gray-700 leading-relaxed">{userAbout}</p>
+                </div>
+              </div>
+            )}
+
+            {isCorrectUser && userData && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Дополнительная информация
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {userData.about_user && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm font-medium text-gray-900">{userData.about_user}</p>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -222,18 +260,16 @@ const CategoryFilter = memo(({
       <button
         key={category.id}
         onClick={() => onCategoryClick(category.id)}
-        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-          selectedCategory === category.id
-            ? "bg-gray-50 text-gray-900 font-medium"
-            : "text-gray-600 hover:bg-gray-50"
-        }`}
+        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${selectedCategory === category.id
+          ? "bg-gray-50 text-gray-900 font-medium"
+          : "text-gray-600 hover:bg-gray-50"
+          }`}
       >
         <div
-          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-            selectedCategory === category.id
-              ? "border-gray-800"
-              : "border-gray-300"
-          }`}
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedCategory === category.id
+            ? "border-gray-800"
+            : "border-gray-300"
+            }`}
         >
           {selectedCategory === category.id && (
             <div className="w-2.5 h-2.5 rounded-full bg-gray-800"></div>
@@ -246,9 +282,9 @@ const CategoryFilter = memo(({
 ));
 CategoryFilter.displayName = "CategoryFilter";
 
-const ViewModeToggle = memo(({ 
-  viewMode, 
-  onViewModeChange 
+const ViewModeToggle = memo(({
+  viewMode,
+  onViewModeChange
 }: {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
@@ -256,21 +292,19 @@ const ViewModeToggle = memo(({
   <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
     <button
       onClick={() => onViewModeChange('vacancies')}
-      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-        viewMode === 'vacancies'
-          ? 'bg-white text-gray-900 shadow-sm'
-          : 'text-gray-600 hover:text-gray-900'
-      }`}
+      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'vacancies'
+        ? 'bg-white text-gray-900 shadow-sm'
+        : 'text-gray-600 hover:text-gray-900'
+        }`}
     >
       Вакансии
     </button>
     <button
       onClick={() => onViewModeChange('services')}
-      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-        viewMode === 'services'
-          ? 'bg-white text-gray-900 shadow-sm'
-          : 'text-gray-600 hover:text-gray-900'
-      }`}
+      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'services'
+        ? 'bg-white text-gray-900 shadow-sm'
+        : 'text-gray-600 hover:text-gray-900'
+        }`}
     >
       Услуги
     </button>
@@ -298,7 +332,6 @@ export default function ListingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Функция для загрузки данных пользователя
   const fetchUserData = async (userId: number): Promise<User | null> => {
     try {
       const user = await apiClient.getUserById(userId);
@@ -338,33 +371,31 @@ export default function ListingsPage() {
         console.log(`- Вакансии: ${extractedVacancies.length}`);
         console.log(`- Услуги: ${extractedServices.length}`);
 
-        // Собираем ВСЕ уникальные ID пользователей
         const allUserIds = new Set<number>();
-        
+
         extractedVacancies.forEach(vacancy => {
           allUserIds.add(vacancy.client);
         });
-        
+
         extractedServices.forEach(service => {
           allUserIds.add(service.executor);
         });
 
         console.log(`👥 Загружаем данные для ${allUserIds.size} пользователей`);
 
-        // Загружаем всех пользователей одним запросом
-        const userPromises = Array.from(allUserIds).map(userId => 
+        const userPromises = Array.from(allUserIds).map(userId =>
           fetchUserData(userId)
         );
-        
+
         const users = await Promise.all(userPromises);
-        
+
         const usersMap = new Map<number, User>();
         users.forEach(user => {
           if (user) {
             usersMap.set(user.id, user);
           }
         });
-        
+
         setUsersData(usersMap);
         console.log(`✅ Загружено данных пользователей: ${usersMap.size}`);
 
@@ -407,40 +438,29 @@ export default function ListingsPage() {
     const sourceData = viewMode === 'vacancies' ? vacancies : services;
     let filtered = [...sourceData];
 
-    console.log(`🔍 Фильтрация: ${viewMode}, всего элементов: ${filtered.length}`);
-
-    // Фильтрация по категориям и подкатегориям
     if (selectedSubCategories.length > 0) {
-      console.log(`🔍 Фильтруем по подкатегориям:`, selectedSubCategories);
       filtered = filtered.filter(item => {
         if (viewMode === 'vacancies') {
-          // Для вакансий
           const vacancy = item as Vacancy;
           const subCategoryId = vacancy.sub_category;
           return selectedSubCategories.includes(subCategoryId);
         } else {
-          // Для услуг
           const service = item as Service;
           const subCategoryIds = service.sub_categories || [];
           return subCategoryIds.some(scId => selectedSubCategories.includes(scId));
         }
       });
-      console.log(`🔍 После фильтрации по подкатегориям: ${filtered.length}`);
     }
     else if (selectedCategory !== null) {
-      console.log(`🔍 Фильтруем по категории: ${selectedCategory}`);
       filtered = filtered.filter(item => {
         const categoryId = typeof item.category === 'number'
           ? item.category
           : item.category?.id;
         return categoryId === selectedCategory;
       });
-      console.log(`🔍 После фильтрации по категории: ${filtered.length}`);
     }
 
-    // Фильтрация по цене
     if (selectedPriceRanges.length > 0) {
-      console.log(`🔍 Фильтруем по цене:`, selectedPriceRanges);
       filtered = filtered.filter(item => {
         return selectedPriceRanges.some(rangeLabel => {
           const priceRange = PRICE_RANGES.find(pr => pr.label === rangeLabel);
@@ -448,10 +468,8 @@ export default function ListingsPage() {
           return item.price >= priceRange.min && item.price <= priceRange.max;
         });
       });
-      console.log(`🔍 После фильтрации по цене: ${filtered.length}`);
     }
 
-    console.log(`✅ Финальный результат: ${filtered.length} элементов`);
     return filtered;
   }, [
     viewMode,
@@ -460,8 +478,6 @@ export default function ListingsPage() {
     selectedCategory,
     selectedSubCategories,
     selectedPriceRanges,
-    selectedExperience,
-    selectedHours,
   ]);
 
   const filteredSubCategories = useMemo(() => {
@@ -526,20 +542,6 @@ export default function ListingsPage() {
     router.push(`/${mode}?${params.toString()}`);
   }, [selectedCategory, router]);
 
-  // if (loading) {
-  //   return (
-  //     <>
-  //       <Navbar />
-  //       <div className="flex justify-center items-center h-screen">
-  //         <div className="text-center">
-  //           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
-  //           <p className="text-gray-600">Загрузка данных...</p>
-  //         </div>
-  //       </div>
-  //     </>
-  //   );
-  // }
-
   return (
     <>
       <Navbar />
@@ -550,7 +552,7 @@ export default function ListingsPage() {
               <p className="text-red-800">{error}</p>
             </div>
           )}
-          
+
           <div className="flex gap-8">
             <aside className="w-56 flex-shrink-0">
               <div className="bg-white rounded-lg shadow-sm sticky top-6">
@@ -560,9 +562,9 @@ export default function ListingsPage() {
                     <ChevronRight size={20} className="text-gray-400" />
                   </div>
 
-                  <ViewModeToggle 
-                    viewMode={viewMode} 
-                    onViewModeChange={handleViewModeSwitch} 
+                  <ViewModeToggle
+                    viewMode={viewMode}
+                    onViewModeChange={handleViewModeSwitch}
                   />
 
                   <div className="mb-5 pb-5 border-b border-gray-100">
@@ -704,7 +706,7 @@ export default function ListingsPage() {
                   {filteredItems.map((item, index) => {
                     const userId = 'client' in item ? item.client : item.executor;
                     const userData = usersData.get(userId) || null;
-                    
+
                     return (
                       <ListingCard
                         key={item.id}
