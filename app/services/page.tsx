@@ -12,7 +12,7 @@ export default function Vacancies() {
         <ClientRoot>
             {/* <Loader 
                 duration={3500}
-                message="Loading..."
+                // message="Loading..."
             > */}
                 <Navbar />
                 <VacanciesCategory />
