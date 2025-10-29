@@ -106,6 +106,7 @@ const CategoryItem = memo(({
   onCategoryClick,
   onSubCategoryClick,
   onShowAllClick,
+  categoryCount,
   t
 }: any) => {
   if (!category || !category.id) {
@@ -142,7 +143,7 @@ const CategoryItem = memo(({
           {displayName || `Category ${category.id}`}
         </h3>
         <p className="text-sm md:text-lg text-[#858b98] ml-2 hidden md:inline-block">
-          {category?.service_count || Math.floor(Math.random() * (500 - 50 + 1)) + 50}
+          {categoryCount}
         </p>
       </div>
 
@@ -220,7 +221,7 @@ const SearchBlock = memo(({
             fill="#A4A8B2"
           />
         </svg>
-        
+
         <input
           className="py-3 px-3 pl-10 max-md:pl-9 w-full border-none rounded-[13px] text-base md:text-lg bg-white shadow-sm"
           aria-label={t("search.ariaLabel", "Поиск специалистов")}
@@ -269,13 +270,13 @@ const SearchBlock = memo(({
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{result.name}</p>
                         <p className="text-xs text-gray-500">
-                          {result.type === 'category' 
-                            ? t("search.category", "Категория") 
+                          {result.type === 'category'
+                            ? t("search.category", "Категория")
                             : result.type === 'subcategory'
-                            ? t("search.subcategory", "Подкатегория")
-                            : result.type === 'service'
-                            ? t("search.service", "Услуга")
-                            : t("search.vacancies", "Вакансия")}
+                              ? t("search.subcategory", "Подкатегория")
+                              : result.type === 'service'
+                                ? t("search.service", "Услуга")
+                                : t("search.vacancies", "Вакансия")}
                         </p>
                       </div>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,6 +337,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [imageError, setImageError] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
+  const [categoryCounts, setCategoryCounts] = useState<Record<number, number>>({});
 
   const reviews = useMemo(
     () =>
@@ -373,7 +375,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     specialistsTitle: mode === 'client'
       ? t("specialists.title", "Специалисты по категориям")
       : t("specialists.titleSpecialist", "Популярные категории для специалистов"),
-    specialistsDescFull: `371 ${mode === 'client'
+    specialistsDescFull: `254 ${mode === 'client'
       ? t("specialists.description", "минут на заказ")
       : t("specialists.descriptionSpecialist", "минут на регистрацию")}`,
     requestTitle: mode === 'client'
@@ -389,13 +391,13 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       ? t("request.button", "Найти специалиста")
       : t("request.buttonSpecialist", "Создать профиль"),
     styledDescContent: mode === 'client'
-      ? t("request.statsClient", "Из 1 233 333 специалистов обязательно найдется тот кто поможет")
-      : t("request.statsSpecialist", "Из 1 233 333 заказов обязательно найдется тот, кто оценит ваши услуги"),
+      ? t("request.statsClient", "Из 254 специалистов обязательно найдется тот кто поможет")
+      : t("request.statsSpecialist", "Из 254 заказов обязательно найдется тот, кто оценит ваши услуги"),
   }), [mode, t]);
 
   const getDisplayName = useCallback((item: Category | SubCategory | Service | Vacancy) => {
     if (!item) return 'Unknown';
-    
+
     if ('display_ru' in item || 'display_uz' in item) {
       const categoryItem = item as Category | SubCategory;
       if (language === "ru" && categoryItem.display_ru) {
@@ -405,7 +407,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         return categoryItem.display_uz;
       }
     }
-    
+
     return item.name || item.title || 'Unnamed';
   }, [language]);
 
@@ -476,9 +478,9 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       }));
 
     return [
-      ...matchedCategories, 
-      ...matchedSubCategories, 
-      ...matchedServices, 
+      ...matchedCategories,
+      ...matchedSubCategories,
+      ...matchedServices,
       ...matchedVacancies
     ].slice(0, 15);
   }, [searchQuery, categories, subCategories, services, vacancies, getDisplayName]);
@@ -506,10 +508,9 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       if (matchedCategory) {
         router.push(`/vacancies?category=${matchedCategory.id}`);
       } else {
-        // Общий поиск
         router.push(`/vacancies?q=${encodeURIComponent(searchQuery)}`);
       }
-      
+
       setShowResults(false);
     }
   }, [searchQuery, categories, getDisplayName, router]);
@@ -561,6 +562,29 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     i18n.changeLanguage(language);
   }, [language, i18n]);
 
+
+  useEffect(() => {
+    if (!categories || categories.length === 0) return;
+
+    const counts = {};
+    categories.forEach(category => {
+      if (!category?.id) return;
+
+      const stored = localStorage.getItem(`category_${category.id}_count`);
+      if (stored) {
+        counts[category.id] = Number(stored);
+      } else {
+        const randomValue = Math.floor(Math.random() * (60 - 50 + 1)) + 10;
+        counts[category.id] = randomValue;
+        localStorage.setItem(`category_${category.id}_count`, randomValue);
+      }
+    });
+
+    setCategoryCounts(counts);
+  }, [categories]);
+
+
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -578,10 +602,6 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
         setSubCategories(extractResults(subCategoriesData));
         setServices(extractResults(servicesData));
         setVacancies(extractResults(vacanciesData));
-
-        // if (totalServicesData && typeof totalServicesData === 'object' && 'count' in totalServicesData) {
-        //   setTotalServices(totalServicesData.count || 0);
-        // }
       } catch (err) {
         console.error("Fetch error:", err);
         setError(t("errors.fetchError", "Ошибка загрузки данных"));
@@ -604,8 +624,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     return (
       <div className="flex justify-center items-center h-screen text-base md:text-lg text-black text-center px-5">
         {error}
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="ml-4 bg-[#3ea23e] text-white px-4 py-2 rounded-lg"
         >
           {t("errors.reload", "Обновить")}
@@ -717,6 +737,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
                   onCategoryClick={handleCategoryClick}
                   onSubCategoryClick={handleSubCategoryClick}
                   onShowAllClick={handleShowAllClick}
+                  categoryCount={categoryCounts[category.id] || 50}
                   t={t}
                 />
               ))
@@ -725,8 +746,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
                 <p className="text-lg text-gray-600 mb-4">
                   {t("errors.noCategories", "Категории не найдены")}
                 </p>
-                <button 
-                  onClick={() => window.location.reload()} 
+                <button
+                  onClick={() => window.location.reload()}
                   className="bg-[#3ea23e] text-white px-6 py-3 rounded-lg hover:bg-[#2e8b57] transition-colors"
                 >
                   {t("errors.reloadPage", "Обновить страницу")}

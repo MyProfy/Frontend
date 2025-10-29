@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { X, MapPin, DollarSign, FileText, Tag, Upload, Loader2, Image as ImageIcon, Link, Check, AlertCircle } from "lucide-react";
+import { X, MapPin, DollarSign, FileText, Tag, Upload, Loader2, Image as ImageIcon, Link, Check, AlertCircle, Lock } from "lucide-react";
 import TarrifModal from "../Modals/TarrifModal";
 import { getAPIClient } from "@/components/types/apiClient";
 import type { Vacancy, Category, SubCategory } from "@/components/types/apiTypes";
@@ -40,6 +40,7 @@ const Services = () => {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [serviceSubCategories, setServiceSubCategories] = useState<SubCategory[]>([]);
   const [userVacancies, setUserVacancies] = useState<Vacancy[]>([]);
+  const [userServices, setUserServices] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -67,6 +68,14 @@ const Services = () => {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [serviceErrors, setServiceErrors] = useState<{ [key: string]: string }>({});
+
+  // КОНСТАНТЫ ЛИМИТОВ
+  const MAX_VACANCIES = 1;
+  const MAX_SERVICES = 1;
+
+  // Проверка лимитов
+  const canCreateVacancy = userVacancies.length < MAX_VACANCIES;
+  const canCreateService = userServices.length < MAX_SERVICES;
 
   const SUPPORTED_IMAGE_FORMATS = [
     'image/jpeg',
@@ -99,6 +108,18 @@ const Services = () => {
       setCategories(categoriesData);
       setUserVacancies(vacanciesData);
 
+      // Загружаем сервисы пользователя
+      try {
+        const servicesData = await apiClient.getServices(1, 100);
+        // Фильтруем только сервисы текущего пользователя
+        const userServicesFiltered = servicesData.filter((s: any) => s.executor === user.id);
+        setUserServices(userServicesFiltered);
+        console.log(`✅ Загружено сервисов: ${userServicesFiltered.length}/${MAX_SERVICES}`);
+      } catch (error) {
+        console.error("❌ Ошибка загрузки сервисов:", error);
+        setUserServices([]);
+      }
+
       // Проверяем доступность эндпоинтов
       await checkApiEndpoints();
 
@@ -129,7 +150,6 @@ const Services = () => {
     }
   }, [formData.category]);
 
-  // Для сервисов
   useEffect(() => {
     if (serviceFormData.category) {
       loadServiceSubCategories(serviceFormData.category);
@@ -184,10 +204,18 @@ const Services = () => {
   };
 
   const handleFindSpecialist = () => {
+    if (!canCreateService) {
+      alert(`Вы уже создали максимальное количество услуг (${MAX_SERVICES}). Удалите существующую услугу, чтобы создать новую.`);
+      return;
+    }
     setShowServiceModal(true);
   };
 
   const handleFindClients = () => {
+    if (!canCreateVacancy) {
+      alert(`Вы уже создали максимальное количество вакансий (${MAX_VACANCIES}). Удалите существующую вакансию, чтобы создать новую.`);
+      return;
+    }
     setShowModal(true);
   };
 
@@ -401,6 +429,12 @@ const Services = () => {
   };
 
   const handleSubmit = async () => {
+    // Дополнительная проверка лимита перед отправкой
+    if (!canCreateVacancy) {
+      alert(`Достигнут лимит вакансий (${MAX_VACANCIES})`);
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
@@ -458,6 +492,12 @@ const Services = () => {
   };
 
   const handleServiceSubmit = async () => {
+    // Дополнительная проверка лимита перед отправкой
+    if (!canCreateService) {
+      alert(`Достигнут лимит услуг (${MAX_SERVICES})`);
+      return;
+    }
+
     if (!validateServiceForm()) {
       return;
     }
@@ -465,7 +505,6 @@ const Services = () => {
     setServiceLoading(true);
 
     try {
-      // Диагностика перед отправкой
       console.log("🔍 Running pre-submit diagnostics...");
 
       if (!apiStatus.services) {
@@ -485,7 +524,6 @@ const Services = () => {
 
       console.log("📤 Отправка данных сервиса:", serviceData);
 
-      // Дополнительная валидация
       if (!validateServiceData(serviceData)) {
         alert("Некорректные данные. Пожалуйста, проверьте введенную информацию.");
         return;
@@ -495,21 +533,20 @@ const Services = () => {
 
       console.log("✅ Сервис успешно создан:", response);
 
+      await loadInitialData();
       handleCloseServiceModal();
       alert("Услуга успешно создана!");
 
     } catch (error: any) {
       console.error("❌ Ошибка создания сервиса:", error);
 
-      // Улучшенная обработка ошибки 500
       if (error.message === "SERVICE_ENDPOINT_UNAVAILABLE" || error.response?.status === 500) {
-        const errorDetails = error.response?.status === 500 ? 
+        const errorDetails = error.response?.status === 500 ?
           "Ошибка сервера (500). Сервис временно недоступен." :
           "Сервис создания услуг временно недоступен.";
 
         console.error("🔧 Service creation failed:", errorDetails);
-        
-        // Предлагаем создать вакансию вместо услуги
+
         const useVacancy = confirm(
           `${errorDetails}\n\n` +
           "Хотите создать вакансию вместо услуги? Это временное решение.\n\n" +
@@ -517,7 +554,6 @@ const Services = () => {
         );
 
         if (useVacancy) {
-          // Автоматически переносим данные из сервиса в вакансию
           setFormData({
             title: serviceFormData.title,
             description: serviceFormData.description,
@@ -527,7 +563,7 @@ const Services = () => {
             client: currentUser.id,
             images: undefined
           });
-          
+
           handleCloseServiceModal();
           setShowModal(true);
         }
@@ -604,9 +640,32 @@ const Services = () => {
               <div>
                 <h3 className="text-yellow-800 font-medium">Сервисы временно недоступны</h3>
                 <p className="text-yellow-700 text-sm mt-1">
-                  Создание услуг временно недоступно из-за технических работ на сервере. 
-                  Вы можете создавать вакансии как временное решение - данные автоматически перенесутся.
+                  Создание услуг временно недоступно из-за технических работ на сервере.
+                  Вы можете создавать вакансии как временное решение.
                 </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {(!canCreateVacancy || !canCreateService) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6"
+          >
+            <div className="flex items-center gap-3">
+              <Lock className="text-green-600" size={24} />
+              <div>
+                <h3 className="text-green-800 font-medium">Информация о лимитах</h3>
+                <div className="text-green-700 text-sm mt-1 space-y-1">
+                  {!canCreateVacancy && (
+                    <p>• Вы достигли лимита вакансий ({userVacancies.length}/{MAX_VACANCIES})</p>
+                  )}
+                  {!canCreateService && (
+                    <p>• Вы достигли лимита услуг ({userServices.length}/{MAX_SERVICES})</p>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -615,28 +674,40 @@ const Services = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">
-              Мои вакансии ({userVacancies.length})
+              Мои вакансии ({userVacancies.length}/{MAX_VACANCIES})
             </h1>
 
             <div className="flex gap-3">
               <button
                 onClick={handleFindSpecialist}
-                disabled={!apiStatus.services}
-                className={`px-5 py-2 border rounded-lg transition-all text-sm font-medium ${!apiStatus.services
-                    ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={!apiStatus.services || !canCreateService}
+                className={`px-5 py-2 border rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${(!apiStatus.services || !canCreateService)
+                  ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
               >
+                {!canCreateService && <Lock size={16} />}
                 Найти специалиста
                 {!apiStatus.services && (
-                  <span className="ml-2 text-xs text-yellow-600">(временно недоступно)</span>
+                  <span className="ml-2 text-xs text-yellow-600">(недоступно)</span>
+                )}
+                {!canCreateService && apiStatus.services && (
+                  <span className="ml-2 text-xs text-blue-600">({userServices.length}/{MAX_SERVICES})</span>
                 )}
               </button>
               <button
                 onClick={handleFindClients}
-                className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium"
+                disabled={!canCreateVacancy}
+                className={`px-5 py-2 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${!canCreateVacancy
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700"
+                  }`}
               >
+                {!canCreateVacancy && <Lock size={16} />}
                 Найти клиентов
+                {!canCreateVacancy && (
+                  <span className="text-xs">({userVacancies.length}/{MAX_VACANCIES})</span>
+                )}
               </button>
             </div>
           </div>
@@ -647,7 +718,7 @@ const Services = () => {
                 У вас пока нет вакансий. Создайте свою первую вакансию!
               </div>
             ) : (
-              userVacancies.map((item, index)  => (
+              userVacancies.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -686,7 +757,7 @@ const Services = () => {
                         onClick={() => setShowTarrifs(true)}
                         className="border border-gray-600 hover:bg-gray-600 hover:text-white text-gray-600 px-4 py-2 rounded-lg text-sm font-medium"
                       >
-                        Выбрать тариф
+                        Продвигать
                       </motion.button>
                     </div>
                   </div>
@@ -696,7 +767,7 @@ const Services = () => {
           </div>
         </div>
 
-        {/* Модальное окно для создания СЕРВИСА (Найти специалиста) */}
+        {/* Модальное окно для создания СЕРВИСА */}
         <AnimatePresence>
           {showServiceModal && (
             <motion.div
@@ -728,7 +799,6 @@ const Services = () => {
                 </div>
 
                 <div className="p-6 space-y-4">
-                  {/* Баннер предупреждения */}
                   {!apiStatus.services && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <div className="flex items-center gap-2">
@@ -737,9 +807,6 @@ const Services = () => {
                           Сервисы временно недоступны
                         </span>
                       </div>
-                      <p className="text-yellow-700 text-xs mt-1">
-                        При отправке будет предложено создать вакансию вместо услуги
-                      </p>
                     </div>
                   )}
 
@@ -842,11 +909,6 @@ const Services = () => {
                           </button>
                         ))}
                       </div>
-                      {serviceFormData.sub_category && (
-                        <p className="text-xs text-green-600 mt-2">
-                          ✓ Выбрана: {getSubCategoryName(serviceSubCategories.find(sc => sc.id === serviceFormData.sub_category)!)}
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -865,12 +927,6 @@ const Services = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
-
-                  {serviceErrors.executor && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm text-red-600">{serviceErrors.executor}</p>
-                    </div>
-                  )}
 
                   <div className="flex gap-3 pt-4">
                     <button
@@ -981,7 +1037,7 @@ const Services = () => {
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={4}
-                      placeholder="Опишите требования к специалисту, объем работ, условия..."
+                      placeholder="Опишите требования..."
                       disabled={loading}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all resize-none ${errors.description
                         ? "border-red-500 focus:ring-red-500"
@@ -1023,7 +1079,7 @@ const Services = () => {
                   {subCategories.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Подкатегория (необязательно) - выберите одну
+                        Подкатегория (необязательно)
                       </label>
                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
                         {subCategories.map((subCat) => (
@@ -1051,11 +1107,6 @@ const Services = () => {
                           </button>
                         ))}
                       </div>
-                      {formData.sub_category && (
-                        <p className="text-xs text-green-600 mt-2">
-                          ✓ Выбрана подкатегория: {getSubCategoryName(subCategories.find(sc => sc.id === formData.sub_category)!)}
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -1198,12 +1249,6 @@ const Services = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.images}</p>
                     )}
                   </div>
-
-                  {errors.client && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm text-red-600">{errors.client}</p>
-                    </div>
-                  )}
 
                   <div className="flex gap-3 pt-4">
                     <button

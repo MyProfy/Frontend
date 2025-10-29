@@ -38,30 +38,6 @@ const Support = () => {
             Написать
           </motion.button>
         </div>
-        
-        <div className="p-6 bg-white flex justify-between items-center gap-5 hover:bg-gray-50 transition-colors">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-              <FaEnvelope className="w-5 h-5 text-gray-500" />
-            </div>
-            <div className="flex-1">
-              <div className="text-base font-medium text-gray-900 mb-1">
-                Напишите нам на почту
-              </div>
-              <div className="text-sm text-gray-500">
-                Ответим в течении 7 рабочих дней
-              </div>
-            </div>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2 whitespace-nowrap"
-          >
-            <FaTelegram className="w-4 h-4" />
-            Написать
-          </motion.button>
-        </div>
       </div>
     </motion.section>
   );

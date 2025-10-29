@@ -23,6 +23,14 @@ const MyProfile = () => {
 
   const apiClient = getAPIClient();
 
+  // Функция для нормализации gender (если вдруг пришел массив)
+  const normalizeGender = (gender: any): string => {
+    if (Array.isArray(gender)) {
+      return gender[0] || "";
+    }
+    return gender || "";
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -33,9 +41,12 @@ const MyProfile = () => {
         setUserData(user);
         setAboutText(user.about_user || "");
 
+        // Нормализуем gender при загрузке
+        const normalizedGender = normalizeGender(user.gender);
+
         setFormData({
           name: user.name || "",
-          gender: user.gender || "",
+          gender: normalizedGender,
           region: user.region || "",
           work_experience: user.work_experience?.toString() || "",
           birthday: user.birthday || "",
@@ -44,6 +55,7 @@ const MyProfile = () => {
         });
 
         console.log("✅ Данные пользователя загружены с бэкенда:", user);
+        console.log("📝 Gender после нормализации:", normalizedGender);
       } catch (error: any) {
         console.error("❌ Ошибка загрузки данных пользователя:", error);
         if (error.message === "User data not found in localStorage") {
@@ -70,13 +82,15 @@ const MyProfile = () => {
         phone: userData.phone,
         role: userData.role,
         region: userData.region || "Ташкент",
-        gender: userData.gender,
+        gender: normalizeGender(userData.gender), // Нормализуем gender
         work_experience: userData.work_experience || 0,
         birthday: userData.birthday,
         email: userData.email,
         telegram_username: userData.telegram_username,
-        about_user: aboutText, 
+        about_user: aboutText,
       };
+
+      console.log("📤 Отправляемые данные (о себе):", updateData);
 
       const updatedUser = await apiClient.updateProfile(userData.id, updateData);
       setUserData(updatedUser);
@@ -96,26 +110,31 @@ const MyProfile = () => {
       setSaving(true);
       console.log("💾 Сохранение профиля...", formData);
 
-      
+      // ВАЖНО: Убедимся, что gender - это строка, а не массив
       const updateData = {
         name: formData.name || userData.name,
-        phone: userData.phone, 
-        role: userData.role, 
+        phone: userData.phone,
+        role: userData.role,
         region: formData.region || userData.region || "Ташкент",
-        gender: formData.gender || userData.gender,
+        gender: formData.gender || normalizeGender(userData.gender), // Гарантируем строку
         work_experience: formData.work_experience ? parseInt(formData.work_experience) : userData.work_experience || 0,
         birthday: formData.birthday || userData.birthday,
         email: formData.email || userData.email,
         telegram_username: formData.telegram_username || userData.telegram_username,
-        about_user: userData.about_user, 
+        about_user: userData.about_user,
       };
+
+      console.log("📤 Отправляемые данные (профиль):", updateData);
+      console.log("🔍 Тип gender:", typeof updateData.gender, "Значение:", updateData.gender);
 
       const updatedUser = await apiClient.updateProfile(userData.id, updateData);
       setUserData(updatedUser);
 
+      // Обновляем formData с нормализованными данными
+      const normalizedGender = normalizeGender(updatedUser.gender);
       setFormData({
         name: updatedUser.name || "",
-        gender: updatedUser.gender || "",
+        gender: normalizedGender,
         region: updatedUser.region || "",
         work_experience: updatedUser.work_experience?.toString() || "",
         birthday: updatedUser.birthday || "",
@@ -127,6 +146,7 @@ const MyProfile = () => {
       console.log("✅ Профиль сохранен:", updatedUser);
     } catch (error: any) {
       console.error("❌ Ошибка сохранения профиля:", error);
+      console.error("📋 Детали ошибки:", error.response?.data);
       alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
     } finally {
       setSaving(false);
@@ -134,6 +154,7 @@ const MyProfile = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`🔄 Изменение поля ${field}:`, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -161,6 +182,9 @@ const MyProfile = () => {
       </div>
     );
   }
+
+  // Нормализуем gender для отображения
+  const displayGender = normalizeGender(userData?.gender);
 
   return (
     <>
@@ -193,7 +217,11 @@ const MyProfile = () => {
               <div className="flex items-center gap-5 text-gray-500 text-sm flex-wrap gap-y-3">
                 <div className="flex items-center gap-1.5">
                   <FaBriefcase className="w-3.5 h-3.5" />
-                  <span>{userData?.gender === 'male' ? 'Мужской' : userData?.gender === 'female' ? 'Женский' : 'Не указано'}</span>
+                  <span>
+                    {displayGender === 'male' ? 'Мужской' : 
+                     displayGender === 'female' ? 'Женский' : 
+                     'Не указано'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FaMapMarkerAlt className="w-3.5 h-3.5" />
@@ -329,8 +357,8 @@ const MyProfile = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/10"
                     >
                       <option value="">Выберите пол</option>
-                      <option value="male">Мужской</option>
-                      <option value="female">Женский</option>
+                      <option value="мужской">Мужской</option>
+                      <option value="женский">Женский</option>
                     </select>
                   </div>
 
