@@ -148,7 +148,7 @@ const ReviewsBlock: React.FC<ReviewsBlockProps> = ({
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const reviewsData = await apiClient.getExecutorReviews();
+        const reviewsData = await apiClient.getExecuterReviews();
 
         if (!Array.isArray(reviewsData)) {
           console.warn("⚠️ reviewsData не является массивом:", reviewsData);

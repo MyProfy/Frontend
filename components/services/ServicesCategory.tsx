@@ -48,9 +48,7 @@ const getInitials = (name: string) => {
   return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
 };
 
-// Исправленная функция получения рейтинга
 const getRatingAndReviews = (item: ListingItem, user: User | null) => {
-  // Проверяем, что user соответствует item
   const userId = 'client' in item ? item.client : item.executor;
 
   if (user && user.id === userId) {
@@ -69,7 +67,6 @@ const getRatingAndReviews = (item: ListingItem, user: User | null) => {
     }
   }
 
-  // Если пользователь не загружен или не соответствует
   return {
     rating: "0.00",
     reviewCount: 0,
@@ -95,7 +92,6 @@ const ListingCard = memo(({
   const title = 'title' in item ? item.title : item.name;
   const description = item.description;
 
-  // Проверяем, что userData соответствует item
   const userId = 'client' in item ? item.client : item.executor;
   const isCorrectUser = userData && userData.id === userId;
   
@@ -165,6 +161,14 @@ const ListingCard = memo(({
         <div className="flex gap-3">
           <button
             onClick={handleActionClick}
+            className="px-5 py-2.5 bg-white border border-gray-800 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <UserIcon size={16} />
+            {isVacancy ? "Найти специалиста" : "Заказать услугу"}
+          </button>
+
+          <button
+            onClick={handleActionClick}
             className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
           >
             <MessageCircle size={16} />
@@ -199,6 +203,15 @@ const ListingCard = memo(({
               <div className="space-y-2 text-sm text-gray-700">
                 <p>{description}</p>
               </div>
+            </div>
+
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+              <button
+                onClick={handleActionClick}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors text-center"
+              >
+                Связаться сейчас
+              </button>
             </div>
           </motion.div>
         )}
@@ -305,7 +318,21 @@ export default function ListingsPage() {
       return user;
     } catch (err) {
       console.error(`❌ Ошибка загрузки данных пользователя ${userId}:`, err);
-      return null;
+      
+      // Возвращаем заглушку если пользователь не найден
+      return {
+        id: userId,
+        phone: "",
+        name: "Неизвестный пользователь",
+        email: "",
+        avatar: "",
+        role: "",
+        region: "Местоположение не указано",
+        client_rating: 0,
+        executor_rating: 0,
+        orders_count: 0,
+        is_trusted: false
+      };
     }
   };
 
@@ -526,19 +553,19 @@ export default function ListingsPage() {
     router.push(`/${mode}?${params.toString()}`);
   }, [selectedCategory, router]);
 
-  // if (loading) {
-  //   return (
-  //     <>
-  //       <Navbar />
-  //       <div className="flex justify-center items-center h-screen">
-  //         <div className="text-center">
-  //           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
-  //           <p className="text-gray-600">Загрузка данных...</p>
-  //         </div>
-  //       </div>
-  //     </>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+            <p className="text-gray-600">Загрузка данных...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -24,6 +24,7 @@ import {
   OTPVerifyResponse,
   LoginPayload,
   PaginatedResponse,
+  Review,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -150,7 +151,6 @@ api.interceptors.response.use(
 
             const newAccessToken = response.data.access;
 
-            // Сохраняем новый токен в cookies
             cookieManager.setCookie("access_token", newAccessToken);
 
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -158,7 +158,7 @@ api.interceptors.response.use(
           }
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError);
-          // Очищаем cookies при ошибке
+
           cookieManager.removeCookie("access_token");
           cookieManager.removeCookie("refresh_token");
           cookieManager.removeCookie("user");
@@ -271,34 +271,34 @@ export const apiClient = {
 
   requestOTP: async (phone: string): Promise<any> => {
     try {
-      console.log("📱 Requesting OTP for:", phone);
+      // console.log("📱 Requesting OTP for:", phone);
       const response = await api.post("/auth/otp/request/", { phone }, {
         withCredentials: true
       });
-      console.log("✅ OTP requested:", response.data);
+      // console.log("✅ OTP requested:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Request OTP error:", error.response?.data || error.message);
-      throw error;
+      // console.error("❌ Request OTP error:", error.response?.data || error.message);
+      // throw error;
     }
   },
 
   verifyOTP: async (data: { phone: string; code: string }): Promise<OTPVerifyResponse> => {
     try {
-      console.log("🔑 Verifying OTP for:", data.phone);
+      // console.log("🔑 Verifying OTP for:", data.phone);
       const response = await api.post("/auth/otp/verify/", data, {
         withCredentials: true
       });
-      console.log("✅ OTP verified:", response.data);
+      // console.log("✅ OTP verified:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Verify OTP error:", error.response?.data || error.message);
-      throw error;
+      // console.error("❌ Verify OTP error:", error.response?.data || error.message);
+      // throw error;
     }
   },
 
   getCurrentUser: async (): Promise<User> => {
-    console.log("👤 Getting current user");
+    // console.log("👤 Getting current user");
     try {
       const user = cookieManager.getUser();
 
@@ -311,14 +311,14 @@ export const apiClient = {
       }
 
       const response = await api.get(`/users/${user.id}/`);
-      console.log("✅ Current user:", response.data);
+      // console.log("✅ Current user:", response.data);
 
       cookieManager.setUser(response.data);
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Get current user error:", error.response?.data || error.message);
-      throw error;
+      // console.error("❌ Get current user error:", error.response?.data || error.message);
+      // throw error;
     }
   },
 
@@ -381,8 +381,8 @@ export const apiClient = {
       const response = await withRetry(() => api.get("/services/", { params: { page, limit, ...params } }));
       return extractData(response.data);
     } catch (error) {
-      console.error("❌ Get services error:", error);
-      throw error;
+      // console.error("❌ Get services error:", error);
+      // throw error;
     }
   },
 
@@ -395,8 +395,8 @@ export const apiClient = {
       console.log("✅ Vacancies loaded:", response.data);
       return extractData(response.data);
     } catch (error: any) {
-      console.error("❌ Get vacancies error:", error.response?.data || error.message);
-      throw error;
+      // console.error("❌ Get vacancies error:", error.response?.data || error.message);
+      // throw error;
     }
   },
 
@@ -406,8 +406,8 @@ export const apiClient = {
       console.log("✅ Vacancy loaded:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Get vacancy error:", error.response?.data || error.message);
-      throw error;
+      // console.error("❌ Get vacancy error:", error.response?.data || error.message);
+      // throw error;
     }
   },
 
@@ -470,7 +470,6 @@ export const apiClient = {
     }
   },
 
-  // Добавьте этот метод в apiClient объект
   checkServicesEndpoint: async (): Promise<any> => {
     try {
       console.log("🔍 Checking services endpoint...");
@@ -508,7 +507,7 @@ export const apiClient = {
     }
   ): Promise<Service> => {
     try {
-      console.log("📝 Creating service:", data);
+      // console.log("📝 Creating service:", data);
 
       const payload = {
         executor: data.executor,
@@ -524,36 +523,67 @@ export const apiClient = {
       console.log("📤 Sending payload:", JSON.stringify(payload, null, 2));
 
       const response = await api.post("/services/", payload);
-      console.log("✅ Service created:", response.data);
+      // console.log("✅ Service created:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Create service error:", error);
+      // console.error("❌ Create service error:", error);
 
-      // Детальная диагностика
       if (error.response) {
-        console.error("📊 Error details:");
-        console.error("Status:", error.response.status);
-        console.error("Status Text:", error.response.statusText);
-        console.error("Headers:", error.response.headers);
-        console.error("Data:", error.response.data);
+        // console.error("📊 Error details:");
+        // console.error("Status:", error.response.status);
+        // console.error("Status Text:", error.response.statusText);
+        // console.error("Headers:", error.response.headers);
+        // console.error("Data:", error.response.data);
 
-        if (error.response.status === 500) {
-          console.error("🔧 Server 500 Error - Possible causes:");
-          console.error("  - Database connection issue");
-          console.error("  - Backend code error");
-          console.error("  - Missing required fields on server");
-          console.error("  - Serializer validation failed");
-        }
+        // if (error.response.status === 500) {
+        //   console.error("🔧 Server 500 Error - Possible causes:");
+        //   console.error("  - Database connection issue");
+        //   console.error("  - Backend code error");
+        //   console.error("  - Missing required fields on server");
+        //   console.error("  - Serializer validation failed");
+        // }
       } else if (error.request) {
-        console.error("🌐 Network error - No response received");
+        // console.error("🌐 Network error - No response received");
       } else {
-        console.error("⚡ Request setup error:", error.message);
+        // console.error("⚡ Request setup error:", error.message);
       }
 
       throw error;
     }
   },
 
+  getExecuterReviews: async (params?: Record<string, any>): Promise<ExecutorReview[]> => {
+    try {
+      const response = await withRetry(() => api.get("/reviews/", { params }));
+      console.log("✅ Reviews loaded:", response.data);
+      return extractData(response.data);
+    } catch (error: any) {
+      // console.error("❌ Get reviews error:", error.response?.data || error.message);
+      // throw error;
+    }
+  },
+
+  getOrders: async (params?: Record<string, any>): Promise<Order[]> => {
+    try {
+      const response = await withRetry(() => api.get("/orders/", { params }));
+      console.log("✅ Orders loaded:", response.data);
+      return extractData(response.data);
+    } catch (error: any) {
+      // console.error("❌ Get orders error:", error.response?.data || error.message);
+      // throw error;
+    }
+  },
+
+  getUserById: async (id: number): Promise<User> => {
+    try {
+      const response = await withRetry(() => api.get(`/users/${id}/`));
+      console.log("✅ User loaded:", response.data);
+      return response.data;
+    } catch (error: any) {
+      // console.error("❌ Get user error:", error.response?.data || error.message);
+      // throw error;
+    }
+  }
 };
 
 export function getAPIClient() {

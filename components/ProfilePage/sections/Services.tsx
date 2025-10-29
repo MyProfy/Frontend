@@ -647,7 +647,7 @@ const Services = () => {
                 У вас пока нет вакансий. Создайте свою первую вакансию!
               </div>
             ) : (
-              userVacancies.map((item, index) => (
+              userVacancies.map((item, index)  => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, x: -20 }}
