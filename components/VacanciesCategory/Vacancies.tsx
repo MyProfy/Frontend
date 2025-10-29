@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
-import { motion } from "framer-motion";
-import { ChevronRight, Folder, DollarSign, Award, Clock, MapPin } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight, Folder, DollarSign, Award, Clock, MapPin, Star, ChevronDown, MessageCircle, User as UserIcon } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAPIClient } from "@/components/types/apiClient";
-import { Category, SubCategory, Vacancy, Service } from "@/components/types/apiTypes";
+import { Category, SubCategory, Vacancy, Service, User } from "@/components/types/apiTypes";
 import Navbar from "@/components/Header/Navbar";
 import Footer from "@/components/Footer/Footer";
 
@@ -18,111 +18,19 @@ const PRICE_RANGES = [
   { label: "60 000 - 80 000", min: 60000, max: 80000 },
 ] as const;
 
-const EXPERIENCE_YEARS = ["1 - 2 года", "3 - 4 года", "5 - 6+ лет"] as const;
-const WORKING_HOURS = ["0 - 10 часов", "11 - 20 часов", "21 - 40 часов"] as const;
+const EXPERIENCE_YEARS = [
+  { label: "1 - 2 года", min: 1, max: 2 },
+  { label: "3 - 4 года", min: 3, max: 4 },
+  { label: "5 - 6+ лет", min: 5, max: 10 }
+] as const;
 
-const MOCK_CATEGORIES: Category[] = [
-  { id: 1, name: "Веб-разработка", display_ru: "Веб-разработка", service_count: 5 },
-  { id: 2, name: "Образование", display_ru: "Образование", service_count: 3 },
-  { id: 3, name: "Ремонт", display_ru: "Ремонт", service_count: 4 },
-  { id: 4, name: "Здоровье", display_ru: "Здоровье", service_count: 2 },
-  { id: 5, name: "Бытовая техника", display_ru: "Бытовая техника", service_count: 6 },
-  { id: 6, name: "Уборка", display_ru: "Уборка", service_count: 1 },
-];
+const WORKING_HOURS = [
+  { label: "0 - 10 часов", min: 0, max: 10 },
+  { label: "11 - 20 часов", min: 11, max: 20 },
+  { label: "21 - 40 часов", min: 21, max: 40 }
+] as const;
 
-const MOCK_SUBCATEGORIES: SubCategory[] = [
-  { id: 1, name: "Дизайн", display_ru: "Дизайн", category: 1 },
-  { id: 2, name: "Frontend", display_ru: "Frontend", category: 1 },
-  { id: 3, name: "Английский", display_ru: "Английский", category: 2 },
-  { id: 4, name: "Репетитор", display_ru: "Репетитор", category: 2 },
-  { id: 5, name: "Электрика", display_ru: "Электрика", category: 3 },
-  { id: 6, name: "Массаж", display_ru: "Массаж", category: 4 },
-  { id: 7, name: "Холодильники", display_ru: "Холодильники", category: 5 },
-  { id: 8, name: "Стиралки", display_ru: "Стиралки", category: 5 },
-  { id: 9, name: "Квартиры", display_ru: "Квартиры", category: 6 },
-];
-
-const MOCK_VACANCIES: Vacancy[] = [
-  {
-    id: 1,
-    title: "Требуется веб-дизайнер для корпоративного сайта",
-    price: 25000,
-    description: "Ищем опытного веб-дизайнера для разработки современного корпоративного сайта. Требуется портфолио с похожими проектами.",
-    category: 1,
-    sub_category: 1,
-    client: 101,
-    images: [],
-    moderation: "approved",
-    moderation_display: "Одобрено",
-    boost: 0,
-  },
-  {
-    id: 2,
-    title: "Нужен электрик для ремонта квартиры",
-    price: 50000,
-    description: "Требуется опытный электрик для полной замены проводки в 3-комнатной квартире. Работа в районе Юнусабад.",
-    category: 3,
-    sub_category: 5,
-    client: 102,
-    images: [],
-    moderation: "approved",
-    moderation_display: "Одобрено",
-    boost: 0,
-  },
-  {
-    id: 3,
-    title: "Ищу репетитора английского языка для ребенка",
-    price: 15000,
-    description: "Нужен репетитор английского для подготовки ребенка 10 лет к международным экзаменам. 3 раза в неделю по 1.5 часа.",
-    category: 2,
-    sub_category: 3,
-    client: 103,
-    images: [],
-    moderation: "approved",
-    moderation_display: "Одобрено",
-    boost: 0,
-  },
-];
-
-const MOCK_SERVICES: Service[] = [
-  {
-    id: 1,
-    name: "Профессиональный массаж на дому",
-    price: 20000,
-    description: "Предлагаю услуги профессионального массажа с выездом на дом. Опыт работы 8 лет, сертификаты.",
-    category: 4,
-    sub_categories: [6],
-    executor: 201,
-    images: [],
-    boosts: [],
-    reviews: [],
-  },
-  {
-    id: 2,
-    name: "Ремонт бытовой техники любой сложности",
-    price: 10000,
-    description: "Ремонт холодильников, стиральных машин, кондиционеров. Гарантия на все работы 6 месяцев.",
-    category: 5,
-    sub_categories: [7, 8],
-    executor: 202,
-    images: [],
-    boosts: [],
-    reviews: [],
-  },
-  {
-    id: 3,
-    name: "Уборка квартир и офисов",
-    price: 8000,
-    description: "Профессиональная уборка помещений. Используем экологичные средства. Работаем 7 дней в неделю.",
-    category: 6,
-    sub_categories: [9],
-    executor: 203,
-    images: [],
-    boosts: [],
-    reviews: [],
-  },
-];
-
+// Вспомогательные функции
 const extractResults = (data: any) => {
   if (Array.isArray(data)) return data;
   if (data && 'results' in data) return data.results || [];
@@ -130,23 +38,77 @@ const extractResults = (data: any) => {
 };
 
 const getDisplayName = (item: Category | SubCategory) => {
-  return item.display_ru || item.display_uz || item.name;
+  return item.display_ru || item.name;
+};
+
+const getInitials = (name: string) => {
+  if (!name) return '??';
+  const names = name.split(' ');
+  if (names.length === 1) return name.substring(0, 2).toUpperCase();
+  return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+};
+
+// Исправленная функция получения рейтинга
+const getRatingAndReviews = (item: ListingItem, user: User | null) => {
+  // Проверяем, что user соответствует item
+  const userId = 'client' in item ? item.client : item.executor;
+
+  if (user && user.id === userId) {
+    if ('client' in item) {
+      return {
+        rating: user.client_rating?.toFixed(2) || "0.00",
+        reviewCount: user.orders_count || 0,
+        isTrusted: user.is_trusted || false
+      };
+    } else {
+      return {
+        rating: user.executor_rating?.toFixed(2) || "0.00",
+        reviewCount: user.orders_count || 0,
+        isTrusted: user.is_trusted || false
+      };
+    }
+  }
+
+  // Если пользователь не загружен или не соответствует
+  return {
+    rating: "0.00",
+    reviewCount: 0,
+    isTrusted: false
+  };
 };
 
 const ListingCard = memo(({
   item,
   index,
   viewMode,
+  userData,
 }: {
   item: ListingItem;
   index: number;
   viewMode: ViewMode;
+  userData: User | null;
 }) => {
   const router = useRouter();
+  const [isExpanded, setIsExpanded] = useState(false);
   const isVacancy = viewMode === 'vacancies';
+
   const title = 'title' in item ? item.title : item.name;
+  const description = item.description;
+
+  // Проверяем, что userData соответствует item
+  const userId = 'client' in item ? item.client : item.executor;
+  const isCorrectUser = userData && userData.id === userId;
+  
+  const { rating, reviewCount, isTrusted } = getRatingAndReviews(item, isCorrectUser ? userData : null);
+  const userName = isCorrectUser ? (userData?.name || 'Неизвестный пользователь') : 'Неизвестный пользователь';
+  const userRegion = isCorrectUser ? (userData?.region || 'Местоположение не указано') : 'Местоположение не указано';
 
   const handleCardClick = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isVacancy) {
       router.push(`/vacancies/${item.id}`);
     } else {
@@ -159,61 +121,105 @@ const ListingCard = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      onClick={handleCardClick}
-      className="bg-white rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white rounded-lg p-5 hover:shadow-md transition-all cursor-pointer border border-gray-200"
     >
-      <div className="flex items-start justify-between mb-3">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        <span className="text-lg font-semibold text-gray-900 whitespace-nowrap ml-4">
-          {item.price.toLocaleString('ru-RU')} сум
-        </span>
-      </div>
+      <div onClick={handleCardClick} className="cursor-pointer">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{title}</h2>
 
-      <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-          <span className="font-medium text-gray-700">Олег Фёдоров</span>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-1">
+                <Star size={16} className="text-yellow-400 fill-current" />
+                <span className="text-sm font-medium text-gray-900">{rating}</span>
+              </div>
+              <span className="text-sm text-gray-500">•</span>
+              <span className="text-sm text-gray-600">{reviewCount} отзывов</span>
+              {isTrusted && (
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                  Проверенный
+                </span>
+              )}
+            </div>
+          </div>
+
+          <span className="text-lg font-semibold text-gray-900 whitespace-nowrap ml-4">
+            {item.price?.toLocaleString('ru-RU') || 0} сум
+          </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <Clock size={14} />
-          <span>Часы работы: 11 - 20</span>
+        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+              {getInitials(userName)}
+            </div>
+            <span className="font-medium text-gray-700">{userName}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <MapPin size={14} />
+            <span>{userRegion}</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <MapPin size={14} />
-          <span>Мирзо Улугбек туман, Аранчи куча</span>
+        <div className="flex gap-3">
+          <button
+            onClick={handleActionClick}
+            className="px-5 py-2.5 bg-white border border-gray-800 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <UserIcon size={16} />
+            {isVacancy ? "Найти специалиста" : "Заказать услугу"}
+          </button>
+
+          <button
+            onClick={handleActionClick}
+            className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
+          >
+            <MessageCircle size={16} />
+            Написать специалисту
+          </button>
+        </div>
+
+        <div className="flex justify-center mt-4">
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <ChevronDown size={20} />
+          </motion.div>
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCardClick();
-          }}
-          className="px-5 py-2.5 bg-white border border-gray-800 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z" />
-          </svg>
-          {isVacancy ? "Найти специалиста" : "Заказать услугу"}
-        </button>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-6 pt-6 border-t border-gray-200"
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                {isVacancy ? "О вакансии" : "Об услуге"}
+              </h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <p>{description}</p>
+              </div>
+            </div>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCardClick();
-          }}
-          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-          </svg>
-          {isVacancy ? "Подробнее о вакансии" : "Подробнее об услуге"}
-        </button>
-      </div>
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+              <button
+                onClick={handleActionClick}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors text-center"
+              >
+                Связаться сейчас
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 });
@@ -257,7 +263,39 @@ const CategoryFilter = memo(({
 ));
 CategoryFilter.displayName = "CategoryFilter";
 
-export default function VacanciesPage() {
+const ViewModeToggle = memo(({ 
+  viewMode, 
+  onViewModeChange 
+}: {
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+}) => (
+  <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+    <button
+      onClick={() => onViewModeChange('vacancies')}
+      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        viewMode === 'vacancies'
+          ? 'bg-white text-gray-900 shadow-sm'
+          : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      Вакансии
+    </button>
+    <button
+      onClick={() => onViewModeChange('services')}
+      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        viewMode === 'services'
+          ? 'bg-white text-gray-900 shadow-sm'
+          : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      Услуги
+    </button>
+  </div>
+));
+ViewModeToggle.displayName = "ViewModeToggle";
+
+export default function ListingsPage() {
   const apiClient = useMemo(() => getAPIClient(), []);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -273,15 +311,39 @@ export default function VacanciesPage() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [usersData, setUsersData] = useState<Map<number, User>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [usingMockData, setUsingMockData] = useState(false);
+
+  // Функция для загрузки данных пользователя
+  const fetchUserData = async (userId: number): Promise<User | null> => {
+    try {
+      const user = await apiClient.getUserById(userId);
+      return user;
+    } catch (err) {
+      console.error(`❌ Ошибка загрузки данных пользователя ${userId}:`, err);
+      
+      // Возвращаем заглушку если пользователь не найден
+      return {
+        id: userId,
+        phone: "",
+        name: "Неизвестный пользователь",
+        email: "",
+        avatar: "",
+        role: "",
+        region: "Местоположение не указано",
+        client_rating: 0,
+        executor_rating: 0,
+        orders_count: 0,
+        is_trusted: false
+      };
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      setUsingMockData(false);
 
       try {
         const [categoriesData, subCategoriesData, vacanciesData, servicesData] = await Promise.all([
@@ -296,35 +358,50 @@ export default function VacanciesPage() {
         const extractedVacancies = extractResults(vacanciesData);
         const extractedServices = extractResults(servicesData);
 
-        setCategories(extractedCategories.length > 0 ? extractedCategories : MOCK_CATEGORIES);
-        setSubCategories(extractedSubCategories.length > 0 ? extractedSubCategories : MOCK_SUBCATEGORIES);
+        setCategories(extractedCategories);
+        setSubCategories(extractedSubCategories);
+        setVacancies(extractedVacancies);
+        setServices(extractedServices);
 
-        if (extractedVacancies.length === 0) {
-          setVacancies(MOCK_VACANCIES);
-          setUsingMockData(true);
-        } else {
-          console.log(`✅ Загружено ${extractedVacancies.length} вакансий с API`);
-          setVacancies(extractedVacancies);
-        }
+        console.log(`✅ Загружено с API:`);
+        console.log(`- Категории: ${extractedCategories.length}`);
+        console.log(`- Подкатегории: ${extractedSubCategories.length}`);
+        console.log(`- Вакансии: ${extractedVacancies.length}`);
+        console.log(`- Услуги: ${extractedServices.length}`);
 
-        if (extractedServices.length === 0) {
-          console.log("⚠️ API вернул пустой список услуг, используем MOCK_SERVICES");
-          setServices(MOCK_SERVICES);
-          setUsingMockData(true);
-        } else {
-          console.log(`✅ Загружено ${extractedServices.length} услуг с API`);
-          setServices(extractedServices);
-        }
+        // Собираем ВСЕ уникальные ID пользователей
+        const allUserIds = new Set<number>();
+        
+        extractedVacancies.forEach(vacancy => {
+          allUserIds.add(vacancy.client);
+        });
+        
+        extractedServices.forEach(service => {
+          allUserIds.add(service.executor);
+        });
+
+        console.log(`👥 Загружаем данные для ${allUserIds.size} пользователей`);
+
+        // Загружаем всех пользователей одним запросом
+        const userPromises = Array.from(allUserIds).map(userId => 
+          fetchUserData(userId)
+        );
+        
+        const users = await Promise.all(userPromises);
+        
+        const usersMap = new Map<number, User>();
+        users.forEach(user => {
+          if (user) {
+            usersMap.set(user.id, user);
+          }
+        });
+        
+        setUsersData(usersMap);
+        console.log(`✅ Загружено данных пользователей: ${usersMap.size}`);
 
       } catch (err) {
         console.error("❌ Ошибка загрузки с API:", err);
-        console.log("🔄 Переключение на MOCK данные из-за ошибки API");
-        setCategories(MOCK_CATEGORIES);
-        setSubCategories(MOCK_SUBCATEGORIES);
-        setVacancies(MOCK_VACANCIES);
-        setServices(MOCK_SERVICES);
-        setUsingMockData(true);
-        setError("Используются тестовые данные (API недоступен)");
+        setError("Ошибка загрузки данных. Пожалуйста, попробуйте позже.");
       } finally {
         setLoading(false);
       }
@@ -361,53 +438,61 @@ export default function VacanciesPage() {
     const sourceData = viewMode === 'vacancies' ? vacancies : services;
     let filtered = [...sourceData];
 
+    console.log(`🔍 Фильтрация: ${viewMode}, всего элементов: ${filtered.length}`);
+
+    // Фильтрация по категориям и подкатегориям
     if (selectedSubCategories.length > 0) {
+      console.log(`🔍 Фильтруем по подкатегориям:`, selectedSubCategories);
       filtered = filtered.filter(item => {
-        const itemSubCat = 'sub_category' in item ? item.sub_category :
-          ('sub_categories' in item ? item.sub_categories : null);
-
-        if (!itemSubCat) return false;
-
-        if (Array.isArray(itemSubCat)) {
-          return itemSubCat.some(sc => {
-            const scId = typeof sc === 'number' ? sc : sc?.id;
-            return selectedSubCategories.includes(scId);
-          });
+        if (viewMode === 'vacancies') {
+          // Для вакансий
+          const vacancy = item as Vacancy;
+          const subCategoryId = vacancy.sub_category;
+          return selectedSubCategories.includes(subCategoryId);
+        } else {
+          // Для услуг
+          const service = item as Service;
+          const subCategoryIds = service.sub_categories || [];
+          return subCategoryIds.some(scId => selectedSubCategories.includes(scId));
         }
-
-        const scId = typeof itemSubCat === 'number' ? itemSubCat : itemSubCat;
-        return selectedSubCategories.includes(scId);
       });
+      console.log(`🔍 После фильтрации по подкатегориям: ${filtered.length}`);
     }
     else if (selectedCategory !== null) {
+      console.log(`🔍 Фильтруем по категории: ${selectedCategory}`);
       filtered = filtered.filter(item => {
         const categoryId = typeof item.category === 'number'
           ? item.category
           : item.category?.id;
         return categoryId === selectedCategory;
       });
+      console.log(`🔍 После фильтрации по категории: ${filtered.length}`);
     }
 
+    // Фильтрация по цене
     if (selectedPriceRanges.length > 0) {
+      console.log(`🔍 Фильтруем по цене:`, selectedPriceRanges);
       filtered = filtered.filter(item => {
-        return selectedPriceRanges.some(range => {
-          const priceRange = PRICE_RANGES.find(pr => pr.label === range);
+        return selectedPriceRanges.some(rangeLabel => {
+          const priceRange = PRICE_RANGES.find(pr => pr.label === rangeLabel);
           if (!priceRange) return false;
           return item.price >= priceRange.min && item.price <= priceRange.max;
         });
       });
+      console.log(`🔍 После фильтрации по цене: ${filtered.length}`);
     }
 
+    console.log(`✅ Финальный результат: ${filtered.length} элементов`);
     return filtered;
   }, [
-    viewMode, 
-    vacancies, 
-    services, 
-    selectedCategory, 
-    selectedSubCategories, 
-    selectedPriceRanges, 
-    categories,
-    subCategories
+    viewMode,
+    vacancies,
+    services,
+    selectedCategory,
+    selectedSubCategories,
+    selectedPriceRanges,
+    selectedExperience,
+    selectedHours,
   ]);
 
   const filteredSubCategories = useMemo(() => {
@@ -477,7 +562,10 @@ export default function VacanciesPage() {
       <>
         <Navbar />
         <div className="flex justify-center items-center h-screen">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+            <p className="text-gray-600">Загрузка данных...</p>
+          </div>
         </div>
       </>
     );
@@ -488,14 +576,12 @@ export default function VacanciesPage() {
       <Navbar />
       <div className="min-h-screen bg-gray-50 mt-[60px]">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {usingMockData && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                ⚠️ Отображаются тестовые данные (API недоступен или вернул пустой список)
-              </p>
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-800">{error}</p>
             </div>
           )}
-
+          
           <div className="flex gap-8">
             <aside className="w-56 flex-shrink-0">
               <div className="bg-white rounded-lg shadow-sm sticky top-6">
@@ -505,17 +591,28 @@ export default function VacanciesPage() {
                     <ChevronRight size={20} className="text-gray-400" />
                   </div>
 
+                  <ViewModeToggle 
+                    viewMode={viewMode} 
+                    onViewModeChange={handleViewModeSwitch} 
+                  />
+
                   <div className="mb-5 pb-5 border-b border-gray-100">
                     <div className="flex items-center gap-2 mb-4 text-gray-700">
                       <Folder size={18} />
-                      <span className="text-sm font-medium">Подкатегории</span>
+                      <span className="text-sm font-medium">Категории</span>
                     </div>
 
-                    <CategoryFilter
-                      categories={categories}
-                      selectedCategory={selectedCategory}
-                      onCategoryClick={handleCategoryClick}
-                    />
+                    {categories.length > 0 ? (
+                      <CategoryFilter
+                        categories={categories}
+                        selectedCategory={selectedCategory}
+                        onCategoryClick={handleCategoryClick}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        Категории не найдены
+                      </p>
+                    )}
 
                     {selectedCategory !== null && filteredSubCategories.length > 0 && (
                       <div className="mt-3 space-y-0.5">
@@ -571,18 +668,18 @@ export default function VacanciesPage() {
                     <div className="space-y-1">
                       {EXPERIENCE_YEARS.map((range) => (
                         <label
-                          key={range}
+                          key={range.label}
                           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
-                            checked={selectedExperience.includes(range)}
+                            checked={selectedExperience.includes(range.label)}
                             onChange={() =>
-                              toggleSelection(selectedExperience, setSelectedExperience, range)
+                              toggleSelection(selectedExperience, setSelectedExperience, range.label)
                             }
                             className="w-4 h-4 text-gray-800 border-gray-300 rounded focus:ring-gray-500"
                           />
-                          <span className="text-gray-700">{range}</span>
+                          <span className="text-gray-700">{range.label}</span>
                         </label>
                       ))}
                     </div>
@@ -596,18 +693,18 @@ export default function VacanciesPage() {
                     <div className="space-y-1">
                       {WORKING_HOURS.map((hours) => (
                         <label
-                          key={hours}
+                          key={hours.label}
                           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
                         >
                           <input
                             type="checkbox"
-                            checked={selectedHours.includes(hours)}
+                            checked={selectedHours.includes(hours.label)}
                             onChange={() =>
-                              toggleSelection(selectedHours, setSelectedHours, hours)
+                              toggleSelection(selectedHours, setSelectedHours, hours.label)
                             }
                             className="w-4 h-4 text-gray-800 border-gray-300 rounded focus:ring-gray-500"
                           />
-                          <span className="text-gray-700">{hours}</span>
+                          <span className="text-gray-700">{hours.label}</span>
                         </label>
                       ))}
                     </div>
@@ -618,7 +715,6 @@ export default function VacanciesPage() {
 
             <main className="flex-1">
               <div className="mb-6">
-
                 <h1 className="text-3xl font-bold text-gray-900">
                   {viewMode === 'vacancies' ? 'Вакансии' : 'Услуги'}
                 </h1>
@@ -635,15 +731,21 @@ export default function VacanciesPage() {
                   <p className="text-gray-500 text-sm">Попробуйте изменить фильтры поиска</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredItems.map((item, index) => (
-                    <ListingCard
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      viewMode={viewMode}
-                    />
-                  ))}
+                <div className="space-y-4">
+                  {filteredItems.map((item, index) => {
+                    const userId = 'client' in item ? item.client : item.executor;
+                    const userData = usersData.get(userId) || null;
+                    
+                    return (
+                      <ListingCard
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        viewMode={viewMode}
+                        userData={userData}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </main>
