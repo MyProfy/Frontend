@@ -636,7 +636,7 @@ const Services = () => {
                 onClick={handleFindClients}
                 className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium"
               >
-                Создать вакансию
+                Найти клиентов
               </button>
             </div>
           </div>
