@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "MyProfy",
   description: "MYPROFY.uz - Платформа, где специалисты и клиенты находят друг друга.",
   icons: {
-    icon: "/MyProfyLogo.png",
+    icon: "/MyProfy_image.png",
   },
 };
 
