@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { FaStar } from "react-icons/fa";
 import { getAPIClient } from ".././types/apiClient";
+import Image from "next/image";
+import { log } from "node:console";
 
 interface Review {
   id: number;
@@ -58,18 +60,22 @@ const StarRating = memo(({ rating }: { rating: number }) => (
 ));
 StarRating.displayName = "StarRating";
 
-  const ReviewCard = memo(({ review, customStyles }: { review: Review; customStyles: CustomStyles }) => (
+const ReviewCard = memo(({ review, customStyles }: { review: Review; customStyles: CustomStyles }) => (
   <div
     className="bg-white rounded-[18px] p-4 flex flex-col items-start gap-2.5 w-full max-w-[400px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-[#e3e3e3] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)] relative"
     style={customStyles.card}
   >
     <div className="bg-[#f2f3f7] p-3 rounded-xl w-full flex items-center gap-3 mb-2.5">
-      <img
+      <Image
         src={review.image}
-        alt={review.reviewer}
+        alt={review.reviewer} 
+        width={11}
+        height={11}
         className="w-11 h-11 rounded-full object-cover border-2 border-white"
         loading="lazy"
       />
+
+      
       <div className="flex flex-col items-start">
         <span className="text-[clamp(0.77rem,1.65vw,0.88rem)] text-[#1a202c] font-bold leading-tight">
           {review.reviewer}
@@ -149,6 +155,8 @@ const ReviewsBlock: React.FC<ReviewsBlockProps> = ({
     const fetchReviews = async () => {
       try {
         const reviewsData = await apiClient.getExecuterReviews();
+        console.log("Gey:", reviewsData);
+        
 
         if (!Array.isArray(reviewsData)) {
           console.warn("⚠️ reviewsData не является массивом:", reviewsData);

@@ -8,9 +8,8 @@ import { FiMenu, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useSelector, useDispatch } from "react-redux";
-import { initializeAuth } from "../../store/slices/authSlice";
-import { FaUser } from "react-icons/fa";
-
+import { initializeAuth, logout } from "../../store/slices/authSlice";
+import { FaUser, FaSignOutAlt } from "react-icons/fa";
 
 import MyProfiLogo from "../../public/avatar/logo.svg";
 import UzFlag from "../../public/🇺🇿.png";
@@ -46,15 +45,26 @@ const LanguageButton = memo(({ onClick, flag, lang }: any) => (
 ));
 LanguageButton.displayName = "LanguageButton";
 
-const ProfileButton = memo(({ isAuthenticated, name, onProfileClick, onLoginClick, t }: any) => (
+const ProfileButton = memo(({ isAuthenticated, onProfileClick, onLoginClick, onLogoutClick, t }: any) => (
   isAuthenticated ? (
-    <button
-      onClick={onProfileClick}
-      className="bg-green-600 text-white px-3  py-2 lg:py-2 border-none rounded-lg font-semibold cursor-pointer text-xs lg:text-sm transition-colors duration-200 hover:bg-green-700 whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis"
-    >
-      <FaUser className="size-5" />
-
-    </button>
+    <div className="relative group">
+      <button
+        onClick={onProfileClick}
+        className="bg-green-600 text-white px-3 py-2 lg:py-2 border-none rounded-lg font-semibold cursor-pointer text-xs lg:text-sm transition-colors duration-200 hover:bg-green-700 whitespace-nowrap flex items-center justify-center"
+      >
+        <FaUser className="size-5" />
+      </button>
+      
+      <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+        <button
+          onClick={onLogoutClick}
+          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-lg transition-colors"
+        >
+          <FaSignOutAlt className="text-red-500" />
+          {t('navbar.logout', "Выйти")}
+        </button>
+      </div>
+    </div>
   ) : (
     <button
       onClick={onLoginClick}
@@ -77,6 +87,7 @@ const MobileMenu = memo(({
   onLanguageClick,
   onProfileClick,
   onLoginClick,
+  onLogoutClick,
   t
 }: any) => (
   <>
@@ -140,19 +151,30 @@ const MobileMenu = memo(({
           </div>
         </div>
 
-        <div className="pt-2">
+        <div className="pt-2 space-y-2">
           {isAuthenticated ? (
-            <button
-              onClick={onProfileClick}
-              className="w-full bg-gray-800 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900"
-            >
-              {userName || t('navbar.profile', "Профиль")}
-            </button>
+            <>
+              <button
+                onClick={onProfileClick}
+                className="w-full bg-gray-800 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-gray-900 flex items-center justify-center gap-2"
+              >
+                <FaUser className="text-white" />
+                {userName || t('navbar.profile', "Профиль")}
+              </button>
+              <button
+                onClick={onLogoutClick}
+                className="w-full bg-red-600 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-red-700 flex items-center justify-center gap-2"
+              >
+                <FaSignOutAlt />
+                {t('navbar.logout', "Выйти")}
+              </button>
+            </>
           ) : (
             <button
               onClick={onLoginClick}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-all duration-200 hover:shadow-lg"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
             >
+              <FaUser className="text-white" />
               {t('navbar.login', "Войти")} →
             </button>
           )}
@@ -184,6 +206,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const getCurrentLanguageData = useCallback(() => {
     const currentLanguage = i18n.language || 'uz';
@@ -271,14 +294,42 @@ export default function Navbar() {
     setMobileOpen(false);
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+    
+    if (!window.confirm(t('navbar.logoutConfirm', "Вы уверены, что хотите выйти?"))) {
+      return;
+    }
+
+    try {
+      setIsLoggingOut(true);
+      console.log("🚪 Выход из системы...");
+
+      // Диспатчим действие логаута в Redux
+      dispatch(logout());
+
+      // Закрываем мобильное меню если открыто
+      setMobileOpen(false);
+
+      // Перенаправляем на главную страницу
+      router.push("/");
+      
+      console.log("✅ Успешный выход из системы");
+    } catch (error) {
+      console.error("❌ Ошибка при выходе из системы:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [dispatch, router, isLoggingOut, t]);
+
   const toggleMobileMenu = useCallback(() => {
     setMobileOpen(prev => !prev);
   }, []);
 
   const truncatedUserName = useMemo(() => {
-    if (!user?.name) return '';
+    if (!user?.name) return t('navbar.profile', "Профиль");
     return user.name.length <= 10 ? user.name : user.name.substring(0, 10) + '...';
-  }, [user?.name]);
+  }, [user?.name, t]);
 
   const truncatedRegion = useMemo(() => {
     const maxLength = isMobile ? 15 : 20;
@@ -315,9 +366,9 @@ export default function Navbar() {
 
           <ProfileButton
             isAuthenticated={isAuthenticated}
-            userName={truncatedUserName}
             onProfileClick={handleProfileClick}
             onLoginClick={() => setShowAuthModal(true)}
+            onLogoutClick={handleLogout}
             t={t}
           />
         </div>
@@ -353,6 +404,7 @@ export default function Navbar() {
             onLanguageClick={handleLanguageClick}
             onProfileClick={handleProfileClick}
             onLoginClick={handleLoginClick}
+            onLogoutClick={handleLogout}
             t={t}
           />
         )}

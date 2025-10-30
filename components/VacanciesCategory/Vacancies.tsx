@@ -242,20 +242,7 @@ const ListingCard = memo(({
             </div>
           )}
 
-          {isCorrectUser && userData && (
-            <div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3">
-                Дополнительная информация
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {userData.about_user && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-900">{userData.about_user}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          
         </div>
       )}
     </div>

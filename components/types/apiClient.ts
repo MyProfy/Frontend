@@ -25,6 +25,8 @@ import {
   LoginPayload,
   PaginatedResponse,
   Review,
+  ChangePasswordPayload,
+  ChangePasswordResponse,
 } from "./apiTypes";
 
 const API_BASE_URL =
@@ -337,6 +339,8 @@ export const apiClient = {
     }
   },
 
+
+
   logout: async (): Promise<void> => {
     try {
       cookieManager.removeCookie("access_token");
@@ -554,7 +558,7 @@ export const apiClient = {
 
   getExecuterReviews: async (params?: Record<string, any>): Promise<ExecutorReview[]> => {
     try {
-      const response = await withRetry(() => api.get("/reviews/", { params }));
+      const response = await withRetry(() => api.get("/client-reviews/", { params }));
       console.log("✅ Reviews loaded:", response.data);
       return extractData(response.data);
     } catch (error: any) {
@@ -583,7 +587,24 @@ export const apiClient = {
       // console.error("❌ Get user error:", error.response?.data || error.message);
       // throw error;
     }
-  }
+  },
+
+  changePassword: async (data: ChangePasswordPayload): Promise<ChangePasswordResponse> => {
+    console.log("🔐 Changing password...");
+    try {
+      // Получаем текущего пользователя
+      const currentUser = await apiClient.getCurrentUser();
+
+      const response = await api.put(`/users/${currentUser.id}/change-password/`, data);
+      console.log("✅ Password changed successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Change password error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+
 };
 
 export function getAPIClient() {
