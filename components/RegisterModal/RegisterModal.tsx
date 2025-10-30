@@ -794,7 +794,7 @@ export default function RegisterModal({
                 exit="exit"
                 onSubmit={handleLoginSubmit}
               >
-                <div className="text-center py-6">{logosvg}</div>
+                <div className="text-center py-4 px-28 lg:px-6">{logosvg}</div>
                 <motion.h2
                   className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
@@ -939,7 +939,7 @@ export default function RegisterModal({
                 exit="exit"
                 onSubmit={handleRegisterPhoneSubmit}
               >
-                <div className="text-center py-6">{logosvg}</div>
+                <div className="text-center py-6 px-28">{logosvg}</div>
                 <motion.h2
                   className="m-0 mb-1 text-3xl text-gray-800 text-center font-bold tracking-tight"
                   variants={itemVariants}
@@ -1052,7 +1052,7 @@ export default function RegisterModal({
                 exit="exit"
                 onSubmit={handleOtpSubmit}
               >
-                <div className="text-center py-8 px-30">{logosvg}</div>
+                <div className="text-center py-6 px-28">{logosvg}</div>
 
                 <motion.h2
                   className="m-0 text-2xl text-gray-900 text-center font-bold"
@@ -1170,7 +1170,7 @@ export default function RegisterModal({
                 exit="exit"
                 onSubmit={handleProfileSubmit}
               >
-                <div className="text-center mt-4">{logosvg}</div>
+                <div className="text-center mt-4 px-28">{logosvg}</div>
 
                 <motion.h2
                   className="m-0 mb-1 text-2xl text-gray-800 text-center font-bold tracking-tight"
@@ -1387,7 +1387,7 @@ export default function RegisterModal({
                 exit="exit"
               >
                 <div className="flex flex-col justify-center p-6 relative">
-                  <div className="mb-5 text-center">{logosvg}</div>
+                  <div className="mb-5 text-center px-28">{logosvg}</div>
                   <h1 className="text-center text-2xl font-bold text-gray-800 m-0 mb-3 tracking-tight">
                     {t("registerCoolText1.title")}
                   </h1>
@@ -1426,7 +1426,7 @@ export default function RegisterModal({
                 exit="exit"
               >
                 <div className="flex flex-col justify-center p-6 relative">
-                  <div className="mb-5 text-center">{logosvg}</div>
+                  <div className="mb-5 text-center px-28">{logosvg}</div>
                   <h1 className="text-center text-2xl font-bold text-gray-800 m-0 mb-3 tracking-tight">
                     {t("registerCoolText2.title")}
                   </h1>

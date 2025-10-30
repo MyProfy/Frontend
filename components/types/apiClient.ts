@@ -101,8 +101,8 @@ const api: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 15000, // Увеличено до 15 секунд
-  withCredentials: true, // Включена отправка cookies
+  timeout: 15000,
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
@@ -115,9 +115,6 @@ api.interceptors.request.use(
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log("Token attached to request:", config.url);
-      } else {
-        console.warn("No token found for request:", config.url);
       }
     }
 
@@ -144,23 +141,19 @@ api.interceptors.response.use(
           const refreshToken = cookieManager.getCookie("refresh_token");
 
           if (refreshToken) {
-            console.log("Refreshing token...");
             const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
               refresh: refreshToken
             }, {
-              withCredentials: true // Важно для cookies
+              withCredentials: true
             });
 
             const newAccessToken = response.data.access;
-
             cookieManager.setCookie("access_token", newAccessToken);
-
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return api(originalRequest);
           }
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError);
-
           cookieManager.removeCookie("access_token");
           cookieManager.removeCookie("refresh_token");
           cookieManager.removeCookie("user");
@@ -171,18 +164,6 @@ api.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       }
-
-      if (error.response.status === 403) {
-        console.error("403 Forbidden - недостаточно прав или токен невалидный");
-      }
-    } else if (error.request) {
-      console.error("API No Response:", error.request);
-      console.error("Возможные причины:");
-      console.error("  - CORS не настроен на бэкенде");
-      console.error("  - Сервер не доступен");
-      console.error("  - Неправильный URL:", API_BASE_URL);
-    } else {
-      console.error("API Error:", error.message);
     }
     return Promise.reject(error);
   }
@@ -201,11 +182,9 @@ const extractData = <T>(data: T | PaginatedResponse<T>): T[] => {
 export const apiClient = {
   login: async (credentials: LoginPayload): Promise<{ token: string; user: User }> => {
     try {
-      console.log("🔐 Logging in:", credentials.phone);
       const response = await api.post("/auth/login/", credentials, {
         withCredentials: true
       });
-      console.log("✅ Login response:", response.data);
 
       const token = response.data.access;
       const refreshToken = response.data.refresh;
@@ -239,68 +218,42 @@ export const apiClient = {
   },
 
   register: async (userData: RegisterPayload): Promise<any> => {
-    console.log("РЕГИСТРАЦИЯ - отправляемые данные:");
-    console.log("URL:", `${API_BASE_URL}/auth/register/`);
-    console.log("Данные:", JSON.stringify(userData, null, 2));
-
     try {
       const response = await api.post("/auth/register/", userData, {
         withCredentials: true
       });
-      console.log("Успешная регистрация - ответ сервера:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("❌ ОШИБКА РЕГИСТРАЦИИ:");
-      console.error("Status:", error.response?.status);
-      console.error("Status Text:", error.response?.statusText);
-      console.error("Data:", error.response?.data);
-      console.error("Headers:", error.response?.headers);
-      console.error("Request URL:", error.config?.url);
-      console.error("Request Method:", error.config?.method);
-      console.error("Request Data:", error.config?.data);
-
-      if (error.response?.data && Object.keys(error.response.data).length === 0) {
-        console.error("Backend returned empty 400 response. Possible causes:");
-        console.error("  - Backend validation failed but didn't return error details");
-        console.error("  - CORS issue preventing error response");
-        console.error("  - Backend expects different payload format");
-        console.error("  - Missing or invalid authentication header");
-      }
-
+      console.error("❌ Registration error:", error.response?.data);
       throw error;
     }
   },
 
   requestOTP: async (phone: string): Promise<any> => {
     try {
-      // console.log("📱 Requesting OTP for:", phone);
       const response = await api.post("/auth/otp/request/", { phone }, {
         withCredentials: true
       });
-      // console.log("✅ OTP requested:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Request OTP error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ OTP request error:", error.response?.data);
+      throw error;
     }
   },
 
   verifyOTP: async (data: { phone: string; code: string }): Promise<OTPVerifyResponse> => {
     try {
-      // console.log("🔑 Verifying OTP for:", data.phone);
       const response = await api.post("/auth/otp/verify/", data, {
         withCredentials: true
       });
-      // console.log("✅ OTP verified:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Verify OTP error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ OTP verification error:", error.response?.data);
+      throw error;
     }
   },
 
   getCurrentUser: async (): Promise<User> => {
-    // console.log("👤 Getting current user");
     try {
       const user = cookieManager.getUser();
 
@@ -313,41 +266,31 @@ export const apiClient = {
       }
 
       const response = await api.get(`/users/${user.id}/`);
-      // console.log("✅ Current user:", response.data);
-
       cookieManager.setUser(response.data);
 
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Get current user error:", error.response?.data || error.message);
-      // throw error;
-    }
-  },
-
-  updateProfile: async (userId: number, data: Partial<User>): Promise<User> => {
-    console.log("📝 Updating user profile:", userId);
-    try {
-      const response = await api.put(`/users/${userId}/`, data);
-      console.log("✅ Profile updated:", response.data);
-
-      cookieManager.setUser(response.data);
-
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Update profile error:", error.response?.data || error.message);
+      console.error("❌ Get current user error:", error.response?.data);
       throw error;
     }
   },
 
-
+  updateProfile: async (userId: number, data: Partial<User>): Promise<User> => {
+    try {
+      const response = await api.put(`/users/${userId}/`, data);
+      cookieManager.setUser(response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Update profile error:", error.response?.data);
+      throw error;
+    }
+  },
 
   logout: async (): Promise<void> => {
     try {
       cookieManager.removeCookie("access_token");
       cookieManager.removeCookie("refresh_token");
       cookieManager.removeCookie("user");
-
-      console.log("✅ Logout successful");
     } catch (error: any) {
       console.error("❌ Logout error:", error);
       throw error;
@@ -385,88 +328,89 @@ export const apiClient = {
       const response = await withRetry(() => api.get("/services/", { params: { page, limit, ...params } }));
       return extractData(response.data);
     } catch (error) {
-      // console.error("❌ Get services error:", error);
-      // throw error;
+      console.error("❌ Get services error:", error);
+      return [];
     }
   },
 
   getServiceById: async (id: number): Promise<Service> =>
     (await withRetry(() => api.get(`/services/${id}/`))).data,
 
+  // Improved Vacancy Methods
   getVacancies: async (params?: Record<string, any>): Promise<Vacancy[]> => {
     try {
       const response = await withRetry(() => api.get("/vacancies/", { params }));
-      console.log("✅ Vacancies loaded:", response.data);
-      return extractData(response.data);
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && typeof response.data === 'object' && 'results' in response.data) {
+        return response.data.results;
+      } else {
+        console.warn("Unexpected vacancies response format:", response.data);
+        return [];
+      }
     } catch (error: any) {
-      // console.error("❌ Get vacancies error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ Get vacancies error:", error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  getVacanciesByClient: async (clientId: number): Promise<Vacancy[]> => {
+    try {
+      const response = await api.get("/vacancies/", {
+        params: { client: clientId }
+      });
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && response.data.results) {
+        return response.data.results;
+      }
+      return [];
+    } catch (error: any) {
+      console.error("❌ Get client vacancies error:", error.response?.data || error.message);
+      return [];
     }
   },
 
   getVacancyById: async (id: number): Promise<Vacancy> => {
     try {
       const response = await withRetry(() => api.get(`/vacancies/${id}/`));
-      console.log("✅ Vacancy loaded:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Get vacancy error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ Get vacancy error:", error.response?.data || error.message);
+      throw error;
     }
   },
 
   createVacancy: async (
-    data: Omit<Vacancy, "id" | "moderation" | "moderation_display" | "boost"> & {
-      images?: File | string | (File | string)[];
+    data: {
+      title: string;
+      description: string;
+      price: number;
+      category: number;
+      client: number;
+      sub_category?: number;
+      images?: string;
     }
   ): Promise<Vacancy> => {
     try {
-      console.log("📝 Creating vacancy:", data);
+      const payload = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        category: data.category,
+        client: data.client,
+        ...(data.sub_category && { sub_category: data.sub_category }),
+        ...(data.images && { images: data.images }),
+        moderation: "pending",
+        boost: 0,
+      };
 
-      let payload: any;
-      let headers: Record<string, string>;
-
-      if (
-        data.images instanceof File ||
-        (Array.isArray(data.images) && data.images.some(img => img instanceof File))
-      ) {
-        const formData = new FormData();
-        formData.append("title", data.title);
-        formData.append("description", data.description);
-        formData.append("price", String(data.price));
-        formData.append("category", String(data.category));
-        formData.append("client", String(data.client));
-        if (data.sub_category)
-          formData.append("sub_category", String(data.sub_category));
-
-        if (Array.isArray(data.images)) {
-          data.images.forEach(img => {
-            if (img instanceof File) formData.append("images", img);
-          });
-        } else if (data.images instanceof File) {
-          formData.append("images", data.images);
-        }
-
-        payload = formData;
-        headers = { "Content-Type": "multipart/form-data" };
-      } else {
-        payload = {
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          category: data.category,
-          client: data.client,
-          ...(data.sub_category && { sub_category: data.sub_category }),
-          ...(data.images && { images: Array.isArray(data.images) ? data.images : [data.images] }),
-        };
-        headers = { "Content-Type": "application/json" };
-      }
-
-      const response = await api.post("/vacancies/", payload, { headers });
-      console.log("✅ Vacancy created:", response.data);
+      const response = await api.post("/vacancies/", payload);
       return response.data;
     } catch (error: any) {
-      console.error("❌ Create vacancy error:", error.response?.data || error.message);
+      console.error("❌ Create vacancy error:", error);
       if (error.response?.data) {
         console.error("Validation errors:", JSON.stringify(error.response.data, null, 2));
       }
@@ -474,26 +418,40 @@ export const apiClient = {
     }
   },
 
+  updateVacancy: async (id: number, data: any): Promise<Vacancy> => {
+    try {
+      console.log("📝 Updating vacancy:", id, data);
+
+      const response = await api.put(`/vacancies/${id}/`, data);
+      console.log("✅ Vacancy updated successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Update vacancy error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+  deleteVacancy: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/vacancies/${id}/`);
+    } catch (error: any) {
+      console.error("❌ Delete vacancy error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   checkServicesEndpoint: async (): Promise<any> => {
     try {
-      console.log("🔍 Checking services endpoint...");
       const response = await api.get("/services/");
-      console.log("✅ Services endpoint available:", response.status);
       return response.data;
     } catch (error: any) {
       console.error("❌ Services endpoint check failed:", error);
-
       if (error.response?.status === 500) {
-        console.error("💥 Services endpoint returns 500 error");
         throw new Error("SERVICE_ENDPOINT_500_ERROR");
       } else if (error.response?.status === 404) {
-        console.error("💥 Services endpoint not found (404)");
         throw new Error("SERVICE_ENDPOINT_NOT_FOUND");
       } else if (error.request) {
-        console.error("💥 No response from services endpoint");
         throw new Error("SERVICE_ENDPOINT_NO_RESPONSE");
       }
-
       throw error;
     }
   },
@@ -511,8 +469,6 @@ export const apiClient = {
     }
   ): Promise<Service> => {
     try {
-      // console.log("📝 Creating service:", data);
-
       const payload = {
         executor: data.executor,
         category: data.category,
@@ -524,34 +480,10 @@ export const apiClient = {
         boost: data.boost || 1,
       };
 
-      console.log("📤 Sending payload:", JSON.stringify(payload, null, 2));
-
       const response = await api.post("/services/", payload);
-      // console.log("✅ Service created:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Create service error:", error);
-
-      if (error.response) {
-        // console.error("📊 Error details:");
-        // console.error("Status:", error.response.status);
-        // console.error("Status Text:", error.response.statusText);
-        // console.error("Headers:", error.response.headers);
-        // console.error("Data:", error.response.data);
-
-        // if (error.response.status === 500) {
-        //   console.error("🔧 Server 500 Error - Possible causes:");
-        //   console.error("  - Database connection issue");
-        //   console.error("  - Backend code error");
-        //   console.error("  - Missing required fields on server");
-        //   console.error("  - Serializer validation failed");
-        // }
-      } else if (error.request) {
-        // console.error("🌐 Network error - No response received");
-      } else {
-        // console.error("⚡ Request setup error:", error.message);
-      }
-
+      console.error("❌ Create service error:", error);
       throw error;
     }
   },
@@ -559,52 +491,43 @@ export const apiClient = {
   getExecuterReviews: async (params?: Record<string, any>): Promise<ExecutorReview[]> => {
     try {
       const response = await withRetry(() => api.get("/client-reviews/", { params }));
-      console.log("✅ Reviews loaded:", response.data);
       return extractData(response.data);
     } catch (error: any) {
-      // console.error("❌ Get reviews error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ Get reviews error:", error.response?.data || error.message);
+      return [];
     }
   },
 
   getOrders: async (params?: Record<string, any>): Promise<Order[]> => {
     try {
       const response = await withRetry(() => api.get("/orders/", { params }));
-      console.log("✅ Orders loaded:", response.data);
       return extractData(response.data);
     } catch (error: any) {
-      // console.error("❌ Get orders error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ Get orders error:", error.response?.data || error.message);
+      return [];
     }
   },
 
   getUserById: async (id: number): Promise<User> => {
     try {
       const response = await withRetry(() => api.get(`/users/${id}/`));
-      console.log("✅ User loaded:", response.data);
       return response.data;
     } catch (error: any) {
-      // console.error("❌ Get user error:", error.response?.data || error.message);
-      // throw error;
+      console.error("❌ Get user error:", error.response?.data || error.message);
+      throw error;
     }
   },
 
   changePassword: async (data: ChangePasswordPayload): Promise<ChangePasswordResponse> => {
-    console.log("🔐 Changing password...");
     try {
-      // Получаем текущего пользователя
       const currentUser = await apiClient.getCurrentUser();
-
       const response = await api.put(`/users/${currentUser.id}/change-password/`, data);
-      console.log("✅ Password changed successfully:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("❌ Change password error:", error.response?.data || error.message);
       throw error;
     }
   },
-
-
 };
 
 export function getAPIClient() {

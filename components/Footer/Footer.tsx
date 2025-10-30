@@ -16,9 +16,9 @@ import {
 import logo from "../../public/avatar/logo.svg";
 
 const SOCIAL_LINKS = [
-  { name: "Telegram", href: "https://t.me/yourpage", icon: FaTelegramPlane },
-  { name: "Facebook", href: "https://facebook.com/yourpage", icon: FaFacebookF },
-  { name: "Instagram", href: "https://instagram.com/yourpage", icon: FaInstagram },
+  { name: "Telegram", href: " https://t.me/myprofy", icon: FaTelegramPlane },
+  { name: "Facebook", href: "https://www.facebook.com/myprofy.uz", icon: FaFacebookF },
+  { name: "Instagram", href: "https://instagram.com/myprofy.uz", icon: FaInstagram },
   { name: "YouTube", href: "https://youtube.com/yourchannel", icon: FaYoutube },
   { name: "Twitter", href: "https://twitter.com/yourpage", icon: FaTwitter },
 ] as const;

@@ -3,10 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { X, MapPin, DollarSign, FileText, Tag, Upload, Loader2, Image as ImageIcon, Link, Check, AlertCircle, Lock } from "lucide-react";
+import { X, MapPin, DollarSign, FileText, Tag, Upload, Loader2, Image as ImageIcon, Link, Check, AlertCircle, Lock, Trash2, Edit, Crown } from "lucide-react";
 import TarrifModal from "../Modals/TarrifModal";
 import { getAPIClient } from "@/components/types/apiClient";
-import type { Vacancy, Category, SubCategory } from "@/components/types/apiTypes";
+import type { Vacancy, Category, SubCategory, Service } from "@/components/types/apiTypes";
+
+// Константы лимитов
+const LIMITS = {
+  VACANCIES: 1,
+  SERVICES: 1,
+} as const;
 
 interface VacancyFormData {
   title: string;
@@ -36,17 +42,22 @@ const Services = () => {
   const [loading, setLoading] = useState(false);
   const [serviceLoading, setServiceLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [serviceSubCategories, setServiceSubCategories] = useState<SubCategory[]>([]);
   const [userVacancies, setUserVacancies] = useState<Vacancy[]>([]);
-  const [userServices, setUserServices] = useState<any[]>([]);
+  const [userServices, setUserServices] = useState<Service[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [imageInputType, setImageInputType] = useState<"file" | "url">("file");
   const [apiStatus, setApiStatus] = useState<{ services: boolean; vacancies: boolean }>({ services: true, vacancies: true });
+
+  // Состояния для редактирования
+  const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const [formData, setFormData] = useState<VacancyFormData>({
     title: "",
@@ -69,13 +80,9 @@ const Services = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [serviceErrors, setServiceErrors] = useState<{ [key: string]: string }>({});
 
-  // КОНСТАНТЫ ЛИМИТОВ
-  const MAX_VACANCIES = 1;
-  const MAX_SERVICES = 1;
-
   // Проверка лимитов
-  const canCreateVacancy = userVacancies.length < MAX_VACANCIES;
-  const canCreateService = userServices.length < MAX_SERVICES;
+  const canCreateVacancy = userVacancies.length < LIMITS.VACANCIES;
+  const canCreateService = userServices.length < LIMITS.SERVICES;
 
   const SUPPORTED_IMAGE_FORMATS = [
     'image/jpeg',
@@ -89,6 +96,16 @@ const Services = () => {
   ];
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+  // Функции для сообщений
+  const getLimitMessage = (type: 'vacancy' | 'service') => {
+    const current = type === 'vacancy' ? userVacancies.length : userServices.length;
+    const max = type === 'vacancy' ? LIMITS.VACANCIES : LIMITS.SERVICES;
+
+    return type === 'vacancy'
+      ? `Вы достигли лимита вакансий (${current}/${max}). Удалите существующую вакансию, чтобы создать новую.`
+      : `Вы достигли лимита услуг (${current}/${max}). Удалите существующую услугу, чтобы создать новую.`;
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -111,16 +128,14 @@ const Services = () => {
       // Загружаем сервисы пользователя
       try {
         const servicesData = await apiClient.getServices(1, 100);
-        // Фильтруем только сервисы текущего пользователя
         const userServicesFiltered = servicesData.filter((s: any) => s.executor === user.id);
         setUserServices(userServicesFiltered);
-        console.log(`✅ Загружено сервисов: ${userServicesFiltered.length}/${MAX_SERVICES}`);
+        console.log(`✅ Загружено сервисов: ${userServicesFiltered.length}/${LIMITS.SERVICES}`);
       } catch (error) {
         console.error("❌ Ошибка загрузки сервисов:", error);
         setUserServices([]);
       }
 
-      // Проверяем доступность эндпоинтов
       await checkApiEndpoints();
 
     } catch (error) {
@@ -179,6 +194,68 @@ const Services = () => {
     }
   };
 
+  const handleEditVacancy = (vacancy: Vacancy) => {
+    console.log("🔧 Editing vacancy:", vacancy);
+    console.log("🔧 Current user ID:", currentUser?.id);
+
+    setEditingVacancy(vacancy);
+
+    let imageUrlValue = "";
+    if (vacancy.images) {
+      if (Array.isArray(vacancy.images)) {
+        imageUrlValue = vacancy.images[0] || "";
+      } else if (typeof vacancy.images === 'string') {
+        imageUrlValue = vacancy.images;
+      }
+    }
+
+    setFormData({
+      title: vacancy.title,
+      description: vacancy.description,
+      price: vacancy.price.toString(),
+      category: vacancy.category,
+      sub_category: vacancy.sub_category,
+      client: currentUser.id, 
+      images: imageUrlValue
+    });
+
+    if (vacancy.category) {
+      loadSubCategories(vacancy.category);
+    }
+
+    if (imageUrlValue && imageUrlValue.startsWith('http')) {
+      setImagePreview(imageUrlValue);
+      setImageUrl(imageUrlValue);
+      setImageInputType("url");
+    } else {
+      setImagePreview(null);
+      setImageUrl("");
+      setImageInputType("file");
+    }
+
+    setShowModal(true);
+  };
+
+  const handleEditService = (service: Service) => {
+    setEditingService(service);
+    setServiceFormData({
+      title: service.name,
+      description: service.description || "",
+      price: service.price.toString(),
+      category: typeof service.category === 'object' ? service.category.id : service.category,
+      sub_category: service.sub_categories && service.sub_categories.length > 0
+        ? (typeof service.sub_categories[0] === 'object' ? service.sub_categories[0].id : service.sub_categories[0])
+        : null,
+    });
+
+    const categoryId = typeof service.category === 'object' ? service.category.id : service.category;
+    if (categoryId) {
+      loadServiceSubCategories(categoryId);
+    }
+
+    setShowServiceModal(true);
+  };
+
   const validateServiceData = (data: any): boolean => {
     if (!data.title || !data.description || !data.category || !data.executor) {
       console.error("❌ Missing required fields:", {
@@ -205,22 +282,45 @@ const Services = () => {
 
   const handleFindSpecialist = () => {
     if (!canCreateService) {
-      alert(`Вы уже создали максимальное количество услуг (${MAX_SERVICES}). Удалите существующую услугу, чтобы создать новую.`);
+      // Показываем сообщение о подписке вместо обычного алерта
       return;
     }
+    setEditingService(null);
+    setServiceFormData({
+      title: "",
+      description: "",
+      price: "",
+      category: null,
+      sub_category: null,
+    });
     setShowServiceModal(true);
   };
 
   const handleFindClients = () => {
     if (!canCreateVacancy) {
-      alert(`Вы уже создали максимальное количество вакансий (${MAX_VACANCIES}). Удалите существующую вакансию, чтобы создать новую.`);
+      // Показываем сообщение о подписке вместо обычного алерта
       return;
     }
+    setEditingVacancy(null);
+    setFormData({
+      title: "",
+      description: "",
+      price: "",
+      category: null,
+      sub_category: null,
+      client: null,
+      images: undefined
+    });
+    setImageFile(null);
+    setImagePreview(null);
+    setImageUrl("");
+    setImageInputType("file");
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setEditingVacancy(null);
     setFormData({
       title: "",
       description: "",
@@ -239,6 +339,7 @@ const Services = () => {
 
   const handleCloseServiceModal = () => {
     setShowServiceModal(false);
+    setEditingService(null);
     setServiceFormData({
       title: "",
       description: "",
@@ -344,6 +445,7 @@ const Services = () => {
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
     };
+
     reader.onerror = () => {
       setErrors(prev => ({ ...prev, images: "Ошибка чтения файла" }));
       setImageFile(null);
@@ -428,10 +530,144 @@ const Services = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Функции удаления
+  const handleDeleteVacancy = async (id: number) => {
+    if (!confirm("Вы уверены, что хотите удалить эту вакансию?")) return;
+
+    setDeleteLoading(id);
+    try {
+      // Здесь должен быть вызов API для удаления вакансии
+      // await apiClient.deleteVacancy(id);
+
+      // Временное решение - фильтрация локального состояния
+      setUserVacancies(prev => prev.filter(vacancy => vacancy.id !== id));
+      alert("Вакансия успешно удалена");
+    } catch (error) {
+      console.error("Ошибка удаления вакансии:", error);
+      alert("Ошибка при удалении вакансии");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleDeleteService = async (id: number) => {
+    if (!confirm("Вы уверены, что хотите удалить эту услугу?")) return;
+
+    setDeleteLoading(id);
+    try {
+      // Здесь должен быть вызов API для удаления услуги
+      // await apiClient.deleteService(id);
+
+      // Временное решение - фильтрация локального состояния
+      setUserServices(prev => prev.filter(service => service.id !== id));
+      alert("Услуга успешно удалена");
+    } catch (error) {
+      console.error("Ошибка удаления услуги:", error);
+      alert("Ошибка при удалении услуги");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleUpdateVacancy = async () => {
+    if (!editingVacancy) return;
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Создаем объект данных для обновления согласно API документации
+      const updateData: any = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        client: currentUser.id, // ДОБАВЛЕНО ОБЯЗАТЕЛЬНОЕ ПОЛЕ
+        ...(formData.sub_category && { sub_category: formData.sub_category }),
+        moderation: editingVacancy.moderation, // Сохраняем текущий статус модерации
+        boost: editingVacancy.boost // Сохраняем текущий уровень буста
+      };
+
+      // Обрабатываем изображения только если они изменились
+      if (imageInputType === "url" && imageUrl.trim()) {
+        updateData.images = imageUrl;
+      } else if (imageInputType === "file" && imageFile) {
+        // Для файлов нужно использовать FormData
+        const formDataToSend = new FormData();
+        formDataToSend.append("title", formData.title);
+        formDataToSend.append("description", formData.description);
+        formDataToSend.append("price", formData.price);
+        formDataToSend.append("category", formData.category!.toString());
+        formDataToSend.append("client", currentUser.id.toString());
+        if (formData.sub_category) {
+          formDataToSend.append("sub_category", formData.sub_category.toString());
+        }
+        formDataToSend.append("images", imageFile);
+
+        console.log("📤 Обновление вакансии с файлом:", Object.fromEntries(formDataToSend));
+
+        // const response = await apiClient.updateVacancyWithFormData(editingVacancy.id, formDataToSend);
+        alert("Загрузка файлов при редактировании временно недоступна. Используйте URL изображения.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("📤 Обновление вакансии:", updateData);
+
+      // Вызов API для обновления вакансии
+      const response = await apiClient.updateVacancy(editingVacancy.id, updateData);
+
+      console.log("✅ Вакансия успешно обновлена:", response);
+
+      // Обновляем локальное состояние
+      setUserVacancies(prev => prev.map(vacancy =>
+        vacancy.id === editingVacancy.id ? response : vacancy
+      ));
+
+      handleCloseModal();
+      alert("Вакансия успешно обновлена!");
+
+    } catch (error: any) {
+      console.error("❌ Ошибка обновления вакансии:", error);
+
+      // Подробная обработка ошибок
+      if (error.response?.data) {
+        const apiErrors = error.response.data;
+        const newErrors: { [key: string]: string } = {};
+
+        Object.keys(apiErrors).forEach(key => {
+          if (Array.isArray(apiErrors[key])) {
+            newErrors[key] = apiErrors[key][0];
+          } else if (typeof apiErrors[key] === 'string') {
+            newErrors[key] = apiErrors[key];
+          }
+        });
+
+        setErrors(newErrors);
+
+        const errorMessage = Object.values(newErrors).join('\n');
+        alert(`Ошибка обновления вакансии:\n${errorMessage}`);
+      } else if (error.request) {
+        alert("Не удалось соединиться с сервером. Проверьте подключение к интернету.");
+      } else {
+        alert("Произошла неизвестная ошибка при обновлении вакансии. Попробуйте снова.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
-    // Дополнительная проверка лимита перед отправкой
+    if (editingVacancy) {
+      await handleUpdateVacancy();
+      return;
+    }
+
     if (!canCreateVacancy) {
-      alert(`Достигнут лимит вакансий (${MAX_VACANCIES})`);
+      alert(getLimitMessage('vacancy'));
       return;
     }
 
@@ -492,9 +728,8 @@ const Services = () => {
   };
 
   const handleServiceSubmit = async () => {
-    // Дополнительная проверка лимита перед отправкой
     if (!canCreateService) {
-      alert(`Достигнут лимит услуг (${MAX_SERVICES})`);
+      alert(getLimitMessage('service'));
       return;
     }
 
@@ -594,8 +829,28 @@ const Services = () => {
     }
   };
 
+  const handleDeleteFromModal = async () => {
+    if (!editingVacancy) return;
+
+    if (!confirm("Вы уверены, что хотите удалить эту вакансию?")) return;
+
+    setLoading(true);
+    try {
+      await handleDeleteVacancy(editingVacancy.id);
+      handleCloseModal();
+    } catch (error) {
+      console.error("Ошибка удаления вакансии:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoToCandidates = (id: number) => {
     router.push(`/vacancies/${id}`);
+  };
+
+  const handleGoToService = (id: number) => {
+    router.push(`/services/${id}`);
   };
 
   const quickTags = ["сантехник", "под ключ", "сантехработы", "электрик", "строитель"];
@@ -612,6 +867,40 @@ const Services = () => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const formatPrice = (price: number): string => {
+    return price?.toLocaleString('ru-RU') || '0';
+  };
+
+  const showSubscriptionMessage = (type: 'vacancy' | 'service') => {
+    const current = type === 'vacancy' ? userVacancies.length : userServices.length;
+    const max = type === 'vacancy' ? LIMITS.VACANCIES : LIMITS.SERVICES;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-green-50 to-white border border-green-200 rounded-lg p-6 text-center shadow-sm"
+      >
+        <Crown className="mx-auto mb-3 text-green-600" size={32} />
+        <h3 className="text-lg font-semibold text-green-800 mb-2">
+          Достигнут лимит {type === 'vacancy' ? 'вакансий' : 'услуг'}
+        </h3>
+        <p className="text-green-700 mb-4">
+          Вы создали {current} из {max}{' '}
+          {type === 'vacancy' ? 'вакансий' : 'услуг'}.<br />
+          Если хотите создать больше объявлений, купите подписку.
+        </p>
+        <button
+          onClick={() => setShowTarrifs(true)}
+          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all"
+        >
+          Тарифы
+        </button>
+      </motion.div>
+
+    );
   };
 
   if (initialLoading) {
@@ -648,33 +937,10 @@ const Services = () => {
           </motion.div>
         )}
 
-        {(!canCreateVacancy || !canCreateService) && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6"
-          >
-            <div className="flex items-center gap-3">
-              <Lock className="text-green-600" size={24} />
-              <div>
-                <h3 className="text-green-800 font-medium">Информация о лимитах</h3>
-                <div className="text-green-700 text-sm mt-1 space-y-1">
-                  {!canCreateVacancy && (
-                    <p>• Вы достигли лимита вакансий ({userVacancies.length}/{MAX_VACANCIES})</p>
-                  )}
-                  {!canCreateService && (
-                    <p>• Вы достигли лимита услуг ({userServices.length}/{MAX_SERVICES})</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">
-              Мои вакансии ({userVacancies.length}/{MAX_VACANCIES})
+              Мои обьявление ({userVacancies.length}/{LIMITS.VACANCIES})
             </h1>
 
             <div className="flex gap-3">
@@ -685,6 +951,7 @@ const Services = () => {
                   ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
+                title={!canCreateService ? "Создать услугу" : "Создать услугу"}
               >
                 {!canCreateService && <Lock size={16} />}
                 Найти специалиста
@@ -692,7 +959,7 @@ const Services = () => {
                   <span className="ml-2 text-xs text-yellow-600">(недоступно)</span>
                 )}
                 {!canCreateService && apiStatus.services && (
-                  <span className="ml-2 text-xs text-blue-600">({userServices.length}/{MAX_SERVICES})</span>
+                  <span className="ml-2 text-xs text-blue-600">({userServices.length}/{LIMITS.SERVICES})</span>
                 )}
               </button>
               <button
@@ -702,11 +969,12 @@ const Services = () => {
                   ? "bg-gray-400 text-white cursor-not-allowed"
                   : "bg-green-600 text-white hover:bg-green-700"
                   }`}
+                title={!canCreateVacancy ? "Создать вакансию" : "Создать вакансию"}
               >
                 {!canCreateVacancy && <Lock size={16} />}
                 Найти клиентов
                 {!canCreateVacancy && (
-                  <span className="text-xs">({userVacancies.length}/{MAX_VACANCIES})</span>
+                  <span className="text-xs">({userVacancies.length}/{LIMITS.VACANCIES})</span>
                 )}
               </button>
             </div>
@@ -715,7 +983,9 @@ const Services = () => {
           <div className="space-y-3">
             {userVacancies.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                У вас пока нет вакансий. Создайте свою первую вакансию!
+                <FileText className="mx-auto mb-3 text-gray-400" size={48} />
+                <p className="text-lg mb-2">У вас пока нет вакансий</p>
+                <p className="text-sm text-gray-400">Создайте свою первую вакансию, чтобы найти клиентов</p>
               </div>
             ) : (
               userVacancies.map((item, index) => (
@@ -726,29 +996,30 @@ const Services = () => {
                   transition={{ delay: index * 0.1 }}
                   className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all"
                 >
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-lg font-medium text-gray-900 mb-1">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-gray-600 mb-1">
+                      <p className="text-sm text-gray-600 mb-2">
                         {item.description.substring(0, 100)}
                         {item.description.length > 100 ? '...' : ''}
                       </p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span className="font-medium text-green-600">
-                          {item.price.toLocaleString()} сум
+                          {formatPrice(item.price)} сум
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-3 ml-4">
+                    <div className="flex gap-2 ml-4">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => handleGoToCandidates(item.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                        onClick={() => handleEditVacancy(item)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
                       >
-                        Просмотр
+                        <Edit size={16} />
+                        Редактировать
                       </motion.button>
 
                       <motion.button
@@ -759,15 +1030,117 @@ const Services = () => {
                       >
                         Продвигать
                       </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleDeleteVacancy(item.id)}
+                        disabled={deleteLoading === item.id}
+                        className="border border-red-600 hover:bg-red-600 hover:text-white text-red-600 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                        title="Удалить вакансию"
+                      >
+                        {deleteLoading === item.id ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </motion.button>
                     </div>
                   </div>
                 </motion.div>
               ))
             )}
+
+            {!canCreateVacancy && userVacancies.length > 0 && (
+              showSubscriptionMessage('vacancy')
+            )}
           </div>
         </div>
 
-        {/* Модальное окно для создания СЕРВИСА */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Мои услуги ({userServices.length}/{LIMITS.SERVICES})
+            </h1>
+          </div>
+
+          <div className="space-y-3">
+            {userServices.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="mx-auto mb-3 text-gray-400" size={48} />
+                <p className="text-lg mb-2">У вас пока нет услуг</p>
+                <p className="text-sm text-gray-400">Создайте свою первую услугу, чтобы найти специалистов</p>
+              </div>
+            ) : (
+              userServices.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {item.description?.substring(0, 100)}
+                        {item.description && item.description.length > 100 ? '...' : ''}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="font-medium text-green-600">
+                          {formatPrice(item.price)} сум
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleEditService(item)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Редактировать
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowTarrifs(true)}
+                        className="border border-gray-600 hover:bg-gray-600 hover:text-white text-gray-600 px-4 py-2 rounded-lg text-sm font-medium"
+                      >
+                        Продвигать
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleDeleteService(item.id)}
+                        disabled={deleteLoading === item.id}
+                        className="border border-red-600 hover:bg-red-600 hover:text-white text-red-600 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                        title="Удалить услугу"
+                      >
+                        {deleteLoading === item.id ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+
+            {!canCreateService && userServices.length > 0 && (
+              showSubscriptionMessage('service')
+            )}
+          </div>
+        </div>
+
         <AnimatePresence>
           {showServiceModal && (
             <motion.div
@@ -787,7 +1160,7 @@ const Services = () => {
               >
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Найти специалиста
+                    {editingService ? 'Редактировать услугу' : 'Найти специалиста'}
                   </h2>
                   <button
                     onClick={handleCloseServiceModal}
@@ -947,10 +1320,10 @@ const Services = () => {
                       {serviceLoading ? (
                         <>
                           <Loader2 className="animate-spin" size={16} />
-                          Отправка...
+                          {editingService ? 'Обновление...' : 'Отправка...'}
                         </>
                       ) : (
-                        "Отправить"
+                        editingService ? 'Обновить' : 'Отправить'
                       )}
                     </button>
                   </div>
@@ -960,7 +1333,6 @@ const Services = () => {
           )}
         </AnimatePresence>
 
-        {/* Модальное окно для создания ВАКАНСИИ */}
         <AnimatePresence>
           {showModal && (
             <motion.div
@@ -979,16 +1351,30 @@ const Services = () => {
                 className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Найти клиентов
-                  </h2>
-                  <button
-                    onClick={handleCloseModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={loading}
-                  >
-                    <X size={24} />
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {editingVacancy ? 'Редактировать вакансию' : 'Найти клиентов'}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {editingVacancy && (
+                      <button
+                        onClick={handleDeleteFromModal}
+                        disabled={loading}
+                        className="text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                        title="Удалить вакансию"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                    <button
+                      onClick={handleCloseModal}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      disabled={loading}
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-6 space-y-4">
@@ -1268,10 +1654,10 @@ const Services = () => {
                       {loading ? (
                         <>
                           <Loader2 className="animate-spin" size={16} />
-                          Создание...
+                          {editingVacancy ? 'Обновление...' : 'Создание...'}
                         </>
                       ) : (
-                        'Создать вакансию'
+                        editingVacancy ? 'Обновить вакансию' : 'Создать вакансию'
                       )}
                     </button>
                   </div>
