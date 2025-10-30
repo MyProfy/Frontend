@@ -99,6 +99,7 @@ const Security = () => {
 
       console.log("🔐 Попытка смены пароля...");
 
+      // Получаем текущего пользователя
       const currentUser = await apiClient.getCurrentUser();
       
       if (!currentUser || !currentUser.id) {
@@ -107,88 +108,58 @@ const Security = () => {
 
       console.log("👤 Пользователь:", currentUser.id);
 
+      // Шаг 1: Проверяем текущий пароль через логин
       try {
-        await apiClient.changePassword({
-          old_password: formData.currentPassword,
-          new_password: formData.newPassword
+        await apiClient.login({
+          phone: currentUser.phone,
+          password: formData.currentPassword
         });
-        
-        console.log("✅ Пароль успешно изменен через API");
+
+        console.log("✅ Текущий пароль подтвержден");
+
+        // Шаг 2: Обновляем пароль через updateProfile
+        const updateData = {
+          // Обязательные поля
+          name: currentUser.name,
+          phone: currentUser.phone,
+          role: currentUser.role,
+          region: currentUser.region,
+          // Новый пароль
+          password: formData.newPassword,
+          // Остальные поля (если есть)
+          ...(currentUser.about_user && { about_user: currentUser.about_user }),
+          ...(currentUser.work_experience && { work_experience: currentUser.work_experience }),
+          ...(currentUser.email && { email: currentUser.email }),
+          ...(currentUser.telegram_username && { telegram_username: currentUser.telegram_username }),
+          ...(currentUser.gender && { gender: currentUser.gender }),
+          ...(currentUser.birthday && { birthday: currentUser.birthday }),
+          ...(currentUser.avatar && { avatar: currentUser.avatar }),
+        };
+
+        console.log("📤 Отправляемые данные для обновления:", updateData);
+
+        await apiClient.updateProfile(currentUser.id, updateData);
+
+        console.log("✅ Пароль успешно изменен через updateProfile");
         setSuccess(true);
 
+        // Очищаем форму
         setFormData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: ""
         });
 
+        // Показываем сообщение об успехе
         setTimeout(() => {
           setSuccess(false);
         }, 5000);
 
-      } catch (apiError: any) {
-        console.error("❌ Ошибка API смены пароля:", apiError);
-
-        if (apiError.message?.includes("not a function") || apiError.response?.status === 404) {
-          console.log("🔄 Пробуем альтернативный метод через updateProfile...");
-
-          try {
-            await apiClient.login({
-              phone: currentUser.phone,
-              password: formData.currentPassword
-            });
-
-            console.log("✓ Текущий пароль подтвержден");
-
-            await apiClient.updateProfile(currentUser.id, {
-              name: currentUser.name,
-              phone: currentUser.phone,
-              role: currentUser.role,
-              password: formData.newPassword, 
-              region: currentUser.region,
-              gender: currentUser.gender,
-              work_experience: currentUser.work_experience,
-              birthday: currentUser.birthday,
-              email: currentUser.email,
-              telegram_username: currentUser.telegram_username,
-              about_user: currentUser.about_user,
-            });
-
-            console.log("✅ Пароль успешно изменен через updateProfile");
-            setSuccess(true);
-
-            // Очищаем форму
-            setFormData({
-              currentPassword: "",
-              newPassword: "",
-              confirmPassword: ""
-            });
-
-            // Показываем сообщение
-            setTimeout(() => {
-              setSuccess(false);
-            }, 5000);
-
-          } catch (loginError: any) {
-            console.error("❌ Неверный текущий пароль:", loginError);
-            setErrors({ 
-              currentPassword: "Неверный текущий пароль" 
-            });
-          }
-        } else {
-          // Обрабатываем другие ошибки API
-          if (apiError.response?.status === 400) {
-            setErrors({ 
-              currentPassword: "Неверный текущий пароль" 
-            });
-          } else if (apiError.response?.status === 401) {
-            setErrors({ 
-              submit: "Сессия истекла. Пожалуйста, войдите снова" 
-            });
-          } else {
-            throw apiError;
-          }
-        }
+      } catch (loginError: any) {
+        console.error("❌ Неверный текущий пароль:", loginError);
+        setErrors({ 
+          currentPassword: "Неверный текущий пароль" 
+        });
       }
 
     } catch (error: any) {

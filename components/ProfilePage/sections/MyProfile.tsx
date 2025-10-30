@@ -23,12 +23,80 @@ const MyProfile = () => {
 
   const apiClient = getAPIClient();
 
-  // Функция для нормализации gender (если вдруг пришел массив)
-  const normalizeGender = (gender: any): string => {
-    if (Array.isArray(gender)) {
-      return gender[0] || "";
-    }
-    return gender || "";
+  // Функция для преобразования gender между английским и русским
+  const normalizeGenderToServer = (gender: string): string => {
+    const genderMap: { [key: string]: string } = {
+      "male": "мужской",
+      "female": "женский",
+      "мужской": "мужской",
+      "женский": "женский"
+    };
+    return genderMap[gender] || gender;
+  };
+
+  const normalizeGenderFromServer = (gender: string): string => {
+    const genderMap: { [key: string]: string } = {
+      "мужской": "male",
+      "женский": "female",
+      "male": "male",
+      "female": "female"
+    };
+    return genderMap[gender] || gender;
+  };
+
+  const normalizeGenderForDisplay = (gender: string): string => {
+    const genderMap: { [key: string]: string } = {
+      "male": "Мужской",
+      "female": "Женский",
+      "мужской": "Мужской",
+      "женский": "Женский"
+    };
+    return genderMap[gender] || "Не указано";
+  };
+
+  // Функция для преобразования региона в правильный формат
+  const normalizeRegion = (region: string): string => {
+    const regionMap: { [key: string]: string } = {
+      "Ташкент": "Город Ташкент",
+      "танкент": "Город Ташкент",
+      "Ташкентская область": "Ташкентская область",
+      "Андижан": "Андижанская область",
+      "Бухара": "Бухарская область",
+      "Фергана": "Ферганская область",
+      "Джизак": "Джизакская область",
+      "Наманган": "Наманганская область",
+      "Навои": "Навоийская область",
+      "Кашкадарья": "Кашкадарьинская область",
+      "Самарканд": "Самаркандская область",
+      "Сырдарья": "Сырдарьинская область",
+      "Сурхандарья": "Сурхандарьинская область",
+      "Хорезм": "Хорезмская область",
+      "Республика Каракалпакстан": "Республика Каракалпакстан"
+    };
+    
+    return regionMap[region] || region;
+  };
+
+  // Функция для обратного преобразования региона для отображения в форме
+  const denormalizeRegion = (region: string): string => {
+    const reverseMap: { [key: string]: string } = {
+      "Город Ташкент": "Ташкент",
+      "Ташкентская область": "Ташкентская область",
+      "Андижанская область": "Андижан",
+      "Бухарская область": "Бухара",
+      "Ферганская область": "Фергана",
+      "Джизакская область": "Джизак",
+      "Наманганская область": "Наманган",
+      "Навоийская область": "Навои",
+      "Кашкадарьинская область": "Кашкадарья",
+      "Самаркандская область": "Самарканд",
+      "Сырдарьинская область": "Сырдарья",
+      "Сурхандарьинская область": "Сурхандарья",
+      "Хорезмская область": "Хорезм",
+      "Республика Каракалпакстан": "Республика Каракалпакстан"
+    };
+    
+    return reverseMap[region] || region;
   };
 
   useEffect(() => {
@@ -41,13 +109,13 @@ const MyProfile = () => {
         setUserData(user);
         setAboutText(user.about_user || "");
 
-        // Нормализуем gender при загрузке
-        const normalizedGender = normalizeGender(user.gender);
+        // Преобразуем gender с сервера для формы
+        const normalizedGender = normalizeGenderFromServer(user.gender || "");
 
         setFormData({
           name: user.name || "",
           gender: normalizedGender,
-          region: user.region || "",
+          region: denormalizeRegion(user.region || ""),
           work_experience: user.work_experience?.toString() || "",
           birthday: user.birthday || "",
           email: user.email || "",
@@ -55,7 +123,8 @@ const MyProfile = () => {
         });
 
         console.log("✅ Данные пользователя загружены с бэкенда:", user);
-        console.log("📝 Gender после нормализации:", normalizedGender);
+        console.log("📝 Gender после преобразования:", normalizedGender);
+        console.log("📍 Region после денормализации:", denormalizeRegion(user.region || ""));
       } catch (error: any) {
         console.error("❌ Ошибка загрузки данных пользователя:", error);
         if (error.message === "User data not found in localStorage") {
@@ -81,8 +150,8 @@ const MyProfile = () => {
         name: userData.name,
         phone: userData.phone,
         role: userData.role,
-        region: userData.region || "Ташкент",
-        gender: normalizeGender(userData.gender), // Нормализуем gender
+        region: normalizeRegion(userData.region || "Город Ташкент"),
+        gender: normalizeGenderToServer(userData.gender || ""), // Преобразуем для сервера
         work_experience: userData.work_experience || 0,
         birthday: userData.birthday,
         email: userData.email,
@@ -110,13 +179,13 @@ const MyProfile = () => {
       setSaving(true);
       console.log("💾 Сохранение профиля...", formData);
 
-      // ВАЖНО: Убедимся, что gender - это строка, а не массив
+      // ВАЖНО: Преобразуем данные перед отправкой на сервер
       const updateData = {
         name: formData.name || userData.name,
         phone: userData.phone,
         role: userData.role,
-        region: formData.region || userData.region || "Ташкент",
-        gender: formData.gender || normalizeGender(userData.gender), // Гарантируем строку
+        region: normalizeRegion(formData.region || userData.region || "Город Ташкент"),
+        gender: normalizeGenderToServer(formData.gender || userData.gender || ""), // Преобразуем для сервера
         work_experience: formData.work_experience ? parseInt(formData.work_experience) : userData.work_experience || 0,
         birthday: formData.birthday || userData.birthday,
         email: formData.email || userData.email,
@@ -125,17 +194,18 @@ const MyProfile = () => {
       };
 
       console.log("📤 Отправляемые данные (профиль):", updateData);
-      console.log("🔍 Тип gender:", typeof updateData.gender, "Значение:", updateData.gender);
+      console.log("🔍 Gender для сервера:", updateData.gender);
+      console.log("🔍 Region для сервера:", updateData.region);
 
       const updatedUser = await apiClient.updateProfile(userData.id, updateData);
       setUserData(updatedUser);
 
-      // Обновляем formData с нормализованными данными
-      const normalizedGender = normalizeGender(updatedUser.gender);
+      // Обновляем formData с преобразованными данными
+      const normalizedGender = normalizeGenderFromServer(updatedUser.gender || "");
       setFormData({
         name: updatedUser.name || "",
         gender: normalizedGender,
-        region: updatedUser.region || "",
+        region: denormalizeRegion(updatedUser.region || ""),
         work_experience: updatedUser.work_experience?.toString() || "",
         birthday: updatedUser.birthday || "",
         email: updatedUser.email || "",
@@ -147,6 +217,15 @@ const MyProfile = () => {
     } catch (error: any) {
       console.error("❌ Ошибка сохранения профиля:", error);
       console.error("📋 Детали ошибки:", error.response?.data);
+      
+      // Более детальный вывод ошибок валидации
+      if (error.response?.data) {
+        console.error("🔍 Ошибки валидации:");
+        Object.keys(error.response.data).forEach(field => {
+          console.error(`  ${field}:`, error.response.data[field]);
+        });
+      }
+      
       alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
     } finally {
       setSaving(false);
@@ -154,7 +233,7 @@ const MyProfile = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    console.log(`🔄 Изменение поля ${field}:`, value);
+    console.log(`🔄 Изменение поля ${field}:`, value, "Тип:", typeof value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -183,8 +262,8 @@ const MyProfile = () => {
     );
   }
 
-  // Нормализуем gender для отображения
-  const displayGender = normalizeGender(userData?.gender);
+  // Получаем gender для отображения
+  const displayGender = normalizeGenderForDisplay(userData?.gender || "");
 
   return (
     <>
@@ -217,15 +296,11 @@ const MyProfile = () => {
               <div className="flex items-center gap-5 text-gray-500 text-sm flex-wrap gap-y-3">
                 <div className="flex items-center gap-1.5">
                   <FaBriefcase className="w-3.5 h-3.5" />
-                  <span>
-                    {displayGender === 'male' ? 'Мужской' : 
-                     displayGender === 'female' ? 'Женский' : 
-                     'Не указано'}
-                  </span>
+                  <span>{displayGender}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FaMapMarkerAlt className="w-3.5 h-3.5" />
-                  <span>{userData?.region || 'Регион не указан'}</span>
+                  <span>{normalizeRegion(userData?.region || "") || 'Регион не указан'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <MdOutlinePhoneBluetoothSpeaker className="w-3.5 h-3.5" />
@@ -357,8 +432,8 @@ const MyProfile = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/10"
                     >
                       <option value="">Выберите пол</option>
-                      <option value="мужской">Мужской</option>
-                      <option value="женский">Женский</option>
+                      <option value="male">Мужской</option>
+                      <option value="female">Женский</option>
                     </select>
                   </div>
 
@@ -373,18 +448,19 @@ const MyProfile = () => {
                     >
                       <option value="">Выберите регион</option>
                       <option value="Республика Каракалпакстан">Республика Каракалпакстан</option>
-                      <option value="Ташкент">Ташкент</option>
-                      <option value="Самарканд">Самарканд</option>
-                      <option value="Бухара">Бухара</option>
-                      <option value="Андижан">Андижан</option>
-                      <option value="Наманган">Наманган</option>
-                      <option value="Фергана">Фергана</option>
-                      <option value="Навои">Навои</option>
-                      <option value="Хорезм">Хорезм</option>
-                      <option value="Сурхандарья">Сурхандарья</option>
-                      <option value="Сырдарья">Сырдарья</option>
-                      <option value="Джизак">Джизак</option>
-                      <option value="Кашкадарья">Кашкадарья</option>
+                      <option value="Ташкент">Город Ташкент</option>
+                      <option value="Ташкентская область">Ташкентская область</option>
+                      <option value="Самарканд">Самаркандская область</option>
+                      <option value="Бухара">Бухарская область</option>
+                      <option value="Андижан">Андижанская область</option>
+                      <option value="Наманган">Наманганская область</option>
+                      <option value="Фергана">Ферганская область</option>
+                      <option value="Навои">Навоийская область</option>
+                      <option value="Хорезм">Хорезмская область</option>
+                      <option value="Сурхандарья">Сурхандарьинская область</option>
+                      <option value="Сырдарья">Сырдарьинская область</option>
+                      <option value="Джизак">Джизакская область</option>
+                      <option value="Кашкадарья">Кашкадарьинская область</option>
                     </select>
                   </div>
 

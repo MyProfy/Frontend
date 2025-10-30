@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Оптимизация production build
+
   reactStrictMode: true,
-  
-  // Компрессия
+
   compress: true,
-  
-  // Оптимизация изображений
+
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -19,39 +17,37 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'myprofy.uz',
       },
+
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com', 
+      },
     ],
   },
 
-  // Оптимизация сборки
-  swcMinify: true, // Использование SWC вместо Terser (быстрее)
-  
-  // Experimental features для производительности
+  swcMinify: true,
+
   experimental: {
-    // Оптимизация CSS
+
     optimizeCss: true,
-    
-    // Оптимизация шрифтов
+
     optimizePackageImports: ['framer-motion', 'react-i18next'],
   },
 
-  // Webpack оптимизации
   webpack: (config, { dev, isServer }) => {
-    // Production оптимизации
     if (!dev && !isServer) {
-      // Tree shaking для lodash и других больших библиотек
+
       config.optimization = {
         ...config.optimization,
         usedExports: true,
         sideEffects: false,
       };
-      
-      // Bundle splitting
+
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
           default: false,
           vendors: false,
-          // Vendor chunk для больших библиотек
           framework: {
             name: 'framework',
             chunks: 'all',
@@ -59,7 +55,7 @@ const nextConfig = {
             priority: 40,
             enforce: true,
           },
-          // Отдельный chunk для framer-motion
+
           framerMotion: {
             name: 'framer-motion',
             test: /[\\/]node_modules[\\/](framer-motion)[\\/]/,
@@ -96,7 +92,6 @@ const nextConfig = {
       };
     }
 
-    // Алиасы для удобства
     config.resolve.alias = {
       ...config.resolve.alias,
       '@components': './src/components',
@@ -108,7 +103,6 @@ const nextConfig = {
     return config;
   },
 
-  // Headers для кеширования
   async headers() {
     return [
       {
@@ -143,14 +137,14 @@ const nextConfig = {
   },
 
   compiler: {
-      removeConsole: process.env.NODE_ENV === 'production' ? {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
   },
 
-  output: 'standalone', 
+  output: 'standalone',
 
-  
+
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -245,3 +239,4 @@ module.exports = nextConfig;
 //   [withPWA],
 //   [withBundleAnalyzer],
 // ], nextConfig);
+
