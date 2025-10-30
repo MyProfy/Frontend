@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaMapMarkerAlt, FaBriefcase, FaCalendar, FaEdit } from "react-icons/fa";
+import { FaMapMarkerAlt, FaBriefcase, FaCalendar, FaEdit, FaCamera } from "react-icons/fa";
 import { MdOutlinePhoneBluetoothSpeaker } from "react-icons/md";
 import { getAPIClient } from "@/components/types/apiClient";
 import { User } from "@/components/types/apiTypes";
@@ -11,6 +11,10 @@ const MyProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aboutText, setAboutText] = useState("");
+  const [avatarBase64, setAvatarBase64] = useState<string>("");
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     name: "",
     gender: "",
@@ -23,7 +27,6 @@ const MyProfile = () => {
 
   const apiClient = getAPIClient();
 
-  // Функция для преобразования gender между английским и русским
   const normalizeGenderToServer = (gender: string): string => {
     const genderMap: { [key: string]: string } = {
       "male": "мужской",
@@ -54,7 +57,6 @@ const MyProfile = () => {
     return genderMap[gender] || "Не указано";
   };
 
-  // Функция для преобразования региона в правильный формат
   const normalizeRegion = (region: string): string => {
     const regionMap: { [key: string]: string } = {
       "Ташкент": "Город Ташкент",
@@ -73,11 +75,9 @@ const MyProfile = () => {
       "Хорезм": "Хорезмская область",
       "Республика Каракалпакстан": "Республика Каракалпакстан"
     };
-    
     return regionMap[region] || region;
   };
 
-  // Функция для обратного преобразования региона для отображения в форме
   const denormalizeRegion = (region: string): string => {
     const reverseMap: { [key: string]: string } = {
       "Город Ташкент": "Ташкент",
@@ -95,8 +95,56 @@ const MyProfile = () => {
       "Хорезмская область": "Хорезм",
       "Республика Каракалпакстан": "Республика Каракалпакстан"
     };
-    
     return reverseMap[region] || region;
+  };
+
+  // Конвертация файла в base64 (без префикса)
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // Убираем префикс для отправки на сервер
+        const base64Clean = result.replace(/^data:image\/\w+;base64,/, '');
+        resolve(base64Clean);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Обработчик выбора файла
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Проверка размера файла (максимум 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Файл слишком большой. Максимальный размер: 5MB");
+        return;
+      }
+
+      // Проверка типа файла
+      if (!file.type.startsWith('image/')) {
+        alert("Пожалуйста, выберите изображение");
+        return;
+      }
+
+      try {
+        const base64Clean = await convertToBase64(file);
+        setAvatarBase64(base64Clean);
+        // Для preview добавляем префикс обратно
+        setAvatarPreview(`data:image/jpeg;base64,${base64Clean}`);
+        console.log("✅ Аватар готов к отправке");
+      } catch (error) {
+        console.error("❌ Ошибка конвертации изображения:", error);
+        alert("Не удалось обработать изображение");
+      }
+    }
+  };
+
+  // Открытие диалога выбора файла
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
   };
 
   useEffect(() => {
@@ -108,8 +156,17 @@ const MyProfile = () => {
         const user = await apiClient.getCurrentUser();
         setUserData(user);
         setAboutText(user.about_user || "");
+        
+        // Обработка аватара с учетом префикса
+        if (user.avatar) {
+          const avatarWithPrefix = user.avatar.startsWith('data:') 
+            ? user.avatar 
+            : `data:image/jpeg;base64,${user.avatar}`;
+          setAvatarPreview(avatarWithPrefix);
+          // Сохраняем чистый base64 для сравнения
+          setAvatarBase64(user.avatar.replace(/^data:image\/\w+;base64,/, ''));
+        }
 
-        // Преобразуем gender с сервера для формы
         const normalizedGender = normalizeGenderFromServer(user.gender || "");
 
         setFormData({
@@ -123,8 +180,6 @@ const MyProfile = () => {
         });
 
         console.log("✅ Данные пользователя загружены с бэкенда:", user);
-        console.log("📝 Gender после преобразования:", normalizedGender);
-        console.log("📍 Region после денормализации:", denormalizeRegion(user.region || ""));
       } catch (error: any) {
         console.error("❌ Ошибка загрузки данных пользователя:", error);
         if (error.message === "User data not found in localStorage") {
@@ -151,12 +206,13 @@ const MyProfile = () => {
         phone: userData.phone,
         role: userData.role,
         region: normalizeRegion(userData.region || "Город Ташкент"),
-        gender: normalizeGenderToServer(userData.gender || ""), // Преобразуем для сервера
+        gender: normalizeGenderToServer(userData.gender || ""),
         work_experience: userData.work_experience || 0,
         birthday: userData.birthday,
         email: userData.email,
         telegram_username: userData.telegram_username,
         about_user: aboutText,
+        avatar: userData.avatar || "",
       };
 
       console.log("📤 Отправляемые данные (о себе):", updateData);
@@ -179,28 +235,49 @@ const MyProfile = () => {
       setSaving(true);
       console.log("💾 Сохранение профиля...", formData);
 
-      // ВАЖНО: Преобразуем данные перед отправкой на сервер
-      const updateData = {
+      // Подготовка данных аватара
+      let avatarData = undefined; // По умолчанию не отправляем поле avatar
+      
+      if (avatarBase64 && avatarBase64 !== userData.avatar) {
+        // Если аватар изменился, используем чистый base64 (уже без префикса)
+        avatarData = avatarBase64;
+        console.log("📷 Отправляем новый аватар (base64 без префикса)");
+      }
+
+      const updateData: any = {
         name: formData.name || userData.name,
         phone: userData.phone,
         role: userData.role,
         region: normalizeRegion(formData.region || userData.region || "Город Ташкент"),
-        gender: normalizeGenderToServer(formData.gender || userData.gender || ""), // Преобразуем для сервера
+        gender: normalizeGenderToServer(formData.gender || userData.gender || ""),
         work_experience: formData.work_experience ? parseInt(formData.work_experience) : userData.work_experience || 0,
         birthday: formData.birthday || userData.birthday,
         email: formData.email || userData.email,
         telegram_username: formData.telegram_username || userData.telegram_username,
-        about_user: userData.about_user,
+        about_user: userData.about_user || "",
       };
 
-      console.log("📤 Отправляемые данные (профиль):", updateData);
-      console.log("🔍 Gender для сервера:", updateData.gender);
-      console.log("🔍 Region для сервера:", updateData.region);
+      // Добавляем avatar только если он изменился
+      if (avatarData) {
+        updateData.avatar = avatarData;
+      }
+
+      console.log("📤 Отправляемые данные (профиль):", {
+        ...updateData,
+        avatar: avatarData ? `[base64 image ${avatarData.length} chars]` : "не изменен"
+      });
 
       const updatedUser = await apiClient.updateProfile(userData.id, updateData);
       setUserData(updatedUser);
+      
+      // Обновляем preview с учетом того, что сервер может вернуть base64 с префиксом или без
+      if (updatedUser.avatar) {
+        const avatarWithPrefix = updatedUser.avatar.startsWith('data:') 
+          ? updatedUser.avatar 
+          : `data:image/jpeg;base64,${updatedUser.avatar}`;
+        setAvatarPreview(avatarWithPrefix);
+      }
 
-      // Обновляем formData с преобразованными данными
       const normalizedGender = normalizeGenderFromServer(updatedUser.gender || "");
       setFormData({
         name: updatedUser.name || "",
@@ -218,7 +295,6 @@ const MyProfile = () => {
       console.error("❌ Ошибка сохранения профиля:", error);
       console.error("📋 Детали ошибки:", error.response?.data);
       
-      // Более детальный вывод ошибок валидации
       if (error.response?.data) {
         console.error("🔍 Ошибки валидации:");
         Object.keys(error.response.data).forEach(field => {
@@ -233,7 +309,6 @@ const MyProfile = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    console.log(`🔄 Изменение поля ${field}:`, value, "Тип:", typeof value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -262,7 +337,6 @@ const MyProfile = () => {
     );
   }
 
-  // Получаем gender для отображения
   const displayGender = normalizeGenderForDisplay(userData?.gender || "");
 
   return (
@@ -275,18 +349,35 @@ const MyProfile = () => {
       >
         <div className="p-8 md:p-6 sm:p-5 flex items-start justify-between gap-5 flex-col md:flex-col lg:flex-row">
           <div className="flex gap-5 flex-1 w-full">
-            <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
-              {userData?.avatar ? (
+            <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 group cursor-pointer">
+              {avatarPreview ? (
                 <img
-                  src={userData.avatar}
+                  src={avatarPreview}
                   alt={userData.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg font-semibold">
-                  {userData?.name?.charAt(0) || "U"}
+                <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl font-bold">
+                  {userData?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
               )}
+              
+              {/* Overlay при наведении */}
+              <div 
+                onClick={handleAvatarClick}
+                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <FaCamera className="text-white text-xl" />
+              </div>
+              
+              {/* Скрытый input для выбора файла */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
             </div>
 
             <div className="flex-1">
@@ -371,6 +462,37 @@ const MyProfile = () => {
 
               <div className="p-6">
                 <div className="space-y-4">
+                  {/* Выбор аватара */}
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-200 group cursor-pointer mb-2">
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-3xl font-bold">
+                          {userData?.name?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                      )}
+                      
+                      <div 
+                        onClick={handleAvatarClick}
+                        className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <FaCamera className="text-white text-2xl" />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAvatarClick}
+                      className="text-sm text-green-600 hover:text-green-700 font-medium"
+                    >
+                      {avatarPreview ? 'Изменить фото' : 'Добавить фото'}
+                    </button>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Имя

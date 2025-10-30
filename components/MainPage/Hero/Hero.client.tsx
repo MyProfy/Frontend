@@ -196,7 +196,6 @@ const SearchBlock = memo(({
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setTimeout(() => {
           if (searchRef.current) {
-            // State will be handled by parent
           }
         }, 100);
       }
@@ -375,7 +374,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
     specialistsTitle: mode === 'client'
       ? t("specialists.title", "Специалисты по категориям")
       : t("specialists.titleSpecialist", "Популярные категории для специалистов"),
-    specialistsDescFull: `254 ${mode === 'client'
+    specialistsDescFull: `806 ${mode === 'client'
       ? t("specialists.description", "минут на заказ")
       : t("specialists.descriptionSpecialist", "минут на регистрацию")}`,
     requestTitle: mode === 'client'
@@ -391,8 +390,8 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       ? t("request.button", "Найти специалиста")
       : t("request.buttonSpecialist", "Создать профиль"),
     styledDescContent: mode === 'client'
-      ? t("request.statsClient", "Из 254 специалистов обязательно найдется тот кто поможет")
-      : t("request.statsSpecialist", "Из 254 заказов обязательно найдется тот, кто оценит ваши услуги"),
+      ? t("request.statsClient", "Из 806 специалистов обязательно найдется тот кто поможет")
+      : t("request.statsSpecialist", "Из 806 заказов обязательно найдется тот, кто оценит ваши услуги"),
   }), [mode, t]);
 
   const getDisplayName = useCallback((item: Category | SubCategory | Service | Vacancy) => {
@@ -508,7 +507,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       if (matchedCategory) {
         router.push(`/vacancies?category=${matchedCategory.id}`);
       } else {
-        router.push(`/vacancies?q=${encodeURIComponent(searchQuery)}`);
+        router.push(`/vacancies?=${encodeURIComponent(searchQuery)}`);
       }
 
       setShowResults(false);
@@ -518,19 +517,20 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
   const handleResultClick = useCallback((result: any) => {
     switch (result.type) {
       case 'category':
-        router.push(`/vacancies?category=${result.categoryId}`);
+        router.push(`/vacancies?category=${result.categoryId}&mode=vacancies`);
         break;
       case 'subcategory':
-        router.push(`/vacancies?category=${result.categoryId}&subcategory=${result.subCategoryId}`);
+        router.push(`/vacancies?category=${result.categoryId}&subcategory=${result.subCategoryId}&mode=vacancies`);
         break;
       case 'service':
         router.push(`/services/${result.serviceId}`);
         break;
       case 'vacancies':
-        router.push(`/vacancies/${result.vacanciesId}`);
+
+        router.push(`/vacancies?vacancyId=${result.vacanciesId}&mode=vacancies`);
         break;
       default:
-        router.push(`/vacancies?q=${encodeURIComponent(result.name)}`);
+        router.push(`/vacancies?q=${encodeURIComponent(result.name)}&mode=vacancies`);
     }
     setSearchQuery(result.name);
     setShowResults(false);
@@ -574,7 +574,7 @@ const BannerClient = ({ initialSlide = 1 }: BannerClientProps) => {
       if (stored) {
         counts[category.id] = Number(stored);
       } else {
-        const randomValue = Math.floor(Math.random() * (60 - 50 + 1)) + 10;
+        const randomValue = Math.floor(Math.random() * (60 - 50 + 1)) + 50;
         counts[category.id] = randomValue;
         localStorage.setItem(`category_${category.id}_count`, randomValue);
       }

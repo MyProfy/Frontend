@@ -14,6 +14,7 @@ import { FaUser, FaSignOutAlt } from "react-icons/fa";
 import MyProfiLogo from "../../public/avatar/logo.svg";
 import UzFlag from "../../public/🇺🇿.png";
 import RusFlag from "../../public/🇷🇺.png";
+import { Phone } from "lucide-react";
 
 const RegionModal = React.lazy(() => import("../RegionModal/RegionModal"));
 const LanguageModal = React.lazy(() => import("../LanguageModalProps/LanguageModalProps"));
@@ -45,7 +46,8 @@ const LanguageButton = memo(({ onClick, flag, lang }: any) => (
 ));
 LanguageButton.displayName = "LanguageButton";
 
-const ProfileButton = memo(({ isAuthenticated, onProfileClick, onLoginClick, onLogoutClick, t }: any) => (
+// ИСПРАВЛЕННЫЙ ProfileButton - добавлен пропс user
+const ProfileButton = memo(({ isAuthenticated, user, onProfileClick, onLoginClick, onLogoutClick, t }: any) => (
   isAuthenticated ? (
     <div className="relative group">
       <button
@@ -54,8 +56,33 @@ const ProfileButton = memo(({ isAuthenticated, onProfileClick, onLoginClick, onL
       >
         <FaUser className="size-5" />
       </button>
-      
-      <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+
+      <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+        {/* Расширенная информация о пользователе */}
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <span className="text-xs font-medium text-gray-600">
+                {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+              </span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.name || 'Пользователь'}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {user?.email || ''}
+            </p>
+          </div>
+        </div>
+
         <button
           onClick={onLogoutClick}
           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-lg transition-colors"
@@ -161,6 +188,7 @@ const MobileMenu = memo(({
                 <FaUser className="text-white" />
                 {userName || t('navbar.profile', "Профиль")}
               </button>
+
               <button
                 onClick={onLogoutClick}
                 className="w-full bg-red-600 text-white px-5 py-3 border-none rounded-lg font-semibold cursor-pointer text-sm transition-colors duration-200 hover:bg-red-700 flex items-center justify-center gap-2"
@@ -296,7 +324,7 @@ export default function Navbar() {
 
   const handleLogout = useCallback(async () => {
     if (isLoggingOut) return;
-    
+
     if (!window.confirm(t('navbar.logoutConfirm', "Вы уверены, что хотите выйти?"))) {
       return;
     }
@@ -305,15 +333,13 @@ export default function Navbar() {
       setIsLoggingOut(true);
       console.log("🚪 Выход из системы...");
 
-      // Диспатчим действие логаута в Redux
       dispatch(logout());
 
-      // Закрываем мобильное меню если открыто
       setMobileOpen(false);
 
-      // Перенаправляем на главную страницу
+
       router.push("/");
-      
+
       console.log("✅ Успешный выход из системы");
     } catch (error) {
       console.error("❌ Ошибка при выходе из системы:", error);
@@ -366,6 +392,7 @@ export default function Navbar() {
 
           <ProfileButton
             isAuthenticated={isAuthenticated}
+            user={user}
             onProfileClick={handleProfileClick}
             onLoginClick={() => setShowAuthModal(true)}
             onLogoutClick={handleLogout}
