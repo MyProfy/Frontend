@@ -6,7 +6,7 @@ import 'flag-icons/css/flag-icons.min.css';
 
 export const metadata: Metadata = {
   title: "MyProfy",
-  description: "Platform for services and vacancies",
+  description: "MYPROFY.uz - Платформа, где специалисты и клиенты находят друг друга.",
   icons: {
     icon: "/MyProfyLogo.png",
   },
