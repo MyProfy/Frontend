@@ -18,6 +18,13 @@ interface Subcategory {
   name?: string;
 }
 
+interface User {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export default function Create() {
   const [step, setStep] = useState<number>(1);
   const [title, setTitle] = useState<string>("");
@@ -32,11 +39,30 @@ export default function Create() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const router = useRouter();
 
+  // Set client-side flag and get auth data
   useEffect(() => {
     setIsClient(true);
+    
+    // Get user data from localStorage
+    const userData = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    
+    if (userData) {
+      try {
+        setCurrentUser(JSON.parse(userData));
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+      }
+    }
+    
+    if (token) {
+      setAuthToken(token);
+    }
   }, []);
 
   // Fetch categories & subcategories
@@ -47,11 +73,11 @@ export default function Create() {
           fetch("https://api.myprofy.uz/api/categories/"),
           fetch("https://api.myprofy.uz/api/subcategories/"),
         ]);
-
+        
         if (!catRes.ok || !subRes.ok) {
-          throw new Error("Failed to fetch categories/subcategories");
+          throw new Error("Failed to fetch categories");
         }
-
+        
         const catData = await catRes.json();
         const subData = await subRes.json();
 
@@ -59,7 +85,6 @@ export default function Create() {
         setSubcategories(Array.isArray(subData) ? subData : subData.results || []);
       } catch (err) {
         console.error("Error loading categories:", err);
-        alert("Не удалось загрузить категории. Попробуйте позже.");
       }
     };
     fetchData();
@@ -82,14 +107,18 @@ export default function Create() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert("Файл слишком большой! Максимум 10MB.");
+        alert("❌ Файл слишком большой. Максимальный размер: 10MB");
         return;
       }
+      
       setImage(file);
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (e.target?.result) {
+          setImagePreview(e.target.result as string);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -97,77 +126,105 @@ export default function Create() {
 
   const handleCreate = async () => {
     if (!title || !description || !selectedCategory) {
-      alert("Пожалуйста, заполните все обязательные поля!");
+      alert("❌ Пожалуйста, заполните все обязательные поля!");
       return;
     }
 
-    if (description.length < 20) {
-      alert("Описание должно содержать минимум 20 символов.");
+
+    // Check if user is authenticated
+    if (!currentUser || !authToken) {
+      alert("❌ Вы должны быть авторизованы для создания вакансии!");
+      router.push("/auth");
       return;
     }
 
     setLoading(true);
-
-    // Get auth token (adjust key if needed)
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-    if (!token) {
-      alert("Вы не авторизованы! Пожалуйста, войдите в систему.");
-      router.push("/login");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("category", selectedCategory);
-      if (selectedSubcategory) formData.append("sub_category", selectedSubcategory);
-      if (price) formData.append("price", price);
-      if (image) formData.append("image", image);
+      // Create payload with current user ID
+      const payload: any = {
+        title: title.trim(),
+        description: description.trim(),
+        category: Number(selectedCategory),
+        client: currentUser.id, // Use actual user ID instead of hardcoded value
+      };
+
+      // Add optional fields
+      if (price) {
+        const priceValue = Number(price);
+        if (priceValue > 0) {
+          payload.price = priceValue;
+        }
+      }
+      
+      if (selectedSubcategory) {
+        payload.sub_category = Number(selectedSubcategory);
+      }
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      };
+
+      // Add authorization header if token exists
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
 
       const res = await fetch("https://api.myprofy.uz/api/vacancies/", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Do NOT set Content-Type — browser sets it with boundary
-        },
-        body: formData,
+        headers,
+        body: JSON.stringify(payload),
       });
 
-      // Always read text first to debug
-      const text = await res.text();
-
-      let data;
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch (e) {
-        console.error("Invalid JSON response:", text.substring(0, 500));
-        throw new Error("Сервер вернул некорректный ответ. Попробуйте позже.");
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text);
+        
+        if (res.status === 401) {
+          throw new Error("Ошибка авторизации. Пожалуйста, войдите снова.");
+        } else if (res.status === 500) {
+          throw new Error("Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.");
+        } else {
+          throw new Error(`Сервер вернул ошибку: ${res.status}. Попробуйте позже.`);
+        }
       }
+
+      const data = await res.json();
 
       if (!res.ok) {
-        const errorMsg = data.detail || data.message || JSON.stringify(data);
         console.error("API Error:", data);
-        throw new Error(errorMsg);
+        
+        if (data.detail) {
+          throw new Error(data.detail);
+        } else if (data.client) {
+          throw new Error(`Ошибка клиента: ${Array.isArray(data.client) ? data.client[0] : data.client}`);
+        } else if (data.category) {
+          throw new Error(`Ошибка категории: ${Array.isArray(data.category) ? data.category[0] : data.category}`);
+        } else {
+          throw new Error(data.message || "Ошибка при создании вакансии");
+        }
       }
 
-      alert("Вакансия успешно создана!");
+      alert("✅ Вакансия успешно создана!");
       router.push("/");
     } catch (error: any) {
-      console.error("Submission error:", error);
-      alert(`Ошибка: ${error.message}`);
+      console.error("Error details:", error);
+      alert(`❌ ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
 
-  const getProgress = () => (step / 4) * 100;
+  const getProgress = () => {
+    return (step / 4) * 100;
+  };
 
+  // Prevent rendering until client-side to avoid hydration mismatch
   if (!isClient) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -185,6 +242,7 @@ export default function Create() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pb-12">
         {/* Progress Bar */}
@@ -209,9 +267,9 @@ export default function Create() {
           {step === 1 && (
             <motion.div
               key="step1"
-              initial={{ x: "-100%", opacity: 0 }}
+              initial={{ x: step > 1 ? "-100%" : "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "100%", opacity: 0 }}
+              exit={{ x: step > 1 ? "100%" : "-100%", opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
@@ -255,11 +313,12 @@ export default function Create() {
                       className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all resize-none text-gray-800 placeholder:text-gray-400"
                     />
                     <p className="text-xs text-gray-500 mt-2">
-                      Минимум 20 символов ({description.length}/20)
+                      Минимум 20 символов
                     </p>
                   </div>
                 </div>
               </div>
+
 
               <div className="flex justify-between items-center mt-6">
                 <button
@@ -283,9 +342,9 @@ export default function Create() {
           {step === 2 && (
             <motion.div
               key="step2"
-              initial={{ x: "-100%", opacity: 0 }}
+              initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "100%", opacity: 0 }}
+              exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
@@ -302,6 +361,7 @@ export default function Create() {
                     Это поможет специалистам найти вашу задачу
                   </p>
                 </div>
+
 
                 <div className="space-y-6">
                   <div>
@@ -360,6 +420,7 @@ export default function Create() {
                       ))}
                     </div>
                   </div>
+
 
                   {filteredSubcategories.length > 0 && (
                     <motion.div
@@ -426,6 +487,7 @@ export default function Create() {
                 </div>
               </div>
 
+
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={prevStep}
@@ -448,9 +510,9 @@ export default function Create() {
           {step === 3 && (
             <motion.div
               key="step3"
-              initial={{ x: "-100%", opacity: 0 }}
+              initial={{ x: step > 3 ? "-100%" : "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "100%", opacity: 0 }}
+              exit={{ x: step > 3 ? "100%" : "-100%", opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
@@ -468,6 +530,7 @@ export default function Create() {
                   </p>
                 </div>
 
+
                 <div className="max-w-md mx-auto">
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors">
                     <input
@@ -480,9 +543,9 @@ export default function Create() {
                     <label htmlFor="image-upload" className="cursor-pointer">
                       {imagePreview ? (
                         <div className="space-y-4">
-                          <img
-                            src={imagePreview}
-                            alt="Preview"
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
                             className="mx-auto h-48 w-full object-cover rounded-lg"
                           />
                           <p className="text-sm text-gray-600">
@@ -507,7 +570,7 @@ export default function Create() {
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 mt-3 text-center">
-                    Фото помогает привлечь больше откликов от специалистов
+                    💡 Фото помогает привлечь больше откликов от специалистов
                   </p>
                 </div>
               </div>
@@ -528,6 +591,7 @@ export default function Create() {
               </div>
             </motion.div>
           )}
+
 
           {/* STEP 4 - Price & Summary */}
           {step === 4 && (
@@ -563,6 +627,7 @@ export default function Create() {
                       placeholder="Например: 500000"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
+                      min="0"
                       className="w-full px-4 py-4 pr-20 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-800 text-lg placeholder:text-gray-400"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
@@ -570,23 +635,32 @@ export default function Create() {
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-3">
-                    Вы можете оставить это поле пустым, если не уверены в цене
+                    💡 Вы можете оставить это поле пустым, если не уверены в цене
                   </p>
                 </div>
 
                 <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <h3 className="font-semibold text-gray-800 mb-2">Итоговые данные:</h3>
+                  <h3 className="font-semibold text-gray-800 mb-2">📋 Итоговые данные:</h3>
                   <ul className="space-y-1.5 text-sm text-gray-700">
                     <li><span className="font-medium">Название:</span> {title}</li>
                     <li><span className="font-medium">Категория:</span> {categories.find(c => c.id === Number(selectedCategory))?.display_ru || "Не указана"}</li>
                     {selectedSubcategory && (
                       <li><span className="font-medium">Подкатегория:</span> {filteredSubcategories.find(s => s.id === Number(selectedSubcategory))?.display_ru || "Не указана"}</li>
                     )}
-                    {image && <li><span className="font-medium">Фото:</span> Загружено</li>}
+                    {image && <li><span className="font-medium">Фото:</span> ✓ Загружено</li>}
                     {price && <li><span className="font-medium">Бюджет:</span> {Number(price).toLocaleString()} сум</li>}
                   </ul>
                 </div>
+
+                {!currentUser && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Вы не авторизованы. Для создания вакансии необходимо войти в систему.
+                    </p>
+                  </div>
+                )}
               </div>
+
 
               <div className="flex justify-between items-center mt-6">
                 <button
@@ -596,7 +670,7 @@ export default function Create() {
                   ← Назад
                 </button>
                 <button
-                  disabled={loading}
+                  disabled={loading || !currentUser}
                   onClick={handleCreate}
                   className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                 >
@@ -609,7 +683,9 @@ export default function Create() {
                       Создание...
                     </>
                   ) : (
-                    "Создать вакансию"
+                    <>
+                      <span>✓ Создать вакансию</span>
+                    </>
                   )}
                 </button>
               </div>
