@@ -4,6 +4,7 @@ import Navbar from "@/components/Header/Navbar";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Category {
   id: number;
@@ -44,11 +45,9 @@ export default function Create() {
 
   const router = useRouter();
 
-  // Set client-side flag and get auth data
   useEffect(() => {
     setIsClient(true);
     
-    // Get user data from localStorage
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     
@@ -65,7 +64,6 @@ export default function Create() {
     }
   }, []);
 
-  // Fetch categories & subcategories
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -90,7 +88,6 @@ export default function Create() {
     fetchData();
   }, []);
 
-  // Filter subcategories
   useEffect(() => {
     if (selectedCategory) {
       const filtered = subcategories.filter((sub) => {
@@ -107,9 +104,8 @@ export default function Create() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert("❌ Файл слишком большой. Максимальный размер: 10MB");
+        toast.error(" Файл слишком большой. Максимальный размер: 10MB");
         return;
       }
       
@@ -126,29 +122,26 @@ export default function Create() {
 
   const handleCreate = async () => {
     if (!title || !description || !selectedCategory) {
-      alert("❌ Пожалуйста, заполните все обязательные поля!");
+      toast.error("Пожалуйста, заполните все обязательные поля!");
       return;
     }
 
 
-    // Check if user is authenticated
     if (!currentUser || !authToken) {
-      alert("❌ Вы должны быть авторизованы для создания вакансии!");
+      toast.error("Вы должны быть авторизованы для создания вакансии!");
       router.push("/auth");
       return;
     }
 
     setLoading(true);
     try {
-      // Create payload with current user ID
       const payload: any = {
         title: title.trim(),
         description: description.trim(),
         category: Number(selectedCategory),
-        client: currentUser.id, // Use actual user ID instead of hardcoded value
+        client: currentUser.id, 
       };
 
-      // Add optional fields
       if (price) {
         const priceValue = Number(price);
         if (priceValue > 0) {
@@ -165,7 +158,6 @@ export default function Create() {
         "Accept": "application/json",
       };
 
-      // Add authorization header if token exists
       if (authToken) {
         headers["Authorization"] = `Bearer ${authToken}`;
       }
@@ -176,7 +168,6 @@ export default function Create() {
         body: JSON.stringify(payload),
       });
 
-      // Check if response is JSON
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await res.text();
@@ -207,11 +198,11 @@ export default function Create() {
         }
       }
 
-      alert("✅ Вакансия успешно создана!");
+      toast.success("Вакансия успешно создана!");
       router.push("/");
     } catch (error: any) {
       console.error("Error details:", error);
-      alert(`❌ ${error.message}`);
+      toast.error(`❌ ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -224,7 +215,6 @@ export default function Create() {
     return (step / 4) * 100;
   };
 
-  // Prevent rendering until client-side to avoid hydration mismatch
   if (!isClient) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -242,10 +232,7 @@ export default function Create() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
-
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pb-12">
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-center mb-3">
             <span className="text-sm sm:text-base text-gray-600 font-medium">
@@ -263,13 +250,12 @@ export default function Create() {
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
-          {/* STEP 1 - Title & Description */}
           {step === 1 && (
-            <motion.div
+              <motion.div
               key="step1"
-              initial={{ x: step > 1 ? "-100%" : "100%", opacity: 0 }}
+              initial={{ x: "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: step > 1 ? "100%" : "-100%", opacity: 0 }}
+              exit={{ x: "-100%", opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
@@ -323,14 +309,14 @@ export default function Create() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={() => router.push("/")}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 cursor-pointer font-medium transition-colors"
                 >
                   ← Отменить
                 </button>
                 <button
                   disabled={!title || !description || description.length < 20}
                   onClick={nextStep}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 cursor-pointer transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
                 >
                   Продолжить →
                 </button>
@@ -338,15 +324,14 @@ export default function Create() {
             </motion.div>
           )}
 
-          {/* STEP 2 - Category Selection */}
           {step === 2 && (
             <motion.div
-              key="step2"
-              initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
+            key="step2"
+            initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -376,7 +361,7 @@ export default function Create() {
                           onClick={() => setSelectedCategory(String(cat.id))}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                          className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
                             selectedCategory === String(cat.id)
                               ? "border-green-500 bg-green-50 shadow-md"
                               : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
@@ -407,7 +392,7 @@ export default function Create() {
                               )}
                             </div>
                             <span
-                              className={`font-medium text-sm ${
+                              className={`font-medium cursor-pointer text-sm ${
                                 selectedCategory === String(cat.id)
                                   ? "text-green-700"
                                   : "text-gray-700"
@@ -439,7 +424,7 @@ export default function Create() {
                             onClick={() => setSelectedSubcategory(String(sub.id))}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                            className={`relative p-4 rounded-xl cursor-pointer -2 transition-all text-left ${
                               selectedSubcategory === String(sub.id)
                                 ? "border-green-500 bg-green-50 shadow-md"
                                 : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
@@ -491,14 +476,14 @@ export default function Create() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={prevStep}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium cursor-pointer transition-colors"
                 >
                   ← Назад
                 </button>
                 <button
                   disabled={!selectedCategory}
                   onClick={nextStep}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 cursor-pointer transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
                 >
                   Продолжить →
                 </button>
@@ -506,15 +491,14 @@ export default function Create() {
             </motion.div>
           )}
 
-          {/* STEP 3 - Image Upload */}
           {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ x: step > 3 ? "-100%" : "100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: step > 3 ? "100%" : "-100%", opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
+             <motion.div
+             key="step3"
+             initial={{ x: step > 3 ? "-100%" : "100%", opacity: 0 }}
+             animate={{ x: 0, opacity: 1 }}
+             exit={{ x: step > 3 ? "100%" : "-100%", opacity: 0 }}
+             transition={{ duration: 0.4 }}
+           >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -578,13 +562,13 @@ export default function Create() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={prevStep}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 cursor-pointer font-medium transition-colors"
                 >
                   ← Назад
                 </button>
                 <button
                   onClick={nextStep}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200"
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl cursor-pointer  hover:bg-green-700 transition-all shadow-lg shadow-green-200"
                 >
                   Продолжить →
                 </button>
@@ -593,15 +577,14 @@ export default function Create() {
           )}
 
 
-          {/* STEP 4 - Price & Summary */}
           {step === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ x: "100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
+           <motion.div
+           key="step4"
+           initial={{ x: "100%", opacity: 0 }}
+           animate={{ x: 0, opacity: 1 }}
+           exit={{ x: "-100%", opacity: 0 }}
+           transition={{ duration: 0.4 }}
+         >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -665,14 +648,14 @@ export default function Create() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={prevStep}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  className="px-6 py-3 text-gray-600 cursor-pointer hover:text-gray-800 font-medium transition-colors"
                 >
                   ← Назад
                 </button>
                 <button
                   disabled={loading || !currentUser}
                   onClick={handleCreate}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl r  hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex cursor-pointer items-center gap-2"
                 >
                   {loading ? (
                     <>

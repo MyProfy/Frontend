@@ -3,6 +3,7 @@ import ThemeProvider from "@/contexts/ThemeContext";
 import { Providers } from "./providers"; 
 import "./globals.css";
 import 'flag-icons/css/flag-icons.min.css';
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "myprofy.uz - Платформа, где специалисты и клиенты находят друг друга.",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <Providers> 
+          <Toaster position="top-right" richColors closeButton />
             <main>{children}</main>
           </Providers>
         </ThemeProvider>
