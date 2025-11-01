@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import axios from "axios";
 
 interface Category {
   id: number;
@@ -27,7 +26,7 @@ interface User {
   last_name?: string;
 }
 
-export default function Create() {
+export default function CreateService() {
   const [step, setStep] = useState<number>(1);
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -36,7 +35,7 @@ export default function Create() {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [filteredSubcategories, setFilteredSubcategories] = useState<Subcategory[]>([]);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+  const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -96,7 +95,7 @@ export default function Create() {
         return Number(catId) === Number(selectedCategory);
       });
       setFilteredSubcategories(filtered);
-      setSelectedSubcategory("");
+      setSelectedSubcategories([]);
     } else {
       setFilteredSubcategories([]);
     }
@@ -106,7 +105,7 @@ export default function Create() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error(" Файл слишком большой. Максимальный размер: 10MB");
+        toast.error("Файл слишком большой. Максимальный размер: 10MB");
         return;
       }
       
@@ -121,38 +120,48 @@ export default function Create() {
     }
   };
 
-  const handleCreate = async () => {
-    if (!title || !description || !selectedCategory) {
+  const toggleSubcategory = (subcategoryId: number) => {
+    setSelectedSubcategories(prev => {
+      if (prev.includes(subcategoryId)) {
+        return prev.filter(id => id !== subcategoryId);
+      } else {
+        return [...prev, subcategoryId];
+      }
+    });
+  };
+
+  const handleCreateService = async () => {
+    if (!title || !description || !selectedCategory || !price) {
       toast.error("Пожалуйста, заполните все обязательные поля!");
       return;
     }
 
-
     if (!currentUser || !authToken) {
-      toast.error("Вы должны быть авторизованы для создания вакансии!");
+      toast.error("Вы должны быть авторизованы для создания услуги!");
       router.push("/auth");
       return;
     }
 
     setLoading(true);
     try {
+      // Build payload - removed moderation field
       const payload: any = {
+        executor: currentUser.id,
+        category: Number(selectedCategory),
         title: title.trim(),
         description: description.trim(),
-        category: Number(selectedCategory),
-        client: currentUser.id, 
+        price: Number(price),
       };
 
-      if (price) {
-        const priceValue = Number(price);
-        if (priceValue > 0) {
-          payload.price = priceValue;
-        }
+      // Only add sub_categories if there are any selected
+      if (selectedSubcategories.length > 0) {
+        payload.sub_categories = selectedSubcategories;
       }
-      
-      if (selectedSubcategory) {
-        payload.sub_category = Number(selectedSubcategory);
-      }
+
+      console.log("=== SENDING PAYLOAD ===");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("=== AUTH TOKEN ===");
+      console.log(authToken ? "Present" : "Missing");
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -163,47 +172,120 @@ export default function Create() {
         headers["Authorization"] = `Bearer ${authToken}`;
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacancies/`, {
+      console.log("=== HEADERS ===");
+      console.log(JSON.stringify(headers, null, 2));
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services/`, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
 
+      console.log("=== RESPONSE STATUS ===");
+      console.log(res.status);
+
+      // Try to parse response as JSON
+      let responseData;
       const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
+      
+      if (contentType && contentType.includes("application/json")) {
+        responseData = await res.json();
+      } else {
         const text = await res.text();
         console.error("Non-JSON response:", text);
+        console.error("Status:", res.status);
+        console.error("Request payload:", payload);
         
-        if (res.status === 401) {
-          throw new Error("Ошибка авторизации. Пожалуйста, войдите снова.");
-        } else if (res.status === 500) {
-          throw new Error("Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.");
-        } else {
-          throw new Error(`Сервер вернул ошибку: ${res.status}. Попробуйте позже.`);
-        }
+        throw new Error(`Сервер вернул некорректный ответ (статус ${res.status}). Пожалуйста, проверьте данные и попробуйте снова.`);
       }
-
-      const data = await res.json();
 
       if (!res.ok) {
-        console.error("API Error:", data);
+        console.error("API Error:", responseData);
+        console.error("Request payload:", payload);
         
-        if (data.detail) {
-          throw new Error(data.detail);
-        } else if (data.client) {
-          throw new Error(`Ошибка клиента: ${Array.isArray(data.client) ? data.client[0] : data.client}`);
-        } else if (data.category) {
-          throw new Error(`Ошибка категории: ${Array.isArray(data.category) ? data.category[0] : data.category}`);
+        // Build detailed error message from validation errors
+        const errors: string[] = [];
+        
+        if (responseData.executor) {
+          const executorError = Array.isArray(responseData.executor) 
+            ? responseData.executor[0] 
+            : responseData.executor;
+          errors.push(`Исполнитель: ${executorError}`);
+        }
+        if (responseData.category) {
+          const categoryError = Array.isArray(responseData.category) 
+            ? responseData.category[0] 
+            : responseData.category;
+          errors.push(`Категория: ${categoryError}`);
+        }
+        if (responseData.sub_categories) {
+          const subCategoryError = Array.isArray(responseData.sub_categories) 
+            ? responseData.sub_categories[0] 
+            : responseData.sub_categories;
+          errors.push(`Подкатегории: ${subCategoryError}`);
+        }
+        if (responseData.title) {
+          const titleError = Array.isArray(responseData.title) 
+            ? responseData.title[0] 
+            : responseData.title;
+          errors.push(`Название: ${titleError}`);
+        }
+        if (responseData.description) {
+          const descError = Array.isArray(responseData.description) 
+            ? responseData.description[0] 
+            : responseData.description;
+          errors.push(`Описание: ${descError}`);
+        }
+        if (responseData.price) {
+          const priceError = Array.isArray(responseData.price) 
+            ? responseData.price[0] 
+            : responseData.price;
+          errors.push(`Цена: ${priceError}`);
+        }
+        if (responseData.moderation) {
+          const moderationError = Array.isArray(responseData.moderation) 
+            ? responseData.moderation[0] 
+            : responseData.moderation;
+          errors.push(`Модерация: ${moderationError}`);
+        }
+        if (responseData.boost) {
+          const boostError = Array.isArray(responseData.boost) 
+            ? responseData.boost[0] 
+            : responseData.boost;
+          errors.push(`Boost: ${boostError}`);
+        }
+        
+        if (errors.length > 0) {
+          throw new Error(errors.join("; "));
+        } else if (responseData.detail) {
+          throw new Error(responseData.detail);
+        } else if (responseData.message) {
+          throw new Error(responseData.message);
         } else {
-          throw new Error(data.message || "Ошибка при создании вакансии");
+          throw new Error("Ошибка при создании услуги. Проверьте корректность данных.");
         }
       }
 
-      toast.success("Вакансия успешно создана!");
-      router.push("/");
+      toast.success("Услуга успешно создана и отправлена на модерацию!");
+      
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setPrice("");
+      setSelectedCategory("");
+      setSelectedSubcategories([]);
+      setImage(null);
+      setImagePreview("");
+      setStep(1);
+      
+      // Redirect to home or services page
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+      
     } catch (error: any) {
       console.error("Error details:", error);
-      toast.error(`❌ ${error.message}`);
+      toast.error(error.message || "Произошла ошибка при создании услуги");
     } finally {
       setLoading(false);
     }
@@ -213,7 +295,7 @@ export default function Create() {
   const prevStep = () => setStep((prev) => prev - 1);
 
   const getProgress = () => {
-    return (step / 4) * 100;
+    return (step / 3) * 100; // Changed from 4 to 3 steps since we removed moderation step
   };
 
   if (!isClient) {
@@ -233,11 +315,11 @@ export default function Create() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pb-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="mb-8">
           <div className="flex items-center justify-center mb-3">
             <span className="text-sm sm:text-base text-gray-600 font-medium">
-              Шаг {step} из 4
+              Шаг {step} из 3
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -252,7 +334,7 @@ export default function Create() {
 
         <AnimatePresence mode="wait" initial={false}>
           {step === 1 && (
-              <motion.div
+            <motion.div
               key="step1"
               initial={{ x: "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -267,17 +349,17 @@ export default function Create() {
                     </svg>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-                    Опишите вашу задачу
+                    Опишите вашу услугу
                   </h2>
                   <p className="text-gray-600 text-sm sm:text-base">
-                    Укажите название и детальное описание работы
+                    Укажите название и детальное описание услуги
                   </p>
                 </div>
 
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Название задачи <span className="text-red-500">*</span>
+                      Название услуги <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -293,7 +375,7 @@ export default function Create() {
                       Описание <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      placeholder="Опишите подробно что нужно сделать..."
+                      placeholder="Опишите подробно вашу услугу..."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={6}
@@ -305,7 +387,6 @@ export default function Create() {
                   </div>
                 </div>
               </div>
-
 
               <div className="flex justify-between items-center mt-6">
                 <button
@@ -327,12 +408,12 @@ export default function Create() {
 
           {step === 2 && (
             <motion.div
-            key="step2"
-            initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
-            transition={{ duration: 0.4 }}
-          >
+              key="step2"
+              initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -344,10 +425,9 @@ export default function Create() {
                     Выберите категорию
                   </h2>
                   <p className="text-gray-600 text-sm sm:text-base">
-                    Это поможет специалистам найти вашу задачу
+                    Это поможет клиентам найти вашу услугу
                   </p>
                 </div>
-
 
                 <div className="space-y-6">
                   <div>
@@ -407,7 +487,6 @@ export default function Create() {
                     </div>
                   </div>
 
-
                   {filteredSubcategories.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
@@ -415,18 +494,18 @@ export default function Create() {
                       transition={{ duration: 0.3 }}
                     >
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Подкатегория (необязательно)
+                        Подкатегории (можно выбрать несколько)
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
                         {filteredSubcategories.map((sub) => (
                           <motion.button
                             key={sub.id}
                             type="button"
-                            onClick={() => setSelectedSubcategory(String(sub.id))}
+                            onClick={() => toggleSubcategory(sub.id)}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className={`relative p-4 rounded-xl cursor-pointer -2 transition-all text-left ${
-                              selectedSubcategory === String(sub.id)
+                            className={`relative p-4 rounded-xl cursor-pointer border-2 transition-all text-left ${
+                              selectedSubcategories.includes(sub.id)
                                 ? "border-green-500 bg-green-50 shadow-md"
                                 : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                             }`}
@@ -434,12 +513,12 @@ export default function Create() {
                             <div className="flex items-center gap-3">
                               <div
                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                  selectedSubcategory === String(sub.id)
+                                  selectedSubcategories.includes(sub.id)
                                     ? "border-green-500 bg-green-500"
                                     : "border-gray-300"
                                 }`}
                               >
-                                {selectedSubcategory === String(sub.id) && (
+                                {selectedSubcategories.includes(sub.id) && (
                                   <motion.svg
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
@@ -457,7 +536,7 @@ export default function Create() {
                               </div>
                               <span
                                 className={`font-medium text-sm ${
-                                  selectedSubcategory === String(sub.id)
+                                  selectedSubcategories.includes(sub.id)
                                     ? "text-green-700"
                                     : "text-gray-700"
                                 }`}
@@ -468,11 +547,13 @@ export default function Create() {
                           </motion.button>
                         ))}
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Выбрано: {selectedSubcategories.length} подкатегорий
+                      </p>
                     </motion.div>
                   )}
                 </div>
               </div>
-
 
               <div className="flex justify-between items-center mt-6">
                 <button
@@ -493,99 +574,13 @@ export default function Create() {
           )}
 
           {step === 3 && (
-             <motion.div
-             key="step3"
-             initial={{ x: step > 3 ? "-100%" : "100%", opacity: 0 }}
-             animate={{ x: 0, opacity: 1 }}
-             exit={{ x: step > 3 ? "100%" : "-100%", opacity: 0 }}
-             transition={{ duration: 0.4 }}
-           >
-              <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-                    Добавьте фото
-                  </h2>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Загрузите изображение для вашей вакансии (необязательно)
-                  </p>
-                </div>
-
-
-                <div className="max-w-md mx-auto">
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors">
-                    <input
-                      type="file"
-                      id="image-upload"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      {imagePreview ? (
-                        <div className="space-y-4">
-                          <img 
-                            src={imagePreview} 
-                            alt="Preview" 
-                            className="mx-auto h-48 w-full object-cover rounded-lg"
-                          />
-                          <p className="text-sm text-gray-600">
-                            Нажмите чтобы изменить фото
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              Нажмите для загрузки фото
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              PNG, JPG, JPEG до 10MB
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-3 text-center">
-                    💡 Фото помогает привлечь больше откликов от специалистов
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-6">
-                <button
-                  onClick={prevStep}
-                  className="px-6 py-3 text-gray-600 hover:text-gray-800 cursor-pointer font-medium transition-colors"
-                >
-                  ← Назад
-                </button>
-                <button
-                  onClick={nextStep}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl cursor-pointer  hover:bg-green-700 transition-all shadow-lg shadow-green-200"
-                >
-                  Продолжить →
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-
-          {step === 4 && (
-           <motion.div
-           key="step4"
-           initial={{ x: "100%", opacity: 0 }}
-           animate={{ x: 0, opacity: 1 }}
-           exit={{ x: "-100%", opacity: 0 }}
-           transition={{ duration: 0.4 }}
-         >
+            <motion.div
+              key="step3"
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "-100%", opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -594,33 +589,83 @@ export default function Create() {
                     </svg>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-                    Укажите бюджет
+                    Укажите цену и фото
                   </h2>
                   <p className="text-gray-600 text-sm sm:text-base">
-                    Примерная стоимость работы (необязательно)
+                    Стоимость вашей услуги и дополнительное изображение
                   </p>
                 </div>
 
-                <div className="max-w-md mx-auto">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Бюджет в сумах
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      placeholder="Например: 500000"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      min="0"
-                      className="w-full px-4 py-4 pr-20 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-800 text-lg placeholder:text-gray-400"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                      сум
-                    </span>
+                <div className="space-y-6 max-w-md mx-auto">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Цена в сумах <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Например: 500000"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        min="0"
+                        max="99999999"
+                        required
+                        className="w-full px-4 py-4 pr-20 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-800 text-lg placeholder:text-gray-400"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                        сум
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3">
+                      💡 Укажите реальную стоимость вашей услуги
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3">
-                    💡 Вы можете оставить это поле пустым, если не уверены в цене
-                  </p>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Фото услуги (необязательно)
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors">
+                      <input
+                        type="file"
+                        id="image-upload"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                        {imagePreview ? (
+                          <div className="space-y-4">
+                            <img 
+                              src={imagePreview} 
+                              alt="Preview" 
+                              className="mx-auto h-48 w-full object-cover rounded-lg"
+                            />
+                            <p className="text-sm text-gray-600">
+                              Нажмите чтобы изменить фото
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Нажмите для загрузки фото
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                PNG, JPG, JPEG до 10MB
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      💡 Фото помогает привлечь больше клиентов
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -628,23 +673,27 @@ export default function Create() {
                   <ul className="space-y-1.5 text-sm text-gray-700">
                     <li><span className="font-medium">Название:</span> {title}</li>
                     <li><span className="font-medium">Категория:</span> {categories.find(c => c.id === Number(selectedCategory))?.display_ru || "Не указана"}</li>
-                    {selectedSubcategory && (
-                      <li><span className="font-medium">Подкатегория:</span> {filteredSubcategories.find(s => s.id === Number(selectedSubcategory))?.display_ru || "Не указана"}</li>
+                    {selectedSubcategories.length > 0 && (
+                      <li>
+                        <span className="font-medium">Подкатегории:</span>{" "}
+                        {selectedSubcategories.map(id => 
+                          filteredSubcategories.find(s => s.id === id)?.display_ru
+                        ).filter(Boolean).join(", ")}
+                      </li>
                     )}
                     {image && <li><span className="font-medium">Фото:</span> ✓ Загружено</li>}
-                    {price && <li><span className="font-medium">Бюджет:</span> {Number(price).toLocaleString()} сум</li>}
+                    {price && <li><span className="font-medium">Цена:</span> {Number(price).toLocaleString()} сум</li>}
                   </ul>
                 </div>
 
                 {!currentUser && (
                   <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                     <p className="text-sm text-yellow-800">
-                      ⚠️ Вы не авторизованы. Для создания вакансии необходимо войти в систему.
+                      ⚠️ Вы не авторизованы. Для создания услуги необходимо войти в систему.
                     </p>
                   </div>
                 )}
               </div>
-
 
               <div className="flex justify-between items-center mt-6">
                 <button
@@ -654,9 +703,9 @@ export default function Create() {
                   ← Назад
                 </button>
                 <button
-                  disabled={loading || !currentUser}
-                  onClick={handleCreate}
-                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl r  hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex cursor-pointer items-center gap-2"
+                  disabled={loading || !currentUser || !price}
+                  onClick={handleCreateService}
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -668,7 +717,7 @@ export default function Create() {
                     </>
                   ) : (
                     <>
-                      <span>✓ Создать вакансию</span>
+                      <span>✓ Создать услугу</span>
                     </>
                   )}
                 </button>

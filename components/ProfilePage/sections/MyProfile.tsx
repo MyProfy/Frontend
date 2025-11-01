@@ -4,6 +4,7 @@ import { FaMapMarkerAlt, FaBriefcase, FaCalendar, FaEdit } from "react-icons/fa"
 import { MdOutlinePhoneBluetoothSpeaker } from "react-icons/md";
 import { getAPIClient } from "@/components/types/apiClient";
 import { User } from "@/components/types/apiTypes";
+import { toast } from "sonner";
 
 const MyProfile = () => {
   const [showModal, setShowModal] = useState(false);
@@ -59,7 +60,7 @@ const MyProfile = () => {
       } catch (error: any) {
         console.error("❌ Ошибка загрузки данных пользователя:", error);
         if (error.message === "User data not found in localStorage") {
-          alert("Пожалуйста, войдите в систему");
+          toast.error("Пожалуйста, войдите в систему");
           window.location.href = "/login";
         }
       } finally {
@@ -97,7 +98,7 @@ const MyProfile = () => {
       console.log("✅ Описание сохранено");
     } catch (error: any) {
       console.error("❌ Ошибка сохранения описания:", error);
-      alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
     } finally {
       setSaving(false);
     }
@@ -147,7 +148,7 @@ const MyProfile = () => {
     } catch (error: any) {
       console.error("❌ Ошибка сохранения профиля:", error);
       console.error("📋 Детали ошибки:", error.response?.data);
-      alert(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Ошибка при сохранении: ${error.response?.data?.detail || error.message}`);
     } finally {
       setSaving(false);
     }

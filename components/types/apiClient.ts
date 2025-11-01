@@ -379,6 +379,8 @@ export const apiClient = {
   getServices: async (page = 1, limit = 50, params?: Record<string, any>): Promise<Service[]> => {
     try {
       const response = await withRetry(() => api.get("/services/", { params: { page, limit, ...params } }));
+    
+      console.log("✅ Services loaded:", response.data);
       return extractData(response.data);
     } catch (error) {
       // console.error("❌ Get services error:", error);

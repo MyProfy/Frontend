@@ -1,1290 +1,680 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import Navbar from "@/components/Header/Navbar";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { X, MapPin, DollarSign, FileText, Tag, Upload, Loader2, Image as ImageIcon, Link, Check, AlertCircle, Lock } from "lucide-react";
-import TarrifModal from "../Modals/TarrifModal";
-import { getAPIClient } from "@/components/types/apiClient";
-import type { Vacancy, Category, SubCategory } from "@/components/types/apiTypes";
+import { toast } from "sonner";
 
-interface VacancyFormData {
-  title: string;
-  description: string;
-  price: string;
-  category: number | null;
-  sub_category: number | null;
-  client: number | null;
-  images?: string;
+interface Category {
+  id: number;
+  display_ru?: string;
+  name?: string;
 }
 
-interface ServiceFormData {
-  title: string;
-  description: string;
-  price: string;
-  category: number | null;
-  sub_category: number | null;
+interface Subcategory {
+  id: number;
+  category: number | { id: number };
+  display_ru?: string;
+  name?: string;
 }
 
-const Services = () => {
-  const router = useRouter();
-  const apiClient = getAPIClient();
+interface User {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
 
-  const [showModal, setShowModal] = useState<boolean>(false);
-  const [showServiceModal, setShowServiceModal] = useState<boolean>(false);
-  const [showTarrifs, setShowTarrifs] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [serviceLoading, setServiceLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+export default function CreateService() {
+  const [step, setStep] = useState<number>(1);
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [price, setPrice] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [serviceSubCategories, setServiceSubCategories] = useState<SubCategory[]>([]);
-  const [userVacancies, setUserVacancies] = useState<Vacancy[]>([]);
-  const [userServices, setUserServices] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>("");
-  const [imageInputType, setImageInputType] = useState<"file" | "url">("file");
-  const [apiStatus, setApiStatus] = useState<{ services: boolean; vacancies: boolean }>({ services: true, vacancies: true });
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [filteredSubcategories, setFilteredSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<VacancyFormData>({
-    title: "",
-    description: "",
-    price: "",
-    category: null,
-    sub_category: null,
-    client: null,
-    images: undefined
-  });
-
-  const [serviceFormData, setServiceFormData] = useState<ServiceFormData>({
-    title: "",
-    description: "",
-    price: "",
-    category: null,
-    sub_category: null,
-  });
-
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [serviceErrors, setServiceErrors] = useState<{ [key: string]: string }>({});
-
-  // КОНСТАНТЫ ЛИМИТОВ
-  const MAX_VACANCIES = 1;
-  const MAX_SERVICES = 1;
-
-  // Проверка лимитов
-  const canCreateVacancy = userVacancies.length < MAX_VACANCIES;
-  const canCreateService = userServices.length < MAX_SERVICES;
-
-  const SUPPORTED_IMAGE_FORMATS = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'image/avif',
-    'image/svg+xml',
-    'image/bmp'
-  ];
-
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const router = useRouter();
 
   useEffect(() => {
-    loadInitialData();
+    setIsClient(true);
+    
+    const userData = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    
+    if (userData) {
+      try {
+        setCurrentUser(JSON.parse(userData));
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+      }
+    }
+    
+    if (token) {
+      setAuthToken(token);
+    }
   }, []);
 
-  const loadInitialData = async () => {
-    setInitialLoading(true);
-    try {
-      const user = await apiClient.getCurrentUser();
-      setCurrentUser(user);
-
-      const [categoriesData, vacanciesData] = await Promise.all([
-        apiClient.getCategories(),
-        apiClient.getVacancies({ client: user.id })
-      ]);
-
-      setCategories(categoriesData);
-      setUserVacancies(vacanciesData);
-
-      // Загружаем сервисы пользователя
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const servicesData = await apiClient.getServices(1, 100);
-        // Фильтруем только сервисы текущего пользователя
-        const userServicesFiltered = servicesData.filter((s: any) => s.executor === user.id);
-        setUserServices(userServicesFiltered);
-        console.log(`✅ Загружено сервисов: ${userServicesFiltered.length}/${MAX_SERVICES}`);
-      } catch (error) {
-        console.error("❌ Ошибка загрузки сервисов:", error);
-        setUserServices([]);
+        const [catRes, subRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/subcategories/`),
+        ]);
+        
+        if (!catRes.ok || !subRes.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        
+        const catData = await catRes.json();
+        const subData = await subRes.json();
+
+        setCategories(Array.isArray(catData) ? catData : catData.results || []);
+        setSubcategories(Array.isArray(subData) ? subData : subData.results || []);
+      } catch (err) {
+        console.error("Error loading categories:", err);
       }
-
-      // Проверяем доступность эндпоинтов
-      await checkApiEndpoints();
-
-    } catch (error) {
-      console.error("Ошибка загрузки данных:", error);
-    } finally {
-      setInitialLoading(false);
-    }
-  };
-
-  const checkApiEndpoints = async () => {
-    try {
-      await apiClient.checkServicesEndpoint();
-      setApiStatus(prev => ({ ...prev, services: true }));
-      console.log("✅ Services endpoint is available");
-    } catch (error: any) {
-      console.error("❌ Services endpoint unavailable:", error.message);
-      setApiStatus(prev => ({ ...prev, services: false }));
-    }
-  };
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
-    if (formData.category) {
-      loadSubCategories(formData.category);
-    } else {
-      setSubCategories([]);
-      setFormData(prev => ({ ...prev, sub_category: null }));
-    }
-  }, [formData.category]);
-
-  useEffect(() => {
-    if (serviceFormData.category) {
-      loadServiceSubCategories(serviceFormData.category);
-    } else {
-      setServiceSubCategories([]);
-      setServiceFormData(prev => ({ ...prev, sub_category: null }));
-    }
-  }, [serviceFormData.category]);
-
-  const loadSubCategories = async (categoryId: number) => {
-    try {
-      const subCategoriesData = await apiClient.getSubcategories({ category: categoryId });
-      setSubCategories(subCategoriesData);
-    } catch (error) {
-      console.error("Ошибка загрузки подкатегорий:", error);
-      setSubCategories([]);
-    }
-  };
-
-  const loadServiceSubCategories = async (categoryId: number) => {
-    try {
-      const subCategoriesData = await apiClient.getSubcategories({ category: categoryId });
-      setServiceSubCategories(subCategoriesData);
-    } catch (error) {
-      console.error("Ошибка загрузки подкатегорий для сервиса:", error);
-      setServiceSubCategories([]);
-    }
-  };
-
-  const validateServiceData = (data: any): boolean => {
-    if (!data.title || !data.description || !data.category || !data.executor) {
-      console.error("❌ Missing required fields:", {
-        title: !data.title,
-        description: !data.description,
-        category: !data.category,
-        executor: !data.executor
+    if (selectedCategory) {
+      const filtered = subcategories.filter((sub) => {
+        const catId = typeof sub.category === "number" ? sub.category : sub.category?.id;
+        return Number(catId) === Number(selectedCategory);
       });
-      return false;
+      setFilteredSubcategories(filtered);
+      setSelectedSubcategories([]);
+    } else {
+      setFilteredSubcategories([]);
     }
-
-    if (typeof data.executor !== 'number' || data.executor <= 0) {
-      console.error("❌ Invalid executor ID:", data.executor);
-      return false;
-    }
-
-    if (typeof data.category !== 'number' || data.category <= 0) {
-      console.error("❌ Invalid category ID:", data.category);
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleFindSpecialist = () => {
-    if (!canCreateService) {
-      alert(`Вы уже создали максимальное количество услуг (${MAX_SERVICES}). Удалите существующую услугу, чтобы создать новую.`);
-      return;
-    }
-    setShowServiceModal(true);
-  };
-
-  const handleFindClients = () => {
-    if (!canCreateVacancy) {
-      alert(`Вы уже создали максимальное количество вакансий (${MAX_VACANCIES}). Удалите существующую вакансию, чтобы создать новую.`);
-      return;
-    }
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setFormData({
-      title: "",
-      description: "",
-      price: "",
-      category: null,
-      sub_category: null,
-      client: null,
-      images: undefined
-    });
-    setImageFile(null);
-    setImagePreview(null);
-    setImageUrl("");
-    setImageInputType("file");
-    setErrors({});
-  };
-
-  const handleCloseServiceModal = () => {
-    setShowServiceModal(false);
-    setServiceFormData({
-      title: "",
-      description: "",
-      price: "",
-      category: null,
-      sub_category: null,
-    });
-    setServiceErrors({});
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === "category" || name === "sub_category"
-        ? (value ? parseInt(value) : null)
-        : value
-    }));
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const handleServiceInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setServiceFormData(prev => ({
-      ...prev,
-      [name]: name === "category" || name === "sub_category"
-        ? (value ? parseInt(value) : null)
-        : value
-    }));
-
-    if (serviceErrors[name]) {
-      setServiceErrors(prev => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const handleSubCategorySelect = (subCategoryId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      sub_category: prev.sub_category === subCategoryId ? null : subCategoryId
-    }));
-  };
-
-  const handleServiceSubCategorySelect = (subCategoryId: number) => {
-    setServiceFormData(prev => ({
-      ...prev,
-      sub_category: prev.sub_category === subCategoryId ? null : subCategoryId
-    }));
-  };
-
-  const validateImageFile = (file: File): { valid: boolean; error?: string } => {
-    if (!SUPPORTED_IMAGE_FORMATS.includes(file.type)) {
-      return {
-        valid: false,
-        error: "Неподдерживаемый формат файла. Поддерживаются: JPEG, PNG, GIF, WebP, AVIF, SVG, BMP"
-      };
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      const sizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0);
-      return {
-        valid: false,
-        error: `Размер файла не должен превышать ${sizeMB}MB`
-      };
-    }
-
-    return { valid: true };
-  };
-
-  const validateImageUrl = (url: string): { valid: boolean; error?: string } => {
-    if (!url.trim()) {
-      return { valid: true };
-    }
-
-    try {
-      new URL(url);
-      return { valid: true };
-    } catch {
-      return {
-        valid: false,
-        error: "Неверный формат URL"
-      };
-    }
-  };
+  }, [selectedCategory, subcategories]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      setErrors(prev => ({ ...prev, images: validation.error || "Ошибка загрузки файла" }));
-      e.target.value = '';
-      return;
-    }
-
-    setImageFile(file);
-    setImageUrl("");
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.onerror = () => {
-      setErrors(prev => ({ ...prev, images: "Ошибка чтения файла" }));
-      setImageFile(null);
-    };
-    reader.readAsDataURL(file);
-
-    setErrors(prev => ({ ...prev, images: "" }));
-  };
-
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setImageUrl(url);
-
-    if (url.trim()) {
-      const validation = validateImageUrl(url);
-      if (!validation.valid) {
-        setErrors(prev => ({ ...prev, images: validation.error || "Неверный URL изображения" }));
-      } else {
-        setErrors(prev => ({ ...prev, images: "" }));
-        setImagePreview(url);
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Файл слишком большой. Максимальный размер: 10MB");
+        return;
       }
-    } else {
-      setErrors(prev => ({ ...prev, images: "" }));
-      setImagePreview(null);
+      
+      setImage(file);
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (e.target?.result) {
+          setImagePreview(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setImageUrl("");
-    setErrors(prev => ({ ...prev, images: "" }));
+  const toggleSubcategory = (subcategoryId: number) => {
+    setSelectedSubcategories(prev => {
+      if (prev.includes(subcategoryId)) {
+        return prev.filter(id => id !== subcategoryId);
+      } else {
+        return [...prev, subcategoryId];
+      }
+    });
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = "Название обязательно";
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = "Описание обязательно";
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = "Укажите корректную цену";
-    }
-
-    if (!formData.category) {
-      newErrors.category = "Выберите категорию";
-    }
-
-    if (!currentUser?.id) {
-      newErrors.client = "Пользователь не авторизован";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateServiceForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!serviceFormData.title.trim()) {
-      newErrors.title = "Название обязательно";
-    }
-
-    if (!serviceFormData.description.trim()) {
-      newErrors.description = "Описание обязательно";
-    }
-
-    if (!serviceFormData.category) {
-      newErrors.category = "Выберите категорию";
-    }
-
-    if (!currentUser?.id) {
-      newErrors.executor = "Пользователь не авторизован";
-    }
-
-    setServiceErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    // Дополнительная проверка лимита перед отправкой
-    if (!canCreateVacancy) {
-      alert(`Достигнут лимит вакансий (${MAX_VACANCIES})`);
+  const handleCreateService = async () => {
+    if (!title || !description || !selectedCategory) {
+      toast.error("Пожалуйста, заполните все обязательные поля!");
       return;
     }
 
-    if (!validateForm()) {
+    if (!currentUser || !authToken) {
+      toast.error("Вы должны быть авторизованы для создания услуги!");
+      router.push("/auth");
       return;
     }
 
     setLoading(true);
-
     try {
-      const vacancyData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        category: formData.category,
-        client: currentUser.id,
-        ...(formData.sub_category && { sub_category: formData.sub_category }),
-        ...(imageInputType === "file" && imageFile && { images: imageFile }),
-        ...(imageInputType === "url" && imageUrl.trim() && { images: imageUrl })
+      // Build payload matching the working Services.jsx pattern
+      const payload: any = {
+        executor: currentUser.id,
+        category: Number(selectedCategory),
+        title: title.trim(),
+        description: description.trim(),
+        price: price ? parseFloat(price) : 0,
+        moderation: "pending",  // Required field - lowercase to match backend
+        boost: 0,  // Required field - default value
       };
 
-      console.log("📤 Отправка данных вакансии:", vacancyData);
+      // Only add sub_categories if there are any selected
+      if (selectedSubcategories.length > 0) {
+        payload.sub_categories = selectedSubcategories;
+      }
 
-      const response = await apiClient.createVacancy(vacancyData);
+      console.log("📤 Отправка данных сервиса:", payload);
 
-      console.log("✅ Вакансия успешно создана:", response);
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      };
 
-      await loadInitialData();
-      handleCloseModal();
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
 
-      alert("Вакансия успешно создана!");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
 
-    } catch (error: any) {
-      console.error("❌ Ошибка создания вакансии:", error);
+      console.log("📊 Response status:", res.status);
 
-      if (error.response?.data) {
-        const apiErrors = error.response.data;
+      // Try to parse response as JSON
+      let responseData;
+      const contentType = res.headers.get("content-type");
+      
+      if (contentType && contentType.includes("application/json")) {
+        responseData = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("❌ Non-JSON response:", text);
+        console.error("Status:", res.status);
+        
+        throw new Error(`Сервер вернул некорректный ответ (статус ${res.status}). Пожалуйста, попробуйте позже.`);
+      }
+
+      if (!res.ok) {
+        console.error("❌ API Error:", responseData);
+        
+        // Build detailed error message from validation errors
         const newErrors: { [key: string]: string } = {};
-
-        Object.keys(apiErrors).forEach(key => {
-          if (Array.isArray(apiErrors[key])) {
-            newErrors[key] = apiErrors[key][0];
-          } else if (typeof apiErrors[key] === 'string') {
-            newErrors[key] = apiErrors[key];
+        
+        Object.keys(responseData).forEach(key => {
+          if (Array.isArray(responseData[key])) {
+            newErrors[key] = responseData[key][0];
+          } else if (typeof responseData[key] === 'string') {
+            newErrors[key] = responseData[key];
           }
         });
-
-        setErrors(newErrors);
-
-        const errorMessage = Object.values(newErrors).join('\n');
-        alert(`Ошибка создания вакансии:\n${errorMessage}`);
-      } else {
-        alert("Произошла ошибка при создании вакансии. Попробуйте снова.");
+        
+        const errorMessage = Object.entries(newErrors)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n');
+        
+        throw new Error(errorMessage || "Ошибка при создании услуги. Проверьте корректность данных.");
       }
+
+      console.log("✅ Услуга успешно создана:", responseData);
+      
+      toast.success("Услуга успешно создана и отправлена на модерацию!");
+      
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setPrice("");
+      setSelectedCategory("");
+      setSelectedSubcategories([]);
+      setImage(null);
+      setImagePreview("");
+      setStep(1);
+      
+      // Redirect to home or services page
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error("❌ Error details:", error);
+      toast.error(error.message || "Произошла ошибка при создании услуги");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleServiceSubmit = async () => {
-    // Дополнительная проверка лимита перед отправкой
-    if (!canCreateService) {
-      alert(`Достигнут лимит услуг (${MAX_SERVICES})`);
-      return;
-    }
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
 
-    if (!validateServiceForm()) {
-      return;
-    }
-
-    setServiceLoading(true);
-
-    try {
-      console.log("🔍 Running pre-submit diagnostics...");
-
-      if (!apiStatus.services) {
-        throw new Error("SERVICE_ENDPOINT_UNAVAILABLE");
-      }
-
-      const serviceData = {
-        executor: currentUser.id,
-        category: serviceFormData.category!,
-        sub_categories: serviceFormData.sub_category ? [serviceFormData.sub_category] : [],
-        title: serviceFormData.title,
-        description: serviceFormData.description,
-        price: serviceFormData.price ? parseFloat(serviceFormData.price) : 0,
-        moderation: "Pending",
-        boost: 1,
-      };
-
-      console.log("📤 Отправка данных сервиса:", serviceData);
-
-      if (!validateServiceData(serviceData)) {
-        alert("Некорректные данные. Пожалуйста, проверьте введенную информацию.");
-        return;
-      }
-
-      const response = await apiClient.createService(serviceData);
-
-      console.log("✅ Сервис успешно создан:", response);
-
-      await loadInitialData();
-      handleCloseServiceModal();
-      alert("Услуга успешно создана!");
-
-    } catch (error: any) {
-      console.error("❌ Ошибка создания сервиса:", error);
-
-      if (error.message === "SERVICE_ENDPOINT_UNAVAILABLE" || error.response?.status === 500) {
-        const errorDetails = error.response?.status === 500 ?
-          "Ошибка сервера (500). Сервис временно недоступен." :
-          "Сервис создания услуг временно недоступен.";
-
-        console.error("🔧 Service creation failed:", errorDetails);
-
-        const useVacancy = confirm(
-          `${errorDetails}\n\n` +
-          "Хотите создать вакансию вместо услуги? Это временное решение.\n\n" +
-          "Вакансия будет создана с теми же данными."
-        );
-
-        if (useVacancy) {
-          setFormData({
-            title: serviceFormData.title,
-            description: serviceFormData.description,
-            price: serviceFormData.price || "0",
-            category: serviceFormData.category,
-            sub_category: serviceFormData.sub_category,
-            client: currentUser.id,
-            images: undefined
-          });
-
-          handleCloseServiceModal();
-          setShowModal(true);
-        }
-        return;
-      }
-
-      if (error.response?.data) {
-        const apiErrors = error.response.data;
-        const newErrors: { [key: string]: string } = {};
-
-        Object.keys(apiErrors).forEach(key => {
-          if (Array.isArray(apiErrors[key])) {
-            newErrors[key] = apiErrors[key][0];
-          } else if (typeof apiErrors[key] === 'string') {
-            newErrors[key] = apiErrors[key];
-          }
-        });
-
-        setServiceErrors(newErrors);
-
-        const errorMessage = Object.values(newErrors).join('\n');
-        alert(`Ошибка создания услуги:\n${errorMessage}`);
-      } else {
-        alert("Произошла неизвестная ошибка при создании услуги. Попробуйте снова.");
-      }
-    } finally {
-      setServiceLoading(false);
-    }
+  const getProgress = () => {
+    return (step / 3) * 100;
   };
 
-  const handleGoToCandidates = (id: number) => {
-    router.push(`/vacancies/${id}`);
-  };
-
-  const quickTags = ["сантехник", "под ключ", "сантехработы", "электрик", "строитель"];
-
-  const getCategoryName = (category: Category): string => {
-    return category.display_ru || category.name || 'Без названия';
-  };
-
-  const getSubCategoryName = (subCategory: SubCategory): string => {
-    return subCategory.display_ru || subCategory.name || 'Без названия';
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  if (initialLoading) {
+  if (!isClient) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="animate-spin mx-auto mb-4" size={48} />
-          <p className="text-gray-600">Загрузка данных...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pb-12">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-
-        {!apiStatus.services && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"
-          >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="text-yellow-600" size={24} />
-              <div>
-                <h3 className="text-yellow-800 font-medium">Сервисы временно недоступны</h3>
-                <p className="text-yellow-700 text-sm mt-1">
-                  Создание услуг временно недоступно из-за технических работ на сервере.
-                  Вы можете создавать вакансии как временное решение.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {(!canCreateVacancy || !canCreateService) && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6"
-          >
-            <div className="flex items-center gap-3">
-              <Lock className="text-green-600" size={24} />
-              <div>
-                <h3 className="text-green-800 font-medium">Информация о лимитах</h3>
-                <div className="text-green-700 text-sm mt-1 space-y-1">
-                  {!canCreateVacancy && (
-                    <p>• Вы достигли лимита вакансий ({userVacancies.length}/{MAX_VACANCIES})</p>
-                  )}
-                  {!canCreateService && (
-                    <p>• Вы достигли лимита услуг ({userServices.length}/{MAX_SERVICES})</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Мои вакансии ({userVacancies.length}/{MAX_VACANCIES})
-            </h1>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleFindSpecialist}
-                disabled={!apiStatus.services || !canCreateService}
-                className={`px-5 py-2 border rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${(!apiStatus.services || !canCreateService)
-                  ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-              >
-                {!canCreateService && <Lock size={16} />}
-                Найти специалиста
-                {!apiStatus.services && (
-                  <span className="ml-2 text-xs text-yellow-600">(недоступно)</span>
-                )}
-                {!canCreateService && apiStatus.services && (
-                  <span className="ml-2 text-xs text-blue-600">({userServices.length}/{MAX_SERVICES})</span>
-                )}
-              </button>
-              <button
-                onClick={handleFindClients}
-                disabled={!canCreateVacancy}
-                className={`px-5 py-2 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${!canCreateVacancy
-                  ? "bg-gray-400 text-white cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700"
-                  }`}
-              >
-                {!canCreateVacancy && <Lock size={16} />}
-                Найти клиентов
-                {!canCreateVacancy && (
-                  <span className="text-xs">({userVacancies.length}/{MAX_VACANCIES})</span>
-                )}
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-3">
+            <span className="text-sm sm:text-base text-gray-600 font-medium">
+              Шаг {step} из 3
+            </span>
           </div>
-
-          <div className="space-y-3">
-            {userVacancies.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                У вас пока нет вакансий. Создайте свою первую вакансию!
-              </div>
-            ) : (
-              userVacancies.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {item.description.substring(0, 100)}
-                        {item.description.length > 100 ? '...' : ''}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="font-medium text-green-600">
-                          {item.price.toLocaleString()} сум
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 ml-4">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleGoToCandidates(item.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        Просмотр
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowTarrifs(true)}
-                        className="border border-gray-600 hover:bg-gray-600 hover:text-white text-gray-600 px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        Продвигать
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            )}
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <motion.div
+              className="bg-green-500 h-2.5 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${getProgress()}%` }}
+              transition={{ duration: 0.5 }}
+            />
           </div>
         </div>
 
-        {/* Модальное окно для создания СЕРВИСА */}
-        <AnimatePresence>
-          {showServiceModal && (
+        <AnimatePresence mode="wait" initial={false}>
+          {step === 1 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-              onClick={handleCloseServiceModal}
+              key="step1"
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "-100%", opacity: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              >
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Найти специалиста
+              <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                    Опишите вашу услугу
                   </h2>
-                  <button
-                    onClick={handleCloseServiceModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={serviceLoading}
-                  >
-                    <X size={24} />
-                  </button>
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    Укажите название и детальное описание услуги
+                  </p>
                 </div>
 
-                <div className="p-6 space-y-4">
-                  {!apiStatus.services && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="text-yellow-600" size={16} />
-                        <span className="text-yellow-800 text-sm font-medium">
-                          Сервисы временно недоступны
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Название услуги *
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Название услуги <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      name="title"
-                      value={serviceFormData.title}
-                      onChange={handleServiceInputChange}
-                      placeholder="Например: Ремонт квартиры"
-                      disabled={serviceLoading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${serviceErrors.title
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
+                      placeholder="Например: Ремонт сантехники"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-800 placeholder:text-gray-400"
                     />
-                    {serviceErrors.title && (
-                      <p className="mt-1 text-sm text-red-600">{serviceErrors.title}</p>
-                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Описание *
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Описание <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      name="description"
-                      value={serviceFormData.description}
-                      onChange={handleServiceInputChange}
-                      rows={3}
-                      placeholder="Опишите вашу услугу..."
-                      disabled={serviceLoading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all resize-none ${serviceErrors.description
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
+                      placeholder="Опишите подробно вашу услугу..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all resize-none text-gray-800 placeholder:text-gray-400"
                     />
-                    {serviceErrors.description && (
-                      <p className="mt-1 text-sm text-red-600">{serviceErrors.description}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Категория *
-                    </label>
-                    <select
-                      name="category"
-                      value={serviceFormData.category || ""}
-                      onChange={handleServiceInputChange}
-                      disabled={serviceLoading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${serviceErrors.category
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
-                    >
-                      <option value="">Выберите категорию</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {getCategoryName(cat)}
-                        </option>
-                      ))}
-                    </select>
-                    {serviceErrors.category && (
-                      <p className="mt-1 text-sm text-red-600">{serviceErrors.category}</p>
-                    )}
-                  </div>
-
-                  {serviceSubCategories.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Подкатегория (необязательно)
-                      </label>
-                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-                        {serviceSubCategories.map((subCat) => (
-                          <button
-                            key={subCat.id}
-                            type="button"
-                            onClick={() => handleServiceSubCategorySelect(subCat.id)}
-                            disabled={serviceLoading}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${serviceFormData.sub_category === subCat.id
-                              ? 'bg-green-50 border-green-200 text-green-700'
-                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                              }`}
-                          >
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${serviceFormData.sub_category === subCat.id
-                              ? 'bg-green-600 border-green-600'
-                              : 'bg-white border-gray-300'
-                              }`}>
-                              {serviceFormData.sub_category === subCat.id && (
-                                <Check size={14} className="text-white" />
-                              )}
-                            </div>
-                            <span className="text-sm font-medium">
-                              {getSubCategoryName(subCat)}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Цена (необязательно)
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={serviceFormData.price}
-                      onChange={handleServiceInputChange}
-                      placeholder="Например: 500000"
-                      min="0"
-                      disabled={serviceLoading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={handleCloseServiceModal}
-                      disabled={serviceLoading}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Отмена
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleServiceSubmit}
-                      disabled={serviceLoading}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {serviceLoading ? (
-                        <>
-                          <Loader2 className="animate-spin" size={16} />
-                          Отправка...
-                        </>
-                      ) : (
-                        "Отправить"
-                      )}
-                    </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Минимум 20 символов
+                    </p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
+
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={() => router.push("/")}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 cursor-pointer font-medium transition-colors"
+                >
+                  ← Отменить
+                </button>
+                <button
+                  disabled={!title || !description || description.length < 20}
+                  onClick={nextStep}
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 cursor-pointer transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
+                >
+                  Продолжить →
+                </button>
+              </div>
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Модальное окно для создания ВАКАНСИИ */}
-        <AnimatePresence>
-          {showModal && (
+          {step === 2 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-              onClick={handleCloseModal}
+              key="step2"
+              initial={{ x: step > 2 ? "-100%" : "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: step > 2 ? "100%" : "-100%", opacity: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              >
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl z-10">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Найти клиентов
+              <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                    Выберите категорию
                   </h2>
-                  <button
-                    onClick={handleCloseModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={loading}
-                  >
-                    <X size={24} />
-                  </button>
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    Это поможет клиентам найти вашу услугу
+                  </p>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Название вакансии *
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      Категория услуги <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder="Например: Требуется сантехник"
-                      disabled={loading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${errors.title
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
-                    />
-                    {errors.title && (
-                      <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-                    )}
-
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {quickTags.map(tag => (
-                        <button
-                          key={tag}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
+                      {categories.map((cat) => (
+                        <motion.button
+                          key={cat.id}
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, title: tag }))}
-                          disabled={loading}
-                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors disabled:opacity-50"
+                          onClick={() => setSelectedCategory(String(cat.id))}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                            selectedCategory === String(cat.id)
+                              ? "border-green-500 bg-green-50 shadow-md"
+                              : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                          }`}
                         >
-                          {tag}
-                        </button>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                selectedCategory === String(cat.id)
+                                  ? "border-green-500 bg-green-500"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {selectedCategory === String(cat.id) && (
+                                <motion.svg
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="w-3 h-3 text-white"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </motion.svg>
+                              )}
+                            </div>
+                            <span
+                              className={`font-medium cursor-pointer text-sm ${
+                                selectedCategory === String(cat.id)
+                                  ? "text-green-700"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {cat.display_ru || cat.name || `Категория ${cat.id}`}
+                            </span>
+                          </div>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <FileText size={16} />
-                      Подробное описание *
-                    </label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={4}
-                      placeholder="Опишите требования..."
-                      disabled={loading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all resize-none ${errors.description
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
-                    />
-                    {errors.description && (
-                      <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Tag size={16} />
-                      Категория *
-                    </label>
-                    <select
-                      name="category"
-                      value={formData.category || ""}
-                      onChange={handleInputChange}
-                      disabled={loading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${errors.category
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
+                  {filteredSubcategories.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
                     >
-                      <option value="">Выберите категорию</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {getCategoryName(cat)}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.category && (
-                      <p className="mt-1 text-sm text-red-600">{errors.category}</p>
-                    )}
-                  </div>
-
-                  {subCategories.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Подкатегория (необязательно)
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Подкатегории (можно выбрать несколько)
                       </label>
-                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-                        {subCategories.map((subCat) => (
-                          <button
-                            key={subCat.id}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
+                        {filteredSubcategories.map((sub) => (
+                          <motion.button
+                            key={sub.id}
                             type="button"
-                            onClick={() => handleSubCategorySelect(subCat.id)}
-                            disabled={loading}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${formData.sub_category === subCat.id
-                              ? 'bg-green-50 border-green-200 text-green-700'
-                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                              }`}
+                            onClick={() => toggleSubcategory(sub.id)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`relative p-4 rounded-xl cursor-pointer border-2 transition-all text-left ${
+                              selectedSubcategories.includes(sub.id)
+                                ? "border-green-500 bg-green-50 shadow-md"
+                                : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                            }`}
                           >
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.sub_category === subCat.id
-                              ? 'bg-green-600 border-green-600'
-                              : 'bg-white border-gray-300'
-                              }`}>
-                              {formData.sub_category === subCat.id && (
-                                <Check size={14} className="text-white" />
-                              )}
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                  selectedSubcategories.includes(sub.id)
+                                    ? "border-green-500 bg-green-500"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selectedSubcategories.includes(sub.id) && (
+                                  <motion.svg
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="w-3 h-3 text-white"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </motion.svg>
+                                )}
+                              </div>
+                              <span
+                                className={`font-medium text-sm ${
+                                  selectedSubcategories.includes(sub.id)
+                                    ? "text-green-700"
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                {sub.display_ru || sub.name || `Подкатегория ${sub.id}`}
+                              </span>
                             </div>
-                            <span className="text-sm font-medium">
-                              {getSubCategoryName(subCat)}
-                            </span>
-                          </button>
+                          </motion.button>
                         ))}
                       </div>
-                    </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Выбрано: {selectedSubcategories.length} подкатегорий
+                      </p>
+                    </motion.div>
                   )}
+                </div>
+              </div>
 
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={prevStep}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium cursor-pointer transition-colors"
+                >
+                  ← Назад
+                </button>
+                <button
+                  disabled={!selectedCategory}
+                  onClick={nextStep}
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 cursor-pointer transition-all shadow-lg shadow-green-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed"
+                >
+                  Продолжить →
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "-100%", opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                    Укажите цену и фото
+                  </h2>
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    Стоимость вашей услуги и дополнительное изображение
+                  </p>
+                </div>
+
+                <div className="space-y-6 max-w-md mx-auto">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <DollarSign size={16} />
-                      Бюджет (сум) *
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Цена в сумах (необязательно)
                     </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      placeholder="Например: 500000"
-                      min="0"
-                      disabled={loading}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${errors.price
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                        }`}
-                    />
-                    {errors.price && (
-                      <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-                    )}
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Например: 500000"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        min="0"
+                        max="99999999"
+                        className="w-full px-4 py-4 pr-20 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-800 text-lg placeholder:text-gray-400"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                        сум
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3">
+                      💡 Если не указано, будет установлена цена 0
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <ImageIcon size={16} />
-                      Изображение (необязательно)
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Фото услуги (необязательно)
                     </label>
-
-                    <div className="flex gap-4 mb-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="imageType"
-                          checked={imageInputType === "file"}
-                          onChange={() => setImageInputType("file")}
-                          className="text-green-600 focus:ring-green-500"
-                        />
-                        <span className="text-sm">Загрузить файл</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="imageType"
-                          checked={imageInputType === "url"}
-                          onChange={() => setImageInputType("url")}
-                          className="text-green-600 focus:ring-green-500"
-                        />
-                        <span className="text-sm flex items-center gap-1">
-                          <Link size={14} />
-                          Ввести URL
-                        </span>
-                      </label>
-                    </div>
-
-                    {imageInputType === "file" ? (
-                      <>
-                        <p className="text-xs text-gray-500 mb-2">
-                          Поддерживаются: JPEG, PNG, GIF, WebP, AVIF, SVG, BMP (до 10MB)
-                        </p>
-                        <div className="flex items-center gap-4">
-                          <label className="flex-1 cursor-pointer">
-                            <div className={`border-2 border-dashed rounded-lg p-4 transition-all text-center ${errors.images
-                              ? 'border-red-300 hover:border-red-400'
-                              : 'border-gray-300 hover:border-green-500'
-                              }`}>
-                              <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-                              <span className="text-sm text-gray-600 block">
-                                {imageFile ? imageFile.name : 'Выберите файл'}
-                              </span>
-                              {imageFile && (
-                                <span className="text-xs text-gray-500 mt-1 block">
-                                  {formatFileSize(imageFile.size)}
-                                </span>
-                              )}
-                            </div>
-                            <input
-                              type="file"
-                              accept="image/*,.avif"
-                              onChange={handleImageChange}
-                              disabled={loading}
-                              className="hidden"
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors">
+                      <input
+                        type="file"
+                        id="image-upload"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                        {imagePreview ? (
+                          <div className="space-y-4">
+                            <img 
+                              src={imagePreview} 
+                              alt="Preview" 
+                              className="mx-auto h-48 w-full object-cover rounded-lg"
                             />
-                          </label>
-                          {imagePreview && (
-                            <div className="relative w-24 h-24 flex-shrink-0">
-                              <img
-                                src={imagePreview}
-                                alt="Preview"
-                                className="w-full h-full object-cover rounded-lg border border-gray-200"
-                              />
-                              <button
-                                type="button"
-                                onClick={clearImage}
-                                disabled={loading}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 disabled:opacity-50 shadow-lg"
-                              >
-                                <X size={16} />
-                              </button>
+                            <p className="text-sm text-gray-600">
+                              Нажмите чтобы изменить фото
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Нажмите для загрузки фото
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                PNG, JPG, JPEG до 10MB
+                              </p>
                             </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="space-y-2">
-                        <input
-                          type="url"
-                          value={imageUrl}
-                          onChange={handleImageUrlChange}
-                          placeholder="https://example.com/image.jpg"
-                          disabled={loading}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 transition-all ${errors.images
-                            ? "border-red-500 focus:ring-red-500"
-                            : "border-gray-300 focus:ring-green-500 focus:border-green-500"
-                            }`}
-                        />
-                        {imagePreview && (
-                          <div className="relative w-24 h-24">
-                            <img
-                              src={imagePreview}
-                              alt="Preview"
-                              className="w-full h-full object-cover rounded-lg border border-gray-200"
-                            />
-                            <button
-                              type="button"
-                              onClick={clearImage}
-                              disabled={loading}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 disabled:opacity-50 shadow-lg"
-                            >
-                              <X size={16} />
-                            </button>
                           </div>
                         )}
-                      </div>
-                    )}
-                    {errors.images && (
-                      <p className="mt-1 text-sm text-red-600">{errors.images}</p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={handleCloseModal}
-                      disabled={loading}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Отмена
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="animate-spin" size={16} />
-                          Создание...
-                        </>
-                      ) : (
-                        'Создать вакансию'
-                      )}
-                    </button>
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      💡 Фото помогает привлечь больше клиентов
+                    </p>
                   </div>
                 </div>
-              </motion.div>
+
+                <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-800 mb-2">📋 Итоговые данные:</h3>
+                  <ul className="space-y-1.5 text-sm text-gray-700">
+                    <li><span className="font-medium">Название:</span> {title}</li>
+                    <li><span className="font-medium">Категория:</span> {categories.find(c => c.id === Number(selectedCategory))?.display_ru || "Не указана"}</li>
+                    {selectedSubcategories.length > 0 && (
+                      <li>
+                        <span className="font-medium">Подкатегории:</span>{" "}
+                        {selectedSubcategories.map(id => 
+                          filteredSubcategories.find(s => s.id === id)?.display_ru
+                        ).filter(Boolean).join(", ")}
+                      </li>
+                    )}
+                    {image && <li><span className="font-medium">Фото:</span> ✓ Загружено</li>}
+                    <li><span className="font-medium">Цена:</span> {price ? Number(price).toLocaleString() + ' сум' : 'Не указана (0 сум)'}</li>
+                  </ul>
+                </div>
+
+                {!currentUser && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Вы не авторизованы. Для создания услуги необходимо войти в систему.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={prevStep}
+                  className="px-6 py-3 text-gray-600 cursor-pointer hover:text-gray-800 font-medium transition-colors"
+                >
+                  ← Назад
+                </button>
+                <button
+                  disabled={loading || !currentUser}
+                  onClick={handleCreateService}
+                  className="px-8 py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Создание...
+                    </>
+                  ) : (
+                    <>
+                      <span>✓ Создать услугу</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {showTarrifs && <TarrifModal onClose={() => setShowTarrifs(false)} />}
     </div>
   );
-};
-
-export default Services;
+}
